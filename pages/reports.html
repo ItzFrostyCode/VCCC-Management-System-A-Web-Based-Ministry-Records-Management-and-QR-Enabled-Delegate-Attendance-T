@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports — VCCC DAVAO MS</title>
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="icon" type="image/png" href="../assets/VCCC-Logo.png">
+  <style>
+    .summary-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .sum-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+    .sum-pastor   { background:var(--red-light);   color:var(--red-dark); }
+    .sum-wife     { background:var(--blue-bg);      color:var(--blue); }
+    .sum-disciple { background:var(--green-bg);     color:var(--green); }
+    .sum-total    { background:var(--bg-input); border:1px solid var(--border); color:var(--text-2); }
+    .meal-chip-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .meal-chip { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--bg-input); font-size:12px; font-weight:500; color:var(--text); cursor:pointer; transition:all .15s; }
+    .meal-chip:hover  { border-color:var(--red); color:var(--red); }
+    .meal-chip.active { background:var(--red-light); border-color:var(--red); color:var(--red-dark); }
+    .list-row { display:flex; align-items:center; gap:10px; padding:11px 16px; border-bottom:1px solid var(--border); }
+    .list-row:last-child { border:none; }
+    .l-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+    .la-p { background:var(--red-light);  color:var(--red-dark); }
+    .la-w { background:var(--blue-bg);    color:var(--blue); }
+    .la-d { background:var(--green-bg);   color:var(--green); }
+    .l-info { flex:1; min-width:0; }
+    .l-name { font-size:13px; font-weight:500; color:var(--text); }
+    .l-sub  { font-size:11px; color:var(--text-3); }
+    /* Premium Search Bar */
+    .search-wrap {
+      height: 40px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0 14px; display: flex; align-items: center;
+      gap: 10px; transition: all 0.2s; width: 300px;
+    }
+    .search-wrap:focus-within { border-color: var(--red); box-shadow: 0 4px 12px rgba(207, 73, 73, 0.1); }
+    .search-wrap input { flex: 1; border: none; background: transparent; font-size: 13px; color: var(--text); outline: none; font-weight: 500;}
+    .search-wrap input::placeholder { color: var(--text-3); font-weight:400; }
+    .search-wrap svg { width: 16px; height: 16px; stroke: var(--text-3); stroke-width: 2.5; fill: none; transition: stroke 0.2s; }
+    .search-wrap:focus-within svg { stroke: var(--red); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a href="/index.html" class="sidebar-logo">
+      <img src="../assets/VCCC-Logo.png" class="sidebar-logo-img" alt="VCCC Logo" />
+    </a>
+    <nav class="sidebar-nav">
+      <a href="/index.html"             class="nav-item" data-page="dashboard"   data-tip="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>
+      <a href="/pages/pastors.html"     class="nav-item" data-page="pastors"     data-tip="Pastors"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg></a>
+      <a href="/pages/disciples.html"   class="nav-item" data-page="disciples"   data-tip="Disciples"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a8 8 0 0 1 16 0v2"/></svg></a>
+      <div class="sidebar-divider"></div>
+      <a href="/pages/conferences.html" class="nav-item" data-page="conferences" data-tip="Conferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></a>
+      <a href="/pages/badges.html"      class="nav-item" data-page="badges"      data-tip="Badges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></a>
+      <a href="/pages/scanner.html"     class="nav-item" data-page="scanner"     data-tip="Scanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg></a>
+      <a href="/pages/reports.html"     class="nav-item" data-page="reports"     data-tip="Reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></a>
+    </nav>
+    <div class="sidebar-bottom"><div class="sidebar-divider"></div><!-- User info removed --></div>
+  </aside>
+  <div class="app-main">
+    <header class="topbar"><div class="topbar-title">Global Reports</div></header>
+    <main class="page-content">
+      <div class="page-header">
+        <span class="page-header-title">Global Reports</span>
+        <button class="btn btn-primary" onclick="exportToExcel()" id="btn-export" style="display:none; gap:8px;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Export Excel
+        </button>
+      </div>
+
+      <!-- Selector -->
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:14px; margin-bottom:16px;">
+        <div class="form-field">
+          <label class="form-label">Select Conference</label>
+          <select class="select-input" id="conf-select" style="max-width:380px;"><option value="">Loading...</option></select>
+        </div>
+      </div>
+
+      <!-- Results Dashboard -->
+      <div id="results-section" style="display:none;">
+        
+        <!-- Premium Summary Cards -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;" id="summary-cards">
+          <!-- Populated via JS -->
+        </div>
+
+        <!-- Unified Data Table -->
+        <div class="card">
+          <div style="padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:700; color:var(--text); font-size:14px;">All Delegates Status</div>
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="log-search" placeholder="Search delegates..." onkeyup="renderGlobalList()" autocomplete="off" />
+            </div>
+          </div>
+          
+          <div class="table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="data-table" style="width:100%; text-align:left; border-collapse:collapse;">
+              <thead>
+                <tr>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-2); font-size:12px; font-weight:600;">Delegate</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-2); font-size:12px; font-weight:600;">Role / Location</th>
+                  <th style="padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-2); font-size:12px; font-weight:600;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="global-list-body">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="empty-prompt" style="padding:40px 20px;text-align:center;font-size:13px;color:var(--text-3);">Select a conference to generate the global report.</div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="../js/libs/supabase.min.js"></script>
+<script src="../js/supabase.js"></script><script src="../js/router.js"></script><script src="../js/utils/helper.js"></script>
+<script src="../js/services/pastor.service.js"></script><script src="../js/services/disciple.service.js"></script>
+<script src="../js/services/conference.service.js"></script>
+<script src="../js/services/meal.service.js"></script>
+<script src="../js/services/attendance.service.js"></script>
+<script src="../js/pages/reports.js"></script>
+</body>
+</html>

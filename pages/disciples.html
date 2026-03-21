@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disciples — VCCC DAVAO MS</title>
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="icon" type="image/png" href="../assets/VCCC-Logo.png">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a href="/index.html" class="sidebar-logo">
+      <img src="../assets/VCCC-Logo.png" class="sidebar-logo-img" alt="VCCC Logo" />
+    </a>
+    <nav class="sidebar-nav">
+      <a href="/index.html"             class="nav-item" data-page="dashboard"   data-tip="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>
+      <a href="/pages/pastors.html"     class="nav-item" data-page="pastors"     data-tip="Pastors"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg></a>
+      <a href="/pages/disciples.html"   class="nav-item" data-page="disciples"   data-tip="Disciples"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a8 8 0 0 1 16 0v2"/></svg></a>
+      <div class="sidebar-divider"></div>
+      <a href="/pages/conferences.html" class="nav-item" data-page="conferences" data-tip="Conferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></a>
+      <a href="/pages/badges.html"      class="nav-item" data-page="badges"      data-tip="Badges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></a>
+      <a href="/pages/scanner.html"     class="nav-item" data-page="scanner"     data-tip="Scanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg></a>
+      <a href="/pages/reports.html"     class="nav-item" data-page="reports"     data-tip="Reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></a>
+    </nav>
+    <div class="sidebar-bottom"><div class="sidebar-divider"></div><!-- User info removed --></div>
+  </aside>
+  <div class="app-main">
+    <header class="topbar"><div class="topbar-title">Disciples</div></header>
+    <main class="page-content">
+      <div class="page-header">
+        <div class="page-header-info"><span class="page-header-title">Disciples</span><span class="page-header-count" id="count-label"></span></div>
+        <div class="page-header-actions">
+          <button class="btn btn-ghost" id="btn-export"><svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg> Export CSV</button>
+          <button class="btn btn-primary" id="btn-add"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add disciple</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="search-input" placeholder="Search by name or pastor..." /></div>
+        <div id="filter-district" style="width:180px;"></div>
+        <div id="filter-pastor"   style="width:200px;"></div>
+      </div>
+      <div class="data-table">
+        <div class="data-table-head cols-disciples">
+          <span>Disciple</span>
+          <span>Pastor</span>
+          <span>District</span>
+          <span>Church</span>
+          <span></span>
+        </div>
+        <div id="table-body">
+          <div class="skel-row skeleton"></div>
+          <div class="skel-row skeleton"></div>
+          <div class="skel-row skeleton"></div>
+        </div>
+        <div id="pagination" style="display:none; justify-content:space-between; align-items:center; padding: 12px 16px; border-top: 1px solid var(--border);">
+          <div style="font-size:13px; color:var(--text-3); font-weight:500;" id="page-info"></div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-prev" onclick="prevPage()">Prev</button>
+            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-next" onclick="nextPage()">Next</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modal-form">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-title">Add disciple</span>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="item-id" />
+      <div class="form-field"><label class="form-label">Full name <span class="req">*</span></label><input class="input" type="text" id="item-name" placeholder="Disciple full name" /></div>
+      <div class="form-field"><label class="form-label">Filter by district <span class="opt">(optional)</span></label><div id="modal-district-filter"></div></div>
+      <div class="form-field"><label class="form-label">Pastor <span class="req">*</span></label><div id="modal-pastor-sel"></div><div class="form-hint" id="pastor-hint">All pastors shown</div></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="btn-save">Save disciple</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-head">
+      <span class="modal-title">Remove disciple</span>
+      <button class="modal-close" onclick="document.getElementById('modal-delete').classList.remove('open')">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body"><p style="font-size:13px;color:var(--text-2);" id="delete-msg"></p></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="document.getElementById('modal-delete').classList.remove('open')">Cancel</button><button class="btn btn-danger" id="btn-delete-confirm">Remove</button></div>
+  </div>
+</div>
+<script src="../js/libs/supabase.min.js"></script>
+<script src="../js/supabase.js"></script><script src="../js/router.js"></script><script src="../js/utils/helper.js"></script>
+<script src="../js/utils/data-manager.js"></script>
+<script src="../js/services/district.service.js"></script><script src="../js/services/church.service.js"></script>
+<script src="../js/services/pastor.service.js"></script><script src="../js/services/disciple.service.js"></script>
+<script src="../js/pages/disciples.js"></script>
+</body>
+</html>
