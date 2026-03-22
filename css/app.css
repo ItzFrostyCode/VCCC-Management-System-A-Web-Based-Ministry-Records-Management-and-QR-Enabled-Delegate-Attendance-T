@@ -42,7 +42,7 @@ h1,h2,h3,h4 { font-weight: 600; line-height: 1.25; }
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; }
 /* ── Anti-Zoom & Input Resets (Critical for iOS Safari) ── */
-input, 
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), 
 select, 
 textarea,
 [contenteditable="true"],
@@ -57,7 +57,7 @@ textarea,
 
 /* Fix iOS Safari zoom bug inside transformed parents / modals */
 @supports (-webkit-touch-callout: none) {
-  input, 
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), 
   select, 
   textarea,
   [contenteditable="true"] {

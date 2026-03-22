@@ -190,17 +190,14 @@ function calculateDays() {
     html += `
     <div style="display:grid; grid-template-columns: 80px 1fr 1fr 1fr; gap:10px; align-items:center; padding:8px 0; border-bottom:1px dotted var(--border);">
       <div style="font-size:11px; font-weight:700; color:var(--text-2);">Day ${dayNum}</div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <input type="checkbox" id="slot-cb-${dayNum}-MORNING" checked />
-        <label for="slot-cb-${dayNum}-MORNING" style="font-size:10px; cursor:pointer;">Morning</label>
+      <div style="display:flex; align-items:center; justify-content:center;">
+        <input type="checkbox" id="slot-cb-${dayNum}-MORNING" checked style="-webkit-appearance:checkbox; appearance:checkbox; width:18px; height:18px; cursor:pointer; accent-color:var(--red);" />
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <input type="checkbox" id="slot-cb-${dayNum}-AFTERNOON" checked />
-        <label for="slot-cb-${dayNum}-AFTERNOON" style="font-size:10px; cursor:pointer;">Afternoon</label>
+      <div style="display:flex; align-items:center; justify-content:center;">
+        <input type="checkbox" id="slot-cb-${dayNum}-AFTERNOON" checked style="-webkit-appearance:checkbox; appearance:checkbox; width:18px; height:18px; cursor:pointer; accent-color:var(--red);" />
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <input type="checkbox" id="slot-cb-${dayNum}-EVENING" checked />
-        <label for="slot-cb-${dayNum}-EVENING" style="font-size:10px; cursor:pointer;">Evening</label>
+      <div style="display:flex; align-items:center; justify-content:center;">
+        <input type="checkbox" id="slot-cb-${dayNum}-EVENING" checked style="-webkit-appearance:checkbox; appearance:checkbox; width:18px; height:18px; cursor:pointer; accent-color:var(--red);" />
       </div>
     </div>`
   })

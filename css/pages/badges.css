@@ -569,7 +569,9 @@ canvas#badge-canvas:hover {
     flex-shrink: 0;       /* never squish */
     padding: 8px 12px;
     background: #f4f7fa;
-    z-index: 30;
+    z-index: 50;
+    position: sticky;
+    top: 52px; /* right below topbar */
   }
 
   .switch-btn {
@@ -744,9 +746,9 @@ canvas#badge-canvas:hover {
 
   .panel-filters { padding: 12px; }
   .filter-row { flex-direction: column; gap: 8px; }
-  .filter-row .search-wrap { min-width: 0; width: 100%; }
+  .filter-row .search-wrap { min-width: 0; width: 100%; flex: none; height: 42px !important; }
   .filter-row #filter-district-badge,
-  .filter-row #filter-church-badge { width: 100%; flex: 1 1 100%; }
+  .filter-row #filter-church-badge { width: 100%; flex: none; }
 
   .family-row { grid-template-columns: 1fr; }
   .disciple-grid { grid-template-columns: 1fr; }

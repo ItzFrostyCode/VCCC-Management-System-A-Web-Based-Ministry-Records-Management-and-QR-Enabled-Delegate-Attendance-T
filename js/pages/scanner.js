@@ -306,7 +306,10 @@ async function loadConference() {
       return
     }
 
-    if (nameEl) nameEl.textContent = activeConf.title.toUpperCase()
+    if (nameEl) {
+      const displayTitle = activeConf.theme ? activeConf.theme : activeConf.title;
+      nameEl.textContent = displayTitle.toUpperCase();
+    }
 
     // ── Update header meta row (day / status badge) after conf loads
     updateHeaderMeta()
