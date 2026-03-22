@@ -54,8 +54,8 @@ const pastorService = {
     const { data, error } = await db
       .from('pastors')
       .insert({
-        full_name:   fullName.trim(),
-        wife_name:   wifeName.trim() || null,
+        full_name:   fullName.trim().toUpperCase(),
+        wife_name:   wifeName.trim() ? wifeName.trim().toUpperCase() : null,
         church_id:   churchId,
         district_id: districtId
       })
@@ -80,8 +80,8 @@ const pastorService = {
     const { data, error } = await db
       .from('pastors')
       .update({
-        full_name:   fullName.trim(),
-        wife_name:   wifeName.trim() || null,
+        full_name:   fullName.trim().toUpperCase(),
+        wife_name:   wifeName.trim() ? wifeName.trim().toUpperCase() : null,
         church_id:   churchId,
         district_id: districtId
       })

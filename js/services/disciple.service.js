@@ -68,7 +68,7 @@ const discipleService = {
   async create(fullName, pastorId) {
     const { data, error } = await db
       .from('disciples')
-      .insert({ full_name: fullName.trim(), pastor_id: pastorId })
+      .insert({ full_name: fullName.trim().toUpperCase(), pastor_id: pastorId })
       .select(`
         id, full_name, pastor_id,
         pastors (
@@ -97,7 +97,7 @@ const discipleService = {
   async update(id, fullName, pastorId) {
     const { data, error } = await db
       .from('disciples')
-      .update({ full_name: fullName.trim(), pastor_id: pastorId })
+      .update({ full_name: fullName.trim().toUpperCase(), pastor_id: pastorId })
       .eq('id', id)
       .select(`
         id, full_name, pastor_id,

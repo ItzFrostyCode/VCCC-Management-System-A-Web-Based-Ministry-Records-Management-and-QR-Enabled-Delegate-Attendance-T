@@ -61,8 +61,8 @@ const conferenceService = {
       .from('conferences')
       .insert({
         title: title.trim(),
-        theme: theme?.trim() || null,
-        location: location?.trim() || null,
+        theme: theme?.trim() ? theme.trim().toUpperCase() : null,
+        location: location?.trim() ? location.trim().toUpperCase() : null,
         start_date: startDate || null,
         end_date: endDate || null
       })
@@ -128,8 +128,8 @@ const conferenceService = {
       .from('conferences')
       .update({
         title: title.trim(),
-        theme: theme?.trim() || null,
-        location: location?.trim() || null,
+        theme: theme?.trim() ? theme.trim().toUpperCase() : null,
+        location: location?.trim() ? location.trim().toUpperCase() : null,
         start_date: startDate,
         end_date: endDate
       })
