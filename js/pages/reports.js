@@ -7,6 +7,7 @@ let allConferences  = []
 let currentConference = null
 let currentMeals    = []
 let currentTimeSlots = []
+let refreshInterval   = null
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -110,6 +111,27 @@ async function loadGlobalReport(confId) {
 
   currentConference = allConferences.find(c => c.id === confId) || null
 
+  const btnRefresh = document.getElementById('btn-refresh')
+  if (btnRefresh) btnRefresh.style.display = confId ? 'inline-flex' : 'none'
+
+  // Start/Stop polling
+  if (confId) {
+    if (!refreshInterval) {
+      refreshInterval = setInterval(() => {
+        // Only auto-refresh if tab is active to save resources
+        if (document.visibilityState === 'visible') {
+          console.log('🔄 Auto-refreshing report...')
+          refreshReport(true)
+        }
+      }, 60000) // 1 minute
+    }
+  } else {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+    const timeLabel = document.getElementById('last-updated')
+    if (timeLabel) timeLabel.textContent = ''
+  }
+
   try {
     // Fetch all data in parallel
     const [days, attendance, meals, timeSlots] = await Promise.all([
@@ -172,6 +194,13 @@ async function loadGlobalReport(confId) {
 
     renderSummaryCards()
     renderGlobalList()
+
+    // Update timestamp
+    const now = new Date()
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    const timeLabel = document.getElementById('last-updated')
+    if (timeLabel) timeLabel.textContent = `Last updated: ${timeStr}`
+
   } catch (err) {
     console.error('loadGlobalReport error:', err)
     alert('Error loading global report: ' + err.message)
@@ -393,4 +422,31 @@ function pillClass(role) {
 }
 function esc(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+// ── Manual Refresh ────────────────────────────────────────────────────────
+async function refreshReport(isAuto = false) {
+  if (!currentConference) return
+  
+  const btn = document.getElementById('btn-refresh')
+  if (btn && !isAuto) {
+    btn.disabled = true
+    btn.classList.add('spinning')
+    btn.style.opacity = '0.5'
+  }
+
+  try {
+    // Re-fetch all delegate metadata in case new pastors/disciples were added
+    await initDelegateData()
+    // Re-run the report logic
+    await loadGlobalReport(currentConference.id)
+  } catch (e) {
+    console.error('Refresh failed:', e)
+  } finally {
+    if (btn && !isAuto) {
+      btn.disabled = false
+      btn.classList.remove('spinning')
+      btn.style.opacity = '1'
+    }
+  }
 }
