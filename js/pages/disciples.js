@@ -7,15 +7,32 @@ let deletingId = null
 let selModalPastor = null
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await requireAuth()
-    initUI()
-    await initData()
-    bindEvents()
+    try {
+        await requireAuth()
+        initUI()
+        await initData()
+        bindEvents()
+    } catch (err) {
+        console.error('Page init failed:', err)
+        const body = document.getElementById('table-body')
+        if (body) {
+            body.innerHTML = `<div class="empty-state" style="color:var(--red); padding:40px; border:1px solid var(--red-light);">
+                <div style="font-weight:800; margin-bottom:8px;">Load Error</div>
+                <div style="font-size:13px; opacity:0.8;">${esc(err.message)}</div>
+            </div>`
+        }
+    }
 })
 
 function initUI() {
-    selModalPastor = new CustomSelect('modal-pastor-sel', 'Select Pastor')
+    selModalPastor = createSearchSelect(
+        document.getElementById('modal-pastor-sel'),
+        [],
+        'Select Pastor'
+    )
 }
+
+
 
 async function initData() {
     try {

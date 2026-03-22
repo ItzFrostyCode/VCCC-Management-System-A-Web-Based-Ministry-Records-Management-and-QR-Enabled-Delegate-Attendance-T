@@ -80,6 +80,12 @@ const attendanceService = {
       .delete()
       .eq('conference_id', conferenceId)
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'CLEAR_ATTENDANCE', `Cleared all attendance for conference ID: ${conferenceId}`)
+    }
+
   },
 
   async fetchByMeal(mealId) {

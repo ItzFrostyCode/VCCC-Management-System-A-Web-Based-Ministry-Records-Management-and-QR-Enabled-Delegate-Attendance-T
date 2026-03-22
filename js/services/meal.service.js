@@ -26,7 +26,14 @@ const mealService = {
       .single()
 
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'CREATE_MEAL', `Created Meal: ${name || 'Unnamed'} for Day ${dayId}`)
+    }
+
     return data
+
   },
 
   async createBulk(meals) {
@@ -36,7 +43,14 @@ const mealService = {
       .select()
 
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user && data) {
+      await authService.logAudit(user.id, 'CREATE_MEAL_BULK', `Created ${data.length} meal slots`)
+    }
+
     return data
+
   },
 
   async remove(id, dayId, slotId) {
@@ -60,5 +74,11 @@ const mealService = {
       .eq('id', id)
 
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'DELETE_MEAL', `Removed Meal Slot ID: ${id}`)
+    }
+
   }
 }

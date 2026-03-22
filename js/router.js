@@ -64,8 +64,17 @@ function injectMobileNav() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
           Reports
         </a>
+        <a href="/pages/admin_logs.html" class="mob-nav-link admin-only" data-page="logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Activity Logs
+        </a>
       </div>
-      <!-- Mobile Nav Footer removed -->
+      <div class="mob-nav-foot">
+        <button class="mob-nav-link" style="width:100%; border:none; background:none; cursor:pointer; color:var(--text-2);" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/pages/login.html')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </div>
     </div>
   `
   document.body.insertAdjacentHTML('beforeend', drawerHtml)

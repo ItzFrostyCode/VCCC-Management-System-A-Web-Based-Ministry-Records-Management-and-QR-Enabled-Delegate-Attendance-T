@@ -1,8 +1,13 @@
 {
+  "cleanUrls": true,
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/login", "destination": "/pages/login.html" },
+    { "source": "/scanner", "destination": "/pages/scanner.html" },
+    { "source": "/pastors", "destination": "/pages/pastors.html" },
+    { "source": "/disciples", "destination": "/pages/disciples.html" },
+    { "source": "/conferences", "destination": "/pages/conferences.html" },
+    { "source": "/badges", "destination": "/pages/badges.html" },
+    { "source": "/reports", "destination": "/pages/reports.html" },
+    { "source": "/admin_logs", "destination": "/pages/admin_logs.html" }
   ]
 }

@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnLogin = document.getElementById('btn-login');
   const errorEl = document.getElementById('login-error');
   
+  // Check for session expiration message
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('expired') === 'true') {
+    errorEl.textContent = 'Session expired. You were logged in on another device.';
+    errorEl.style.display = 'block';
+    errorEl.classList.add('alert-warn'); // Assuming a warning style
+  }
+
   // If already logged in, redirect
   if (authService.isAuthenticated()) {
      const user = authService.getCurrentUser();

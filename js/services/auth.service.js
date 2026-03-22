@@ -32,37 +32,38 @@ class AuthService {
         throw new Error('Invalid username or password');
       }
 
-      // 2. Check active sessions (allow only 1 device)
-      const { data: activeSession, error: sessionError } = await db
+      // 2. Invalidate ALL existing active sessions for this user (Auto-Logout/Kick-out old devices)
+      const { error: clearError } = await db
         .from('user_sessions')
-        .select('*')
+        .update({ active_flag: false })
         .eq('user_id', user.id)
-        .eq('active_flag', true)
-        .maybeSingle();
+        .eq('active_flag', true);
 
-      if (activeSession) {
-        throw new Error('This account is already active on another device.');
+      if (clearError) {
+        console.warn('Failed to clear old sessions:', clearError);
       }
 
-      // 3. Create Session
-      const sessionId = this.generateSessionId();
+
+      // 3. Create Session (Insert and get the actual DB UUID)
       const deviceInfo = this.getDeviceInfo();
       
-      const { error: insertSessionError } = await db
+      const { data: newSession, error: insertSessionError } = await db
         .from('user_sessions')
         .insert([{
           user_id: user.id,
           device_info: deviceInfo,
           active_flag: true
-        }]);
+        }])
+        .select('id')
+        .single();
 
       if (insertSessionError) {
-        if (insertSessionError.code === '23505') {
-          throw new Error('This account is already active on another device.');
-        }
         if (insertSessionError.message?.includes('does not exist')) throw new Error('Database table "user_sessions" not found. Please run the SQL script.');
         throw new Error('Failed to create session: ' + insertSessionError.message);
       }
+
+      const sessionId = newSession.id; // Use the actual DB-generated UUID
+
 
       // 4. Log Audit
       await this.logAudit(user.id, 'Login', deviceInfo);

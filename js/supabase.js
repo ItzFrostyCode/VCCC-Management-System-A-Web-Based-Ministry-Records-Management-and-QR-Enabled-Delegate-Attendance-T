@@ -11,27 +11,53 @@ console.log('🚀 VCCC is now connected to LIVE Supabase Database')
 // ── Auth guard & helpers ──────────────────────────────────
 async function requireAuth() {
   if (typeof authService !== 'undefined') {
+    const isScannerPage = window.location.pathname.includes('scanner.html');
+    
     if (!authService.isAuthenticated()) {
-      // If we are already on the scanner page, allow it (Public Scanner Mode)
-      if (window.location.pathname.includes('scanner.html')) {
-        return null; 
-      }
-      // Otherwise, redirect to login
+      if (isScannerPage) return null;
       const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
       window.location.href = '/' + prefix + 'login.html';
       return null;
     }
+
     const user = authService.getCurrentUser();
-    
-    // Show admin-only elements
+    const sessionId = localStorage.getItem('vccc_session_id');
+
+    // ── Check if session was "kicked out" by another device ──
+    const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+
+    if (sessionId && isUUID(sessionId) && !isScannerPage) {
+      try {
+        const { data: session, error: sessErr } = await db
+          .from('user_sessions')
+          .select('active_flag')
+          .eq('id', sessionId)
+          .maybeSingle();
+
+
+        if (sessErr) throw sessErr;
+
+        // If session not found or inactive, log them out
+        if (!session || session.active_flag === false) {
+          authService.clearSession();
+          const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
+          window.location.href = '/' + prefix + 'login.html?expired=true';
+          return null;
+        }
+      } catch (e) { 
+        console.error('Session validation failed:', e); 
+      }
+    }
+
+
+    // (Existing role checks...)
     if (user && user.role === 'Admin') {
       document.querySelectorAll('.admin-only').forEach(el => {
         el.style.setProperty('display', 'flex', 'important');
       });
     }
     
-    // Role based check: if Scanner tries to access non-scanner page
-    if (user && user.role === 'Scanner' && !window.location.pathname.includes('scanner.html')) {
+    if (user && user.role === 'Scanner' && !isScannerPage) {
         const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
         window.location.href = '/' + prefix + 'scanner.html';
         return null;
