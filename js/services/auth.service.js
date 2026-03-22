@@ -57,6 +57,9 @@ class AuthService {
         }]);
 
       if (insertSessionError) {
+        if (insertSessionError.code === '23505') {
+          throw new Error('This account is already active on another device.');
+        }
         if (insertSessionError.message?.includes('does not exist')) throw new Error('Database table "user_sessions" not found. Please run the SQL script.');
         throw new Error('Failed to create session: ' + insertSessionError.message);
       }

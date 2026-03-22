@@ -17,7 +17,7 @@ DROP TABLE IF EXISTS districts CASCADE;
 -- 1. Districts
 CREATE TABLE IF NOT EXISTS districts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE, -- Prevent duplicate district names
     is_deleted BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS churches (
     name TEXT NOT NULL,
     district_id UUID REFERENCES districts(id) ON DELETE CASCADE,
     is_deleted BOOLEAN DEFAULT false,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(name, district_id) -- Prevent duplicate churches in the same district
 );
 -- 3. Pastors (and Wives logic)
 CREATE TABLE IF NOT EXISTS pastors (
@@ -35,18 +36,24 @@ CREATE TABLE IF NOT EXISTS pastors (
     full_name TEXT NOT NULL,
     wife_name TEXT,
     church_id UUID REFERENCES churches(id) ON DELETE CASCADE,
-    district_id UUID REFERENCES districts(id) ON DELETE CASCADE, -- Denormalized for simpler queries
+    district_id UUID REFERENCES districts(id) ON DELETE CASCADE,
     is_deleted BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(full_name, church_id) -- Prevent duplicate pastors in the same church
 );
+-- Note: In a real scenario, we might want UNIQUE(full_name, church_id) WHERE (is_deleted IS FALSE)
+-- But PostgreSQL UNIQUE constraints don't natively support WHERE without a partial index.
+-- This basic UNIQUE is a good starting point.
+
 -- 4. Disciples
 CREATE TABLE IF NOT EXISTS disciples (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name TEXT NOT NULL,
     pastor_id UUID REFERENCES pastors(id) ON DELETE CASCADE,
     is_deleted BOOLEAN DEFAULT false,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(full_name, pastor_id) -- Prevent duplicate disciples for the same pastor
 );
 -- 5. Conferences
 CREATE TABLE IF NOT EXISTS conferences (

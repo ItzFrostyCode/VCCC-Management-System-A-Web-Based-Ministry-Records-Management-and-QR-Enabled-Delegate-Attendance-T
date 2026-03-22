@@ -774,10 +774,6 @@ async function handleScan(qrRaw) {
     )
 
     await showResult('success', displayName, `${payload.type || 'Delegate'} scan recorded`)
-    // ── Clear all debounce state → camera ready for the very next QR immediately
-    lastQR = null
-    lastQRTime = 0
-    lastScannedId = null
     await refreshLogs()
     setStatus(`✔ Scan successful: ${displayName}`, 'success')
   } catch (err) {
@@ -787,21 +783,15 @@ async function handleScan(qrRaw) {
 
     if (isDup) {
       await showResult('duplicate', null, 'Already scanned for this slot')
-      lastQR = null
-      lastQRTime = 0
-      lastScannedId = null
       setStatus('⚠ Already scanned', 'warn')
     } else {
       console.error(err)
-      lastQR = null
-      lastQRTime = 0
-      lastScannedId = null
       setStatus('Scan error', 'error')
     }
   } finally {
     isProcessing = false
   }
-}
+}  
 
 // ── Status ───────────────────────────────────────────────────
 function setStatus(msg, state = 'idle') {

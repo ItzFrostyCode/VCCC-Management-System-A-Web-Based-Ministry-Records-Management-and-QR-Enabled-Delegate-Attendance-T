@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   active_flag boolean DEFAULT true
 );
 
+-- Enforce only ONE active session per user at any given time (Concurrency guard)
+CREATE UNIQUE INDEX IF NOT EXISTS single_active_session_per_user ON user_sessions(user_id) WHERE (active_flag = true);
+
+
 CREATE TABLE IF NOT EXISTS audit_logs (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id uuid REFERENCES users(id) ON DELETE CASCADE,

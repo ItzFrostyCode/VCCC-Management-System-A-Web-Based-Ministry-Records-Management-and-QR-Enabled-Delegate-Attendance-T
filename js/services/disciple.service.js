@@ -61,10 +61,11 @@ const discipleService = {
     }
   },
 
-  async create(fullName, pastorId) {
-    const { data, error } = await db
+  async create(data) {
+    const { full_name, pastor_id } = data
+    const { data: result, error } = await db
       .from('disciples')
-      .insert({ full_name: fullName.trim().toUpperCase(), pastor_id: pastorId })
+      .insert({ full_name: full_name.trim().toUpperCase(), pastor_id: pastor_id })
       .select(`
         id, full_name, pastor_id,
         pastors (
@@ -79,25 +80,28 @@ const discipleService = {
       .single()
     if (error) throw error
     
-    const user = authService.getCurrentUser()
-    if (user) await authService.logAudit(user.id, 'CREATE_DISCIPLE', `Added Disciple: ${data.full_name}`)
+    if (result) {
+      const user = authService.getCurrentUser()
+      if (user) await authService.logAudit(user.id, 'CREATE_DISCIPLE', `Added Disciple: ${result.full_name}`)
+    }
 
     return {
-      id:            data.id,
-      full_name:     data.full_name,
-      pastor_id:     data.pastor_id,
-      pastor_name:   data.pastors?.full_name         || '',
-      church_id:     data.pastors?.church_id         || '',
-      church_name:   data.pastors?.churches?.name    || '',
-      district_id:   data.pastors?.district_id       || '',
-      district_name: data.pastors?.districts?.name   || ''
+      id:            result.id,
+      full_name:     result.full_name,
+      pastor_id:     result.pastor_id,
+      pastor_name:   result.pastors?.full_name         || '',
+      church_id:     result.pastors?.church_id         || '',
+      church_name:   result.pastors?.churches?.name    || '',
+      district_id:   result.pastors?.district_id       || '',
+      district_name: result.pastors?.districts?.name   || ''
     }
   },
 
-  async update(id, fullName, pastorId) {
-    const { data, error } = await db
+  async update(id, data) {
+    const { full_name, pastor_id } = data
+    const { data: result, error } = await db
       .from('disciples')
-      .update({ full_name: fullName.trim().toUpperCase(), pastor_id: pastorId })
+      .update({ full_name: full_name.trim().toUpperCase(), pastor_id: pastor_id })
       .eq('id', id)
       .select(`
         id, full_name, pastor_id,
@@ -113,18 +117,20 @@ const discipleService = {
       .single()
     if (error) throw error
 
-    const user = authService.getCurrentUser()
-    if (user) await authService.logAudit(user.id, 'UPDATE_DISCIPLE', `Updated Disciple: ${data.full_name}`)
+    if (result) {
+      const user = authService.getCurrentUser()
+      if (user) await authService.logAudit(user.id, 'UPDATE_DISCIPLE', `Updated Disciple: ${result.full_name}`)
+    }
 
     return {
-      id:            data.id,
-      full_name:     data.full_name,
-      pastor_id:     data.pastor_id,
-      pastor_name:   data.pastors?.full_name         || '',
-      church_id:     data.pastors?.church_id         || '',
-      church_name:   data.pastors?.churches?.name    || '',
-      district_id:   data.pastors?.district_id       || '',
-      district_name: data.pastors?.districts?.name   || ''
+      id:            result.id,
+      full_name:     result.full_name,
+      pastor_id:     result.pastor_id,
+      pastor_name:   result.pastors?.full_name         || '',
+      church_id:     result.pastors?.church_id         || '',
+      church_name:   result.pastors?.churches?.name    || '',
+      district_id:   result.pastors?.district_id       || '',
+      district_name: result.pastors?.districts?.name   || ''
     }
   },
 

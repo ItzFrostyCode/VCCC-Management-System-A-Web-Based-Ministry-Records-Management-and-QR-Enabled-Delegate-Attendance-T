@@ -53,14 +53,15 @@ const pastorService = {
     }
   },
 
-  async create(fullName, wifeName, churchId, districtId) {
-    const { data, error } = await db
+  async create(data) {
+    const { full_name, wife_name, church_id, district_id } = data
+    const { data: result, error } = await db
       .from('pastors')
       .insert({
-        full_name: fullName.trim().toUpperCase(),
-        wife_name: wifeName.trim() ? wifeName.trim().toUpperCase() : null,
-        church_id: churchId,
-        district_id: districtId
+        full_name: full_name.trim().toUpperCase(),
+        wife_name: wife_name && wife_name.trim() ? wife_name.trim().toUpperCase() : null,
+        church_id: church_id,
+        district_id: district_id
       })
       .select(`
         id, full_name, wife_name, church_id, district_id,
@@ -70,35 +71,38 @@ const pastorService = {
       .single()
 
     if (error) throw error
-
-    const user = authService.getCurrentUser()
-    if (user) {
-      await authService.logAudit(
-        user.id,
-        'CREATE_PASTOR',
-        `Added Pastor: ${data.full_name}`
-      )
+    
+    if (result) {
+      const user = authService.getCurrentUser()
+      if (user) {
+        await authService.logAudit(
+          user.id,
+          'CREATE_PASTOR',
+          `Added Pastor: ${result.full_name}`
+        )
+      }
     }
 
     return {
-      id: data.id,
-      full_name: data.full_name,
-      wife_name: data.wife_name || '',
-      church_id: data.church_id,
-      district_id: data.district_id,
-      church_name: data.churches?.name || '',
-      district_name: data.districts?.name || ''
+      id:            result.id,
+      full_name:     result.full_name,
+      wife_name:     result.wife_name || '',
+      church_id:     result.church_id,
+      district_id:   result.district_id,
+      church_name:   result.churches?.name || '',
+      district_name: result.districts?.name || ''
     }
   },
 
-  async update(id, fullName, wifeName, churchId, districtId) {
-    const { data, error } = await db
+  async update(id, data) {
+    const { full_name, wife_name, church_id, district_id } = data
+    const { data: result, error } = await db
       .from('pastors')
       .update({
-        full_name: fullName.trim().toUpperCase(),
-        wife_name: wifeName.trim() ? wifeName.trim().toUpperCase() : null,
-        church_id: churchId,
-        district_id: districtId
+        full_name: full_name.trim().toUpperCase(),
+        wife_name: wife_name && wife_name.trim() ? wife_name.trim().toUpperCase() : null,
+        church_id: church_id,
+        district_id: district_id
       })
       .eq('id', id)
       .select(`
@@ -110,23 +114,25 @@ const pastorService = {
 
     if (error) throw error
 
-    const user = authService.getCurrentUser()
-    if (user) {
-      await authService.logAudit(
-        user.id,
-        'UPDATE_PASTOR',
-        `Updated Pastor: ${data.full_name}`
-      )
+    if (result) {
+      const user = authService.getCurrentUser()
+      if (user) {
+        await authService.logAudit(
+          user.id,
+          'UPDATE_PASTOR',
+          `Updated Pastor: ${result.full_name}`
+        )
+      }
     }
 
     return {
-      id: data.id,
-      full_name: data.full_name,
-      wife_name: data.wife_name || '',
-      church_id: data.church_id,
-      district_id: data.district_id,
-      church_name: data.churches?.name || '',
-      district_name: data.districts?.name || ''
+      id:            result.id,
+      full_name:     result.full_name,
+      wife_name:     result.wife_name || '',
+      church_id:     result.church_id,
+      district_id:   result.district_id,
+      church_name:   result.churches?.name || '',
+      district_name: result.districts?.name || ''
     }
   },
 

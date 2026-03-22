@@ -221,41 +221,48 @@ function closeModal() {
 
 /* ✅ FIXED MISSING FUNCTION */
 async function saveItem() {
-  const name = document.getElementById('item-name').value.trim()
-  const wife = document.getElementById('wife-name').value.trim()
-  const distName = selModalDist.getValue()
-  const churchName = selModalChurch.getValue()
+  const id      = editingId // Use the global editingId
+  const name    = document.getElementById('item-name').value.trim()
+  const wife    = document.getElementById('wife-name').value.trim()
+  const districtId = selModalDist.getValue() // Use the select component's value
+  const churchId   = selModalChurch.getValue() // Use the select component's value
 
-  if (!name || !distName || !churchName) {
-    alert('Please fill in all required fields.')
+  if (!name || !districtId || !churchId) {
+    alert('Please fill in name, district, and church.')
     return
   }
 
   const btn = document.getElementById('btn-save')
   btn.disabled = true
-  btn.textContent = 'Checking IDs...'
+  btn.textContent = 'Saving...'
 
   try {
-    const { distId, churchId } =
-      await dataManager.ensureDistrictAndChurch(distName, churchName)
-
-    btn.textContent = 'Saving...'
-
-    if (editingId) {
-      await pastorService.update(editingId, name, wife, churchId, distId)
-    } else {
-      await pastorService.create(name, wife, churchId, distId)
+    const data = {
+      full_name: name,
+      wife_name: wife || null,
+      district_id: districtId,
+      church_id: churchId
     }
 
-    await initData()
-    applyFilters()
+    if (id) {
+      await pastorService.update(id, data)
+    } else {
+      await pastorService.create(data)
+    }
+
     closeModal()
+    await initData() // Changed from loadData to initData to match existing pattern
+    applyFilters() // Re-apply filters after data load
   } catch (err) {
     console.error(err)
-    alert('Error saving pastor: ' + err.message)
+    if (err.code === '23505') {
+      alert('This pastor already exists in this church.')
+    } else {
+      alert('Failed to save pastor: ' + err.message)
+    }
   } finally {
     btn.disabled = false
-    btn.textContent = editingId ? 'Update pastor' : 'Save pastor'
+    btn.textContent = id ? 'Update pastor' : 'Save pastor'
   }
 }
 
