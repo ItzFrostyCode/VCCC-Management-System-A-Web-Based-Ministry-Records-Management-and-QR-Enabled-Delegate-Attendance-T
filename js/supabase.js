@@ -11,12 +11,12 @@ console.log('🚀 VCCC is now connected to LIVE Supabase Database')
 // ── Auth guard & helpers ──────────────────────────────────
 async function requireAuth() {
   if (typeof authService !== 'undefined') {
-    const isScannerPage = window.location.pathname.includes('scanner.html');
+    const path = window.location.pathname;
+    const isScannerPage = path === '/scanner' || path.includes('scanner.html');
     
     if (!authService.isAuthenticated()) {
       if (isScannerPage) return null;
-      const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
-      window.location.href = '/' + prefix + 'login.html';
+      window.location.href = '/login.html';
       return null;
     }
 
@@ -39,10 +39,9 @@ async function requireAuth() {
 
         // If session not found or inactive, log them out
         if (!session || session.active_flag === false) {
-          authService.clearSession();
-          const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
-          window.location.href = '/' + prefix + 'login.html?expired=true';
-          return null;
+      authService.clearSession();
+      window.location.href = '/login.html?expired=true';
+      return null;
         }
       } catch (e) { 
         console.error('Session validation failed:', e); 
@@ -60,8 +59,7 @@ async function requireAuth() {
     if (user && user.role === 'Scanner') {
         document.body.classList.add('role-scanner');
         if (!isScannerPage) {
-            const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
-            window.location.href = '/' + prefix + 'scanner.html';
+            window.location.href = '/scanner.html';
             return null;
         }
     }

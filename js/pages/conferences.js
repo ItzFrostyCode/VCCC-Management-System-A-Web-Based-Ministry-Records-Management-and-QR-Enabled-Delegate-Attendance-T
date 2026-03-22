@@ -51,7 +51,7 @@ function renderList() {
           </div>
         </div>
         <div class="btn-action-group" style="display:flex; gap:8px; align-items:center;">
-          <a href="scanner.html?confId=${c.id}" class="btn btn-primary" style="height:32px; padding: 0 12px;">
+          <a href="/scanner.html?confId=${c.id}" class="btn btn-primary" style="height:32px; padding: 0 12px;">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
             Scan
           </a>

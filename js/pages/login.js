@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authService.isAuthenticated()) {
      const user = authService.getCurrentUser();
      if (user.role === 'Scanner') {
-       window.location.href = '/pages/scanner.html';
+       window.location.href = '/scanner.html';
      } else {
        window.location.href = '/index.html';
      }
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const user = await authService.signIn(username, password);
       // Redirect based on role
       if (user.role === 'Scanner') {
-        window.location.href = '/pages/scanner.html';
+        window.location.href = '/scanner.html';
       } else {
         window.location.href = '/index.html';
       }

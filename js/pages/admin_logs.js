@@ -5,7 +5,7 @@ const ITEMS_PER_PAGE = 10
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth()
   if (user && user.role !== 'Admin') {
-    window.location.href = '../index.html'
+    window.location.href = '/index.html'
     return
   }
 

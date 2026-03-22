@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('global-search').addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.value.trim()) {
-      window.location.href = `/pages/pastors.html?q=${encodeURIComponent(e.target.value.trim())}`
+      window.location.href = `/pastors?q=${encodeURIComponent(e.target.value.trim())}`
     }
   })
 })
@@ -82,7 +82,7 @@ async function loadSlotAttendance() {
       .limit(1)
 
     if (!confs || !confs.length) {
-      el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text-3)">No conferences yet. <a href="/pages/conferences.html" style="color:var(--red)">Add one</a></div>`
+      el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text-3)">No conferences yet. <a href="/conferences.html" style="color:var(--red)">Add one</a></div>`
       return
     }
 

@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (mobTestModeBtn) mobTestModeBtn.style.display = 'none';
     
     // Also remove the Dashboard link from mobile nav entirely
-    const mobDashboardLink = document.querySelector('.mob-nav-item[href="/index.html"]');
+    const mobDashboardLink = document.querySelector('.mob-nav-item[href="/"]');
     if (mobDashboardLink) mobDashboardLink.remove();
   }
 
