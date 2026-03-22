@@ -20,7 +20,7 @@
 
 .badge-main-content {
   display: grid;
-  grid-template-columns: 720px 1fr; /* Extra Wide (720px) for long pastor names */
+  grid-template-columns: minmax(640px, 1.45fr) minmax(360px, 1fr);
   gap: 20px;
   flex: 1;
   min-height: 0;
@@ -97,6 +97,7 @@
   border-radius: 12px;
   padding: 12px 14px;
   min-width: 170px;
+  flex-shrink: 0; /* Prevent squishing on tablet, force horizontal scroll instead */
   display: flex;
   flex-direction: column;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -195,7 +196,7 @@ canvas#badge-canvas {
   height: auto !important;
   max-width: 100%;
   max-height: 100%;
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 25px 60px rgba(0,0,0,0.2);
   background: #fff;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -239,16 +240,18 @@ canvas#badge-canvas:hover {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .filter-row .search-wrap {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 260px;
+  min-width: 220px;
 }
 
 .filter-row #filter-district-badge,
 .filter-row #filter-church-badge {
-  width: 200px; /* Fixed width for dropdowns */
+  flex: 1 1 180px;
+  width: auto;
   flex-shrink: 0;
 }
 
@@ -436,6 +439,17 @@ canvas#badge-canvas:hover {
   text-overflow: ellipsis;
 }
 
+@media (max-width: 600px) {
+  .del-btn .name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
 .del-btn .role-tag {
   align-self: flex-start;
   font-size: 9px;
@@ -450,7 +464,8 @@ canvas#badge-canvas:hover {
 
 .disciple-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* auto-fill: wraps naturally — never overflows on narrow screens */
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 8px;
   margin-top: 12px;
   padding-top: 12px;
@@ -522,31 +537,39 @@ canvas#badge-canvas:hover {
    RESPONSIVE & TABBED VIEW
 ════════════════════════════════════════ */
 @media (max-width: 1100px) {
-  .badge-layout { height: auto; overflow: visible; padding: 12px; }
-  .badge-main-content { display: block; }
-  
-  .view-panel { display: none; margin-top: 12px; }
-  .view-panel.active { display: flex; }
 
-  .tools-panel { flex-direction: column; height: auto; width: 100%; }
-  .tools-panel .panel-head { writing-mode: horizontal-tb; transform: none; border-bottom: 1px solid var(--badge-border); border-right: none; width: 100%; padding: 10px 16px; }
-  .tools-scroll { flex-direction: column; overflow-x: hidden; overflow-y: auto; gap: 12px; max-height: 50vh; }
-  .tool-group { min-width: 0; width: 100%; }
+  /* ─────────────────────────────────────────
+     1. badge-layout = the single height container.
+        Outer page NEVER scrolls on mobile.
+        Topbar = 52px  •  page-header ~50px  •  gap ~16px  •  page padding-top 12px
+     ───────────────────────────────────────── */
+  .badge-layout {
+    /* Fill everything below the page-header */
+    height: calc(100dvh - 130px);
+    max-height: calc(100dvh - 130px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    background: transparent;
+  }
 
-  .badge-panel { min-height: 60vh; }
-  .delegate-panel { width: 100%; }
-}
+  /* Hide the badge-main-content wrapper gap so layout is fully flex-driven */
+  .badge-main-content {
+    display: contents; /* passes children directly to badge-layout flex */
+  }
 
-@media (max-width: 600px) {
+  /* ─────────────────────────────────────────
+     2. Panel switcher — sticky pill tabs
+     ───────────────────────────────────────── */
   .mobile-panel-switcher {
     display: flex;
     gap: 8px;
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: #f1f5f9;
-    padding: 8px 0;
-    margin: 0 16px;
+    flex-shrink: 0;       /* never squish */
+    padding: 8px 12px;
+    background: #f4f7fa;
+    z-index: 30;
   }
 
   .switch-btn {
@@ -558,6 +581,7 @@ canvas#badge-canvas:hover {
     font-weight: 700;
     background: #fff;
     opacity: 0.6;
+    cursor: pointer;
     transition: all 0.2s;
   }
 
@@ -568,16 +592,163 @@ canvas#badge-canvas:hover {
     color: var(--badge-accent);
   }
 
-  .badge-preview-wrap { min-height: 320px; padding: 12px; }
-  .badge-actions { flex-direction: column; padding: 12px; gap: 8px; }
-  .badge-actions button { width: 100%; justify-content: center; }
-  
+  /* ─────────────────────────────────────────
+     3. All view-panels are hidden by default.
+        .active fills remaining height via flex.
+     ───────────────────────────────────────── */
+  .view-panel         { display: none; }
+  .view-panel.active  {
+    display: flex;
+    flex-direction: column;
+    flex: 1;          /* fill leftover space inside badge-layout */
+    min-height: 0;    /* critical: flex children must explicitly allow shrink */
+    overflow: hidden;
+    padding: 0 12px 12px;
+  }
+
+  /* ─────────────────────────────────────────
+     4. DELEGATE PANEL
+        • panel-head + panel-filters = pinned (flex-shrink: 0)
+        • delegate-list = scrolls internally (flex: 1)
+     ───────────────────────────────────────── */
+  .delegate-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 20px;
+  }
+
+  .delegate-panel .panel-head {
+    flex-shrink: 0;
+  }
+
+  .panel-filters {
+    flex-shrink: 0;   /* filters/search bar never scroll away */
+  }
+
+  .delegate-list {
+    flex: 1;          /* takes all remaining height */
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 12px;
+  }
+
+  /* ─────────────────────────────────────────
+     5. BADGE PREVIEW PANEL
+        • panel-head = pinned
+        • badge-preview-wrap = fills space (canvas visible immediately)
+        • badge-actions = pinned at bottom
+     ───────────────────────────────────────── */
+  .badge-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 20px;
+    min-height: unset;
+  }
+
+  .badge-panel .panel-head {
+    flex-shrink: 0;
+  }
+
+  .badge-preview-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .badge-actions {
+    flex-shrink: 0;
+  }
+
+  /* ─────────────────────────────────────────
+     6. TOOLS PANEL
+        • panel-head = pinned
+        • tools-scroll = scrolls internally
+     ───────────────────────────────────────── */
+  .tools-panel {
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 20px;
+  }
+
+  .tools-panel .panel-head {
+    writing-mode: horizontal-tb;
+    transform: none;
+    border-bottom: 1px solid var(--badge-border);
+    border-right: none;
+    width: 100%;
+    padding: 10px 16px;
+    flex-shrink: 0;
+  }
+
+  .tools-scroll {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tool-group { min-width: 0; width: 100%; }
+}
+
+/* ── Tablet / mid-size: collapse family-row to 1-col, keep disciple-grid 2-col max ── */
+@media (max-width: 768px) {
+  .family-row { grid-template-columns: 1fr; }
+  .disciple-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .badge-layout {
+    padding: 12px;
+    gap: 12px;
+    height: auto;
+  }
+
+  /* Switcher already defined in 1100px block, just tighten spacing on small phones */
+  .mobile-panel-switcher {
+    padding: 6px 0;
+  }
+  .badge-preview-wrap {
+    height: 42vh;
+    min-height: 280px;
+    padding: 12px;
+  }
+  canvas#badge-canvas {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .badge-actions {
+    flex-direction: column;
+    padding: 12px;
+    gap: 8px;
+  }
+  .badge-actions button {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+
   .panel-filters { padding: 12px; }
   .filter-row { flex-direction: column; gap: 8px; }
+  .filter-row .search-wrap { min-width: 0; width: 100%; }
   .filter-row #filter-district-badge,
-  .filter-row #filter-church-badge { width: 100%; }
+  .filter-row #filter-church-badge { width: 100%; flex: 1 1 100%; }
 
   .family-row { grid-template-columns: 1fr; }
-  .disciple-grid { grid-template-columns: repeat(2, 1fr); }
-  .del-btn { min-height: 72px; padding: 12px 10px; gap: 10px; }
+  .disciple-grid { grid-template-columns: 1fr; }
+  .del-btn { min-height: 72px; padding: 12px; gap: 10px; }
 }

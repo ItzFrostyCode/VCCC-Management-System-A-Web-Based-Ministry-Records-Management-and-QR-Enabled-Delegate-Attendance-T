@@ -21,7 +21,7 @@ let activeSlotId = null      // computed by tick
 let lastQR = null
 let lastQRTime = 0
 let lastScannedId = null // Track last ID to prevent accidental double-taps
-const LOCK_MS = 10000    // 10 second cooldown for the same QR
+const LOCK_MS = 3000    // 3-second debounce: prevents the same QR firing twice in a burst
 
 // ─── Test Mode ───────────────────────────────────────────────
 let isTestMode = false
@@ -245,6 +245,38 @@ function getOverallStatus() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  HEADER META ROW (Day · Slot · Status badge)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function updateHeaderMeta() {
+  const dayEl   = document.getElementById('meta-day')
+  const slotEl  = document.getElementById('meta-slot')
+  const badgeEl = document.getElementById('status-badge')
+  if (!dayEl || !slotEl || !badgeEl) return
+
+  const todayDay = getTodayDay()
+  if (!todayDay) {
+    dayEl.textContent = '—'
+    slotEl.textContent = '—'
+    badgeEl.textContent = 'CLOSED'
+    badgeEl.setAttribute('data-state', 'closed')
+    return
+  }
+
+  dayEl.textContent = `Day ${todayDay.day_index}`
+
+  const activeSlotObj = confSlots.find(s => getSlotState(todayDay, s) === 'active')
+  if (activeSlotObj) {
+    slotEl.textContent = activeSlotObj.name
+    badgeEl.textContent = 'OPEN'
+    badgeEl.setAttribute('data-state', 'open')
+  } else {
+    slotEl.textContent = '—'
+    badgeEl.textContent = 'CLOSED'
+    badgeEl.setAttribute('data-state', 'closed')
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  LOAD CONFERENCE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function loadConference() {
@@ -275,6 +307,9 @@ async function loadConference() {
     }
 
     if (nameEl) nameEl.textContent = activeConf.title.toUpperCase()
+
+    // ── Update header meta row (day / status badge) after conf loads
+    updateHeaderMeta()
 
     confDays = await conferenceService.fetchDays(activeConf.id)
     confSlots = await conferenceService.fetchTimeSlots(activeConf.id)
@@ -363,10 +398,12 @@ function renderSchedule() {
         return `
           <div class="slot-cell ${state}${extraClass}" id="slot-${day.id}-${slot.id}" ${clickAttr}>
             <div class="slot-emoji">${emoji}</div>
-            <div class="slot-name">${esc(slot.name)}</div>
-            <div class="slot-time-range">${fmt12(slot.start_time)} – ${fmt12(slot.end_time)}</div>
-            ${badgeHtml}
-            ${scanHint}
+            <div class="slot-info-wrap">
+              <div class="slot-name">${esc(slot.name)}</div>
+              <div class="slot-time-range">${fmt12(slot.start_time)} – ${fmt12(slot.end_time)}</div>
+              ${badgeHtml}
+              ${scanHint}
+            </div>
           </div>`
       }).join('')
 
@@ -427,6 +464,9 @@ function tickStateMachine() {
   } else {
     updateSlotBadgesOnly()
   }
+
+  // Keep header meta row in sync with current slot state
+  updateHeaderMeta()
 }
 
 function updateSlotBadgesOnly() {
@@ -528,6 +568,14 @@ function closeScanner() {
 //  CAMERA ENGINE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function startCamera() {
+  // Hide permission state, show loading
+  const permState  = document.getElementById('cam-permission-state')
+  const deniedState = document.getElementById('cam-denied-state')
+  const nocamState  = document.getElementById('cam-nocam-state')
+  if (permState)   permState.classList.add('hidden')
+  if (deniedState) deniedState.classList.add('hidden')
+  if (nocamState)  nocamState.classList.add('hidden')
+
   try {
     if (!html5QrCode) {
       html5QrCode = new Html5Qrcode("qr-reader")
@@ -539,13 +587,12 @@ async function startCamera() {
       fps: 15, 
       qrbox: (viewfinderWidth, viewfinderHeight) => {
         const minSide = Math.min(viewfinderWidth, viewfinderHeight);
-        const qrboxSize = Math.floor(minSide * 0.82); // Increased to 82% for better mobile visibility
+        const qrboxSize = Math.floor(minSide * 0.78);
         return { width: qrboxSize, height: qrboxSize };
       },
       aspectRatio: 1.777778
     };
 
-    // ⚠️ IMPORTANT: Show the "Start Camera" button if we fail, but here we are in the start func
     await html5QrCode.start(
       { facingMode: "environment" }, 
       config, 
@@ -553,37 +600,45 @@ async function startCamera() {
       (errorMessage) => { /* quiet while scanning */ }
     )
 
-    setStatus('✔ Camera ready — scan QR', 'success')
-
-    // Hide start button once active
-    const startBtn = document.getElementById('btn-start-camera')
-    if (startBtn) startBtn.classList.add('hidden')
+    setStatus('✔ Camera ready — Align QR code in the frame', 'success')
 
     const hintEl = document.getElementById('cam-hint')
     if (hintEl) hintEl.classList.remove('hidden')
   } catch (e) {
     console.error('Camera error:', e)
     
-    // Check for secure context
     const isSecure = window.isSecureContext;
     let msg = 'Camera failed to start.';
     
     if (!isSecure) {
-      msg = '🔴 SECURE CONTEXT REQUIRED. Use localhost or HTTPS.';
+      msg = '🔴 HTTPS required. Use localhost or a secure connection.';
+      if (permState) permState.classList.remove('hidden')
     } else if (e.name === 'NotAllowedError') {
-      msg = '🚫 Permission denied. Enable camera in settings.';
+      msg = '🚫 Camera permission denied.'
+      // Show denied state UI
+      if (deniedState) deniedState.classList.remove('hidden')
     } else if (e.name === 'NotFoundError') {
-      msg = '🔍 No camera device found.';
+      msg = '🔍 No camera found on this device.'
+      // Show no-camera state UI
+      if (nocamState) nocamState.classList.remove('hidden')
     } else {
       msg = '⚠️ Camera error: ' + (e.message || 'unknown');
+      if (permState) permState.classList.remove('hidden')
     }
     
     setStatus(msg, 'error')
     
-    // Force show simulate scan button so they can at least test logic
+    // Show simulate button as fallback
     const simBtn = document.getElementById('btn-simulate')
     if (simBtn) simBtn.classList.remove('hidden')
   }
+}
+
+// Retry camera after denial — resets debounce and re-attempts
+function retryCamera() {
+  lastQR = null
+  lastQRTime = 0
+  startCamera()
 }
 
 async function stopCamera() {
@@ -595,9 +650,13 @@ async function stopCamera() {
     }
   }
 
-  // Ensure button is visible again if we stop
-  const startBtn = document.getElementById('btn-start-camera')
-  if (startBtn) startBtn.classList.remove('hidden')
+  // Re-show the permission prompt state so user knows they can re-enable
+  const permState   = document.getElementById('cam-permission-state')
+  const deniedState = document.getElementById('cam-denied-state')
+  const nocamState  = document.getElementById('cam-nocam-state')
+  if (permState)   permState.classList.remove('hidden')
+  if (deniedState) deniedState.classList.add('hidden')
+  if (nocamState)  nocamState.classList.add('hidden')
 
   const hintEl = document.getElementById('cam-hint')
   if (hintEl) hintEl.classList.add('hidden')
@@ -636,8 +695,8 @@ async function handleScan(qrRaw) {
       return
     }
 
-    // Prevent immediate re-scan of same person unless 10s passed or different payload
-    if (payload.id === lastScannedId && now - lastQRTime < LOCK_MS) return
+    // Note: duplicate protection is DB-side (ALREADY_SCANNED error below).
+    // We don't block by lastScannedId here — that check was broken (used stale lastQRTime).
     lastScannedId = payload.id
 
     // Resolve Name from DB and VERIFY EXISTENCE
@@ -687,6 +746,10 @@ async function handleScan(qrRaw) {
     )
 
     await showResult('success', displayName, `${payload.type || 'Delegate'} scan recorded`)
+    // ── Clear all debounce state → camera ready for the very next QR immediately
+    lastQR = null
+    lastQRTime = 0
+    lastScannedId = null
     await refreshLogs()
     setStatus(`✔ Scan successful: ${displayName}`, 'success')
   } catch (err) {
@@ -696,9 +759,15 @@ async function handleScan(qrRaw) {
 
     if (isDup) {
       await showResult('duplicate', null, 'Already scanned for this slot')
+      lastQR = null
+      lastQRTime = 0
+      lastScannedId = null
       setStatus('⚠ Already scanned', 'warn')
     } else {
       console.error(err)
+      lastQR = null
+      lastQRTime = 0
+      lastScannedId = null
       setStatus('Scan error', 'error')
     }
   } finally {

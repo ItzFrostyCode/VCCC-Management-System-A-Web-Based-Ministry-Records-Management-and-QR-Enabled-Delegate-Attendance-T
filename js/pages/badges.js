@@ -4,11 +4,11 @@ const DEFAULT_CONFIG = {
   canvasWidth:  1050,
   canvasHeight: 750,
   templateUrl:  '../assets/2026%20Conf%20ID%20front.png',
-  name:     { x:80, y:460, fontSize:72, fontWeight:'bold',   fontStyle:'normal', color:'#111111' }, 
-  role:     { x:80, y:600, fontSize:75, fontWeight:'bold',   fontStyle:'italic', color:'#111111', shadow: false }, 
-  district: { x:80, y:515, fontSize:34, fontWeight:'bold',   fontStyle:'normal', color:'#111111' }, 
-  church:   { x:80, y:716, fontSize:26, fontWeight:'bold',   fontStyle:'italic', color:'#ffffff' }, 
-  qr:       { x:780, y:490, size:200 }
+  name:     { x:20, y:350, fontSize:45, fontWeight:'bold',   fontStyle:'normal', color:'#111111' }, 
+  role:     { x:20, y:440, fontSize:75, fontWeight:'bold',   fontStyle:'normal', color:'#111111', shadow: false }, 
+  district: { x:20, y:500, fontSize:34, fontWeight:'bold',   fontStyle:'normal', color:'#111111' }, 
+  church:   { x:600, y:700, fontSize:52, fontWeight:'bold',   fontStyle:'italic', color:'#ffffff' }, 
+  qr:       { x:735, y:300, size:293 }
 }
 const DISTRICT_COLORS = {
   'District 1': '#6FA4A1',
@@ -145,8 +145,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       batchBtn.onclick = batchDownload
     }
 
-    // Mobile/Tablet Default View
-    if (window.innerWidth <= 1100) {
+    // Default to Delegates panel on mobile (use CSS as source of truth)
+    const switcher = document.querySelector('.mobile-panel-switcher')
+    if (switcher && getComputedStyle(switcher).display !== 'none') {
       switchMobileView('delegates')
     }
   } catch (err) {
@@ -165,6 +166,9 @@ function switchMobileView(view) {
 
   if (targetPanel) targetPanel.classList.add('active')
   if (activeBtn) activeBtn.classList.add('active')
+  
+  // Snap to top so the panel is always visible from the start
+  window.scrollTo({ top: 0, behavior: 'instant' })
   
   // Re-render badge if switching to preview to ensure canvas sizes correctly
   if (view === 'preview') renderBadge()
@@ -335,8 +339,12 @@ function selectDelegate(id, role) {
   document.getElementById('btn-print').disabled    = false
   renderBadge()
   
-  // Instant preview mode switch for mobile/tablet users
-  if (window.innerWidth <= 1100) {
+  // Auto-switch to preview panel on mobile/tablet.
+  // Using switcher visibility as source of truth (matches the CSS breakpoint exactly)
+  // rather than a pixel width that can drift with device scaling.
+  const switcher = document.querySelector('.mobile-panel-switcher')
+  const switcherVisible = switcher && getComputedStyle(switcher).display !== 'none'
+  if (switcherVisible) {
     switchMobileView('preview')
   }
 }
@@ -384,10 +392,13 @@ async function drawBadge(canvas, delegate) {
   }
 
   // 2. Text fields
-  drawText(ctx, delegate.fullName,    cfg.name,  800)
-  drawText(ctx, delegate.role,        cfg.role,  null)
-  drawText(ctx, delegate.districtName, cfg.district, 800)
-  drawText(ctx, delegate.churchName,   cfg.church,   500)
+  // Constraints based on 1050px width Canvas:
+  // Name/Role/District (x=20) face the QR code (starts at x=735), so max safe width is ~700
+  // Church (x=600) faces the right edge, so max safe width is ~420
+  drawText(ctx, delegate.fullName,     cfg.name,      700)
+  drawText(ctx, delegate.role,         cfg.role,      700)
+  drawText(ctx, delegate.districtName, cfg.district,  700)
+  drawText(ctx, delegate.churchName,   cfg.church,    420)
 
   // 3. QR code
   const qrPayload = encodeQR(delegate.role, delegate.id)
@@ -402,19 +413,32 @@ async function drawBadge(canvas, delegate) {
   ctx.drawImage(qrCanvas, cfg.qr.x, cfg.qr.y, cfg.qr.size, cfg.qr.size)
 }
 
-function drawText(ctx, text, field, maxWidth) {
+function drawText(ctx, originalText, field, maxWidth) {
   ctx.save()
   const weight = field.fontWeight === 'bold' ? '700' : '400'
   const style  = field.fontStyle  === 'italic' ? 'italic ' : ''
   const fontName = '"Public Sans", system-ui, Arial, sans-serif'
   
   let fontSize = field.fontSize
+  let text = originalText || ''
+  const MIN_FONT_SIZE = 18 // Absolute minimum readable size on a 3.5x2.5" printed badge
+  
   ctx.font = `${style}${weight} ${fontSize}px ${fontName}`
   
   if (maxWidth) {
-    while (ctx.measureText(text || '').width > maxWidth && fontSize > 14) {
+    // 1. Shrink font until it fits OR hits the minimum
+    while (ctx.measureText(text).width > maxWidth && fontSize > MIN_FONT_SIZE) {
       fontSize--
       ctx.font = `${style}${weight} ${fontSize}px ${fontName}`
+    }
+
+    // 2. If it STILL overflows at minimum font size, truncate with ellipsis
+    if (ctx.measureText(text).width > maxWidth) {
+      // Keep removing characters and adding '...' until it fits
+      while (text.length > 0 && ctx.measureText(text + '...').width > maxWidth) {
+        text = text.slice(0, -1)
+      }
+      text = text + '...'
     }
   }
 
@@ -423,9 +447,9 @@ function drawText(ctx, text, field, maxWidth) {
     ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2
   }
 
-  ctx.fillText(text || '', field.x, field.y)
+  ctx.fillText(text, field.x, field.y)
   ctx.restore()
-  return ctx.measureText(text || '').width
+  return ctx.measureText(text).width
 }
 
 function loadImg(src) {
