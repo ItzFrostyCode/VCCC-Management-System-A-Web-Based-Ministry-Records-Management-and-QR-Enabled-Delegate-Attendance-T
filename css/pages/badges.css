@@ -30,11 +30,16 @@
   display: none;
 }
 
-.badge-main-content .view-panel {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+/* ─────────────────────────────────────────
+   DESKTOP ONLY LAYOUT (> 1100px)
+   ───────────────────────────────────────── */
+@media (min-width: 1101px) {
+  .badge-main-content .view-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
 }
 
 
@@ -226,49 +231,21 @@ canvas#badge-canvas:hover {
   height: 100%;
 }
 
+/* Panel filters are now styled via components.css (.filter-bar/.filter-row) */
+/* Override shared filter-row specifically for the delegate panel to make it clean/transparent */
+.delegate-panel .filter-row {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 10px 16px 0 !important;
+  margin-bottom: 12px !important;
+}
+
 .panel-filters {
-  padding: 12px 20px; /* Reduced from 16px */
-  background: #f8fafc;
-  border-bottom: 1px solid var(--badge-border);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   flex: 0 0 auto;
-}
-
-.filter-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.filter-row .search-wrap {
-  flex: 1 1 260px;
-  min-width: 220px;
-}
-
-.filter-row #filter-district-badge,
-.filter-row #filter-church-badge {
-  flex: 1 1 180px;
-  width: auto;
-  flex-shrink: 0;
-}
-
-/* Compact Search and Dropdown Sync */
-.delegate-panel .search-wrap, 
-.delegate-panel .ss-main,
-.delegate-panel .ss-trigger {
-  height: 42px !important;
-  background: #fff !important;
-  border: 1px solid var(--badge-border) !important;
-  border-radius: 12px !important;
-  padding: 0 14px !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  transition: all 0.2s !important;
 }
 
 /* Ensure SlimSelect main container follows size */
@@ -496,43 +473,58 @@ canvas#badge-canvas:hover {
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* Role Pills Scaling & Premium Buttons */
+/* Role Toggle Chips — Modern & Clear */
 .role-pills {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   margin-top: 4px;
-  padding: 4px 0;
+  padding: 0 16px 12px;
 }
 
 .role-pill-btn {
-  background: transparent;
-  border: none;
-  padding: 0;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
+  padding: 8px 16px;
+  border-radius: 12px;
   cursor: pointer;
-  opacity: 0.4;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.role-pill-btn.on {
-  opacity: 1;
-  transform: translateY(-2px);
-}
-
-.delegate-panel .pill {
-  font-size: 13px !important;
-  padding: 10px 18px !important;
-  border-radius: 12px !important;
-  font-weight: 800 !important;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.role-pill-btn.on .pill-pastor { background: #CF4949; color: white; box-shadow: 0 4px 12px rgba(207, 73, 73, 0.3); }
-.role-pill-btn.on .pill-wife   { background: #E3A3A2; color: #1e293b; box-shadow: 0 4px 12px rgba(227, 163, 162, 0.3); }
-.role-pill-btn.on .pill-disciple { background: #6FA4A1; color: white; box-shadow: 0 4px 12px rgba(111, 164, 161, 0.3); }
+.role-pill-btn:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+/* Active / On States — Clear visual feedback */
+.role-pill-btn.on.btn-pastor { 
+  background: #CF4949; 
+  border-color: #CF4949;
+  color: white; 
+  box-shadow: 0 4px 12px rgba(207, 73, 73, 0.3); 
+}
+.role-pill-btn.on.btn-wife { 
+  background: #E3A3A2; 
+  border-color: #E3A3A2;
+  color: #1e293b; 
+  box-shadow: 0 4px 12px rgba(227, 163, 162, 0.3); 
+}
+.role-pill-btn.on.btn-disciple { 
+  background: #6FA4A1; 
+  border-color: #6FA4A1;
+  color: white; 
+  box-shadow: 0 4px 12px rgba(111, 164, 161, 0.3); 
+}
+
+/* Inherited pill styles — clean up unneeded ones */
+.delegate-panel .pill { display: none; }
 /* ════════════════════════════════════════
    BADGES PAGE — LOCK MOBILE SHELL
    Override layout.css which sets app-shell/app-main to height:auto on ≤768px.
@@ -747,23 +739,6 @@ canvas#badge-canvas:hover {
     border-radius: 10px !important;
   }
   .role-pills { gap: 6px; }
-
-  /* Filters stacked */
-  .panel-filters { padding: 10px 12px; gap: 8px; }
-  .filter-row {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .filter-row .search-wrap {
-    min-width: 0;
-    width: 100%;
-    flex: none;
-  }
-  .filter-row #filter-district-badge,
-  .filter-row #filter-church-badge {
-    width: 100%;
-    flex: none;
-  }
 
   /* Preview canvas area — give it enough room but not too much */
   .badge-preview-wrap { padding: 10px; }

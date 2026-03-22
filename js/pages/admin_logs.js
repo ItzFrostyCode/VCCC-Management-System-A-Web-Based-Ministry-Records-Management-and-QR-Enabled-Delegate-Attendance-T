@@ -1,6 +1,6 @@
 let allLogs = []
 let currentPage = 1
-const ITEMS_PER_PAGE = 20
+const ITEMS_PER_PAGE = 10
 
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth()
@@ -59,15 +59,34 @@ function renderTable() {
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedItems = allLogs.slice(startIndex, endIndex)
 
-  body.innerHTML = paginatedItems.map(log => `
-    <div class="data-table-row" style="grid-template-columns: 180px 140px 140px 1fr 140px; font-size: 13px;">
-      <div style="color:var(--text-2);" data-label="Time">${new Date(log.timestamp).toLocaleString()}</div>
-      <div style="font-weight:600;" data-label="User">${esc(log.users?.full_name || 'System')} <small style="display:block; font-weight:400; color:var(--text-3);">${log.users?.role || ''}</small></div>
-      <div style="color:var(--red); font-weight:700; font-size:11px;" data-label="Action">${log.action}</div>
-      <div style="color:var(--text);" data-label="Details">${esc(log.details || '—')}</div>
-      <div style="color:var(--text-3); font-size:11px;" data-label="Device">${esc(log.device_info || 'Unknown')}</div>
-    </div>
-  `).join('')
+  body.innerHTML = paginatedItems.map(log => {
+    const action = (log.action || '').toLowerCase();
+    const actionClass = action.includes('login') ? 'pill-login' : action.includes('logout') ? 'pill-logout' : 'pill-gray';
+    
+    // Clean up details if it's just the User Agent string
+    let details = log.details || '—';
+    if (details.includes('Mozilla/') && details.includes('AppleWebKit')) {
+      details = 'Browser session';
+    }
+
+    return `
+      <div class="data-table-row cols-logs">
+        <div class="log-time" data-label="Time">
+          ${new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+          <span style="display:block; opacity:0.6; font-size:10px;">${new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+        <div class="log-user" data-label="User">
+          <span class="log-user-name">${esc(log.users?.full_name || 'System')}</span>
+          <span class="log-user-role">${log.users?.role || ''}</span>
+        </div>
+        <div class="log-action" data-label="Action">
+          <span class="pill ${actionClass}">${log.action}</span>
+        </div>
+        <div class="log-details" data-label="Details" title="${esc(log.details)}">${esc(details)}</div>
+        <div class="log-device" data-label="Device" title="${esc(log.device_info)}">${esc(log.device_info || 'Unknown')}</div>
+      </div>
+    `;
+  }).join('');
 
   document.getElementById('pagination').style.display = 'flex'
   document.getElementById('page-info').textContent = `Showing ${startIndex + 1}-${Math.min(endIndex, allLogs.length)} of ${allLogs.length}`

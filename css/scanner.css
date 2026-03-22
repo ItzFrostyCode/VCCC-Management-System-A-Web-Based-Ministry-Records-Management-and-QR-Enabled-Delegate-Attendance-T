@@ -214,6 +214,26 @@ body {
 .hdr-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
 .hdr-btn:hover { background: rgba(255, 255, 255, 0.12); color: var(--t-main); border-color: var(--s-border-hi); }
 
+/* Mobile-only logout for Scanner role (when hamburger is hidden) */
+.mobile-scanner-logout {
+  display: none !important;
+}
+
+@media (max-width: 1100px) {
+  body.role-scanner .mobile-scanner-logout {
+    display: inline-flex !important;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: var(--accent);
+  }
+}
+@media (max-width: 480px) {
+  .mobile-scanner-logout span { display: none; }
+  .mobile-scanner-logout { padding: 8px; }
+  .mobile-scanner-logout svg { width: 16px; height: 16px; margin: 0; }
+}
+
 /* Hamburger (mobile only) */
 .mob-hamburger {
   display: none;
@@ -1101,34 +1121,29 @@ body {
 }
 
 .mob-drawer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--s-surface);
-  border-top: 1px solid var(--s-border-mid);
-  border-radius: 24px 24px 0 0;
-  z-index: 201;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 20px);
-  animation: slideUpDrawer 0.30s cubic-bezier(0.175, 0.885, 0.32, 1.10);
-}
-@keyframes slideUpDrawer {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+  position: fixed !important;
+  inset: 0 !important;
+  background: var(--s-bg) !important;
+  z-index: 2000 !important; /* Higher than layout.css */
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100dvh !important;
+  width: 100vw !important;
+  transform: translateY(100%) !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.mob-logs-drawer  { max-height: 86dvh; }
-.mob-nav-drawer   { max-height: 90dvh; z-index: 210; }
+.mob-drawer:not(.hidden) {
+  transform: translateY(0) !important;
+  animation: none !important; /* Use transition instead for better reliability */
+}
+
+
+.mob-logs-drawer { }
+.mob-nav-drawer  { }
 
 .mob-drawer-handle {
-  width: 48px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 2px;
-  margin: 12px auto 0;
-  flex-shrink: 0;
+  display: none;
 }
 
 .mob-drawer-head {

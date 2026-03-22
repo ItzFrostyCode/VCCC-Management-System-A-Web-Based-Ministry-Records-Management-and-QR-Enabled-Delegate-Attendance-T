@@ -54,12 +54,6 @@
       background: var(--bg-input); margin-top: 8px;
     }
 
-    /* Modal Improvements */
-    .modal-box { max-width: 460px; border-radius: var(--radius-lg); }
-    .modal-head { padding: 14px 16px; }
-    .modal-title { font-size: 14px; font-weight: 600; }
-    .modal-body { padding: 16px; gap: 14px; display: flex; flex-direction: column; }
-    .modal-foot { padding: 12px 16px; gap: 8px; }
     .form-label { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
     
     .btn-action-group { display: flex; gap: 6px; }
@@ -141,7 +135,7 @@
 
 <!-- Grid modal -->
 <div class="modal-overlay" id="modal-grid">
-  <div class="modal-box" style="max-width:600px;">
+  <div class="modal-box">
     <div class="modal-head">
       <span class="modal-title">Manage Meal Schedule</span>
       <button class="modal-close" onclick="closeGridModal()">
@@ -162,7 +156,7 @@
 
 <!-- Delete conference modal -->
 <div class="modal-overlay" id="modal-delete">
-  <div class="modal-box" style="max-width:380px;">
+  <div class="modal-box modal-sm">
     <div class="modal-head"><span class="modal-title">Remove conference</span><button class="modal-close" onclick="document.getElementById('modal-delete').classList.remove('open')">×</button></div>
     <div class="modal-body"><p style="font-size:13px;color:var(--text-2);" id="delete-msg"></p></div>
     <div class="modal-foot">

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../css/app.css" />
   <link rel="stylesheet" href="../css/layout.css" />
   <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/admin_logs.css" />
   <link rel="icon" type="image/png" href="../assets/VCCC-Logo.png">
 </head>
 <body>
@@ -39,7 +40,6 @@
   <!-- Main -->
   <div class="app-main">
     <header class="topbar">
-      <button class="topbar-hamburger" id="mob-hamburger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <div class="topbar-title">Activity Logs</div>
     </header>
 
@@ -57,12 +57,12 @@
       <div class="card">
         <div class="card-body">
           <div class="data-table">
-            <div class="data-table-head" style="grid-template-columns: 180px 140px 140px 1fr 140px;">
+            <div class="data-table-head cols-logs">
               <div>Timestamp</div>
               <div>User</div>
               <div>Action</div>
               <div>Details</div>
-              <div>Device</div>
+              <div class="col-device">Device</div>
             </div>
             <div id="table-body">
               <div class="empty-state">Loading logs...</div>

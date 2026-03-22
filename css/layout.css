@@ -147,29 +147,6 @@
 .page-header-count { font-size: 13px; color: var(--text-3); }
 .page-header-actions { display: flex; gap: 8px; }
 
-/* ── Filter bar ── */
-.filter-bar {
-  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 10px 14px;
-}
-.search-wrap {
-  flex: 1; min-width: 200px;
-  display: flex; align-items: center; gap: 8px;
-  height: 36px; border-radius: 7px;
-  border: 1px solid var(--border);
-  background: var(--bg-input);
-  padding: 0 10px;
-}
-.search-wrap svg { width: 13px; height: 13px; stroke: var(--text-3); fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
-.search-wrap input {
-  flex: 1; border: none; background: transparent;
-  font-size: 13px; color: var(--text); outline: none;
-}
-.search-wrap input::placeholder { color: var(--text-3); }
-
 /* ── Card ── */
 .card {
   background: var(--bg-card);
@@ -293,5 +270,21 @@
 
 /* ── Admin Utilities ── */
 .admin-only {
+  display: none !important;
+}
+
+/* ── Scanner Role Restrictions ── */
+body.role-scanner .sidebar,
+body.role-scanner .topbar-hamburger,
+body.role-scanner .scan-back,
+body.role-scanner .mob-hamburger,
+body.role-scanner .sidebar-nav,
+body.role-scanner .mob-nav-overlay,
+body.role-scanner .mob-nav-drawer,
+body.role-scanner #test-mode-btn,
+body.role-scanner #mob-test-mode-btn,
+body.role-scanner #btn-simulate,
+body.role-scanner #clear-logs-btn,
+body.role-scanner .mob-tool-btn.danger {
   display: none !important;
 }

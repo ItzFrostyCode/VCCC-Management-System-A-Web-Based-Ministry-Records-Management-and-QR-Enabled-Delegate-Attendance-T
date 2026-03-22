@@ -57,10 +57,13 @@ async function requireAuth() {
       });
     }
     
-    if (user && user.role === 'Scanner' && !isScannerPage) {
-        const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
-        window.location.href = '/' + prefix + 'scanner.html';
-        return null;
+    if (user && user.role === 'Scanner') {
+        document.body.classList.add('role-scanner');
+        if (!isScannerPage) {
+            const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
+            window.location.href = '/' + prefix + 'scanner.html';
+            return null;
+        }
     }
     
     return user;
