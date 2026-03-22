@@ -110,9 +110,11 @@ function renderTable() {
         <button class="btn btn-icon btn-sm" onclick="openEdit('${d.id}')" title="Edit">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
+        ${authService.getCurrentUser()?.role === 'Staff' ? '' : `
         <button class="btn btn-icon btn-sm" onclick="openDelete('${d.id}','${esc(d.full_name)}')" title="Delete">
           <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
         </button>
+        `}
       </div>
     </div>`
   ).join('')
@@ -245,8 +247,14 @@ function exportCSV() {
 }
 
 function bindEvents() {
-  document.getElementById('btn-add').onclick    = openCreate
-  document.getElementById('btn-export').onclick = exportCSV
+  const isStaff = typeof authService !== 'undefined' && authService.getCurrentUser()?.role === 'Staff';
+  if (isStaff) {
+    const btnExport = document.getElementById('btn-export');
+    if (btnExport) btnExport.style.display = 'none';
+  }
+
+  document.getElementById('btn-add').onclick    = () => { openCreate() }
+  document.getElementById('btn-export').onclick = () => { if(!isStaff) exportCSV() }
   document.getElementById('btn-save').onclick   = save
   document.getElementById('btn-delete-confirm').onclick = deleteItem
   document.getElementById('search-input').addEventListener('input', () => { currentPage = 1; renderTable(); })

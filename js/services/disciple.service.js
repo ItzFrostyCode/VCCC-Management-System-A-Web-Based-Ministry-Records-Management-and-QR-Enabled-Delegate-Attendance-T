@@ -1,8 +1,4 @@
 const discipleService = {
-  // Correct Supabase join:
-  // disciples → pastors → churches (name)
-  // disciples → pastors → districts (name)
-  // Result is flattened so pages do: d.pastor_name, d.church_name, d.district_name
   async fetchAll() {
     const { data, error } = await db
       .from('disciples')
@@ -82,6 +78,10 @@ const discipleService = {
       `)
       .single()
     if (error) throw error
+    
+    const user = authService.getCurrentUser()
+    if (user) await authService.logAudit(user.id, 'CREATE_DISCIPLE', `Added Disciple: ${data.full_name}`)
+
     return {
       id:            data.id,
       full_name:     data.full_name,
@@ -112,6 +112,10 @@ const discipleService = {
       `)
       .single()
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) await authService.logAudit(user.id, 'UPDATE_DISCIPLE', `Updated Disciple: ${data.full_name}`)
+
     return {
       id:            data.id,
       full_name:     data.full_name,
@@ -125,10 +129,23 @@ const discipleService = {
   },
 
   async remove(id) {
+    // fetch name before deleting for audit
+    const { data: d, error: fetchErr } = await db
+      .from('disciples')
+      .select('full_name')
+      .eq('id', id)
+      .single()
+    if (fetchErr) throw fetchErr
+
     const { error } = await db
       .from('disciples')
       .update({ is_deleted: true })
       .eq('id', id)
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user && d) await authService.logAudit(user.id, 'DELETE_DISCIPLE', `Removed Disciple: ${d.full_name}`)
+
+    return true
   }
 }

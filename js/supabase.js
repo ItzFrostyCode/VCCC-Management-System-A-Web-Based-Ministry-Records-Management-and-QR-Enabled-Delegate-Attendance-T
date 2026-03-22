@@ -8,27 +8,38 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON)
 
 console.log('🚀 VCCC is now connected to LIVE Supabase Database')
 
-// ── Auth helpers ─────────────────────────────────────────
-// Bypassed for easy CRUD as requested
-async function getUser() {
-  return { email: 'admin@vccc.local', id: '0000-0000-0000-0000' }
-}
-
-async function signIn(email, password) {
-  // Mock login token for UI consistency
-  localStorage.setItem('sb-vccc-auth-token', 'test-token')
-  return { data: { user: await getUser() }, error: null }
-}
-
-async function signOut() {
-  localStorage.removeItem('sb-vccc-auth-token')
-  console.log('Signed out (auth bypassed)')
-}
-
-// ── Auth guard ───────────────────────────────────────────
+// ── Auth guard & helpers ──────────────────────────────────
 async function requireAuth() {
-  // Always return the mock user, no login page exists
-  return await getUser()
+  if (typeof authService !== 'undefined') {
+    if (!authService.isAuthenticated()) {
+      // If we are already on the scanner page, allow it (Public Scanner Mode)
+      if (window.location.pathname.includes('scanner.html')) {
+        return null; 
+      }
+      // Otherwise, redirect to login
+      const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
+      window.location.href = '/' + prefix + 'login.html';
+      return null;
+    }
+    const user = authService.getCurrentUser();
+    
+    // Show admin-only elements
+    if (user && user.role === 'Admin') {
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.setProperty('display', 'flex', 'important');
+      });
+    }
+    
+    // Role based check: if Scanner tries to access non-scanner page
+    if (user && user.role === 'Scanner' && !window.location.pathname.includes('scanner.html')) {
+        const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
+        window.location.href = '/' + prefix + 'scanner.html';
+        return null;
+    }
+    
+    return user;
+  }
+  return null;
 }
 // Function to toggle test mode
 function toggleTestMode() {

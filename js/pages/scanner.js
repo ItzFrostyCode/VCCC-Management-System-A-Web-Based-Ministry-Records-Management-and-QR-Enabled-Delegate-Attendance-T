@@ -39,6 +39,31 @@ const SLOT_EMOJI = { MORNING: '🌅', AFTERNOON: '☀️', EVENING: '🌙' }
 document.addEventListener('DOMContentLoaded', async () => {
   await requireAuth()
 
+  // Navigation restriction: Hide hamburger and dashboard link for Scanners or Unauthenticated
+  const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
+  const isScannerRole = user && user.role === 'Scanner';
+  const isUnauthenticated = !user;
+
+  if (isScannerRole || isUnauthenticated) {
+    const hamburger = document.getElementById('mob-hamburger');
+    const backBtn = document.querySelector('.scan-back');
+    const logoutBtn = document.getElementById('logout-btn');
+    const clearLogsBtn = document.getElementById('clear-logs-btn');
+    const testModeBtn = document.getElementById('test-mode-btn');
+    const mobTestModeBtn = document.getElementById('mob-test-mode-btn');
+
+    if (hamburger) hamburger.style.display = 'none';
+    if (backBtn) backBtn.style.display = 'none';
+    if (logoutBtn && isUnauthenticated) logoutBtn.style.display = 'none';
+    if (clearLogsBtn) clearLogsBtn.style.display = 'none';
+    if (testModeBtn) testModeBtn.style.display = 'none';
+    if (mobTestModeBtn) mobTestModeBtn.style.display = 'none';
+    
+    // Also remove the Dashboard link from mobile nav entirely
+    const mobDashboardLink = document.querySelector('.mob-nav-item[href="/index.html"]');
+    if (mobDashboardLink) mobDashboardLink.remove();
+  }
+
   video = document.getElementById('cam-video')
   canvas = document.createElement('canvas')
   ctx = canvas.getContext('2d', { willReadFrequently: true })
