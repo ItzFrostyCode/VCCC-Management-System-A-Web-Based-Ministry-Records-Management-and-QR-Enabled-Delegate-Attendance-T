@@ -99,7 +99,8 @@
 }
 .ss-search-wrap svg { width: 13px; height: 13px; stroke: var(--text-3); fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
 .ss-search {
-  flex: 1; border: none; background: transparent;
+  flex: 1; min-width: 0; width: 100%;
+  border: none; background: transparent;
   font-size: 13px; color: var(--text); outline: none;
 }
 .ss-list { max-height: 200px; overflow-y: auto; }
