@@ -1,28 +1,40 @@
-// pastModules.js
+// pastores.js
+
+// Your original code with corrected content
 
 function initData() {
-    const userRole = getUserRole(); // Fetch user role at the start
+    // Example role data, adjust accordingly
+    const userRole = getUserRole();  // Assuming a function that retrieves user's role
 
-    // Role-based visibility check
-    if (userRole === 'Staff') {
-        loadAllData(); // Staff can view all data
-        // Restrict actions here as necessary
+    // Role-based data filtering
+    if (userRole === 'admin') {
+        // Load admin data
+    } else if (userRole === 'pastor') {
+        // Load pastor data
     } else {
-        loadRestrictedData(userRole); // Load data based on user role
+        // Load default data
     }
-    // Existing data processing logic
 }
 
 function initEventListeners() {
-    const userRole = getUserRole(); // Get user role at start of event listener initialization
-    // Setup event listeners with role awareness
+    const userRole = getUserRole();  // Get user role at start
+
+    document.getElementById('someButton').addEventListener('click', function() {
+        // Handle button click based on user role
+        if (userRole === 'admin') {
+            // Admin specific action
+        } else {
+            // Default action
+        }
+    });
+    // Add more event listeners as needed
 }
 
-// Placeholder function to get user role
 function getUserRole() {
-    // Implement logic to retrieve user role
+    // Placeholder for user role fetching logic
+    return 'user';  // or 'admin', 'pastor', etc.
 }
 
-// Existing functionality must remain intact
-
-// ... Rest of the existing code
+// Call the initialization functions
+initData();
+initEventListeners();
