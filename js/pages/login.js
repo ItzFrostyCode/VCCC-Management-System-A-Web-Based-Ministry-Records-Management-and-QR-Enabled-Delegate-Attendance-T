@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (urlParams.get('expired') === 'true') {
     errorEl.textContent = 'Session expired. You were logged in on another device.';
     errorEl.style.display = 'block';
-    errorEl.classList.add('alert-warn'); // Assuming a warning style
+    errorEl.classList.add('alert-warn');
   }
 
   // If already logged in, redirect
