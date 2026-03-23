@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pastors — VCCC DAVAO MS</title>
+  <title>Assignment — VCCC DAVAO MS</title>
   <link rel="stylesheet" href="./css/app.css" />
   <link rel="stylesheet" href="./css/layout.css" />
   <link rel="stylesheet" href="./css/components.css" />
-   <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
+  <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
 </head>
 <body>
 <div class="app-shell">
@@ -41,87 +41,26 @@
       </button>
     </div>
   </aside>
+
   <div class="app-main">
-    <header class="topbar"><div class="topbar-title">Pastors</div></header>
+    <header class="topbar"><div class="topbar-title">Assignment</div></header>
     <main class="page-content">
-      <div class="page-header">
-        <div class="page-header-info"><span class="page-header-title">Pastors</span><span class="page-header-count" id="count-label"></span></div>
-        <div class="page-header-actions">
-          <button class="btn btn-ghost" id="btn-export"><svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg> Export CSV</button>
-          <button class="btn btn-primary" id="btn-add"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add pastor</button>
-        </div>
-      </div>
-      <div class="filter-bar">
-        <div class="search-wrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="search-input" placeholder="Search by name, wife, or church..." /></div>
-        <div id="filter-district" style="width:180px;"></div>
-        <div id="filter-church"   style="width:200px;"></div>
-      </div>
-      <div class="data-table">
-        <div class="data-table-head cols-pastors">
-          <span>Pastor</span>
-          <span>Wife</span>
-          <span>Contact</span>
-          <span>District</span>
-          <span>Church</span>
-          <span></span>
-        </div>
-        <div id="table-body">
-          <div class="skel-row skeleton"></div>
-          <div class="skel-row skeleton"></div>
-          <div class="skel-row skeleton"></div>
-        </div>
-        <div id="pagination" style="display:none; justify-content:space-between; align-items:center; padding: 12px 16px; border-top: 1px solid var(--border);">
-          <div style="font-size:13px; color:var(--text-3); font-weight:500;" id="page-info"></div>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-prev" onclick="prevPage()">Prev</button>
-            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-next" onclick="nextPage()">Next</button>
-          </div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:60vh; gap:16px; text-align:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="width:56px;height:56px;opacity:0.5;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+        <div>
+          <div style="font-size:1.15rem;font-weight:600;color:var(--text-1);margin-bottom:6px;">Assignment Management</div>
+          <div style="font-size:13px;color:var(--text-3);">🚧 This page is under development and will be available in a future update.</div>
         </div>
       </div>
     </main>
   </div>
 </div>
 
-<!-- Add/Edit Modal -->
-<div class="modal-overlay" id="modal-form">
-  <div class="modal-box">
-    <div class="modal-head">
-      <span class="modal-title" id="modal-title">Add Pastor</span>
-      <button class="modal-close" onclick="closeModal()">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="item-id" />
-      <div class="form-field"><label class="form-label">Full name <span class="req">*</span></label><input class="input" type="text" id="item-name" placeholder="Pastor full name" /></div>
-      <div class="form-field"><label class="form-label">Wife's name <span class="opt">(optional)</span></label><input class="input" type="text" id="wife-name" placeholder="Wife's name" /></div>
-      <div class="form-field"><label class="form-label">Contact number <span class="opt">(optional)</span></label><input class="input" type="text" id="contact-number" placeholder="Enter contact number" /></div>
-      <div class="form-field"><label class="form-label">District <span class="req">*</span></label><div id="modal-district-sel"></div></div>
-      <div class="form-field"><label class="form-label">Church <span class="req">*</span></label><div id="modal-church-sel"></div><div class="form-hint" id="church-hint">Select a district first</div></div>
-    </div>
-    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="btn-save">Save pastor</button></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-delete">
-  <div class="modal-box modal-sm">
-    <div class="modal-head">
-      <span class="modal-title">Remove pastor</span>
-      <button class="modal-close" onclick="document.getElementById('modal-delete').classList.remove('open')">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="modal-body"><p style="font-size:13px;color:var(--text-2);" id="delete-msg"></p></div>
-    <div class="modal-foot"><button class="btn btn-ghost" onclick="document.getElementById('modal-delete').classList.remove('open')">Cancel</button><button class="btn btn-danger" id="btn-delete-confirm">Remove</button></div>
-  </div>
-</div>
-
 <script src="./js/libs/supabase.min.js"></script>
 <script src="./js/services/auth.service.js"></script>
-<script src="./js/supabase.js"></script><script src="./js/router.js"></script><script src="./js/utils/helper.js"></script>
-<script src="./js/utils/data-manager.js"></script>
-<script src="./js/services/district.service.js"></script><script src="./js/services/church.service.js"></script>
-<script src="./js/services/pastor.service.js"></script>
-<script src="./js/pages/pastors.js"></script>
+<script src="./js/supabase.js"></script>
+<script src="./js/router.js"></script>
+<script src="./js/utils/helper.js"></script>
+<script src="./js/pages/assignment.js"></script>
 </body>
 </html>
