@@ -8,6 +8,8 @@ let currentConference = null
 let currentMeals    = []
 let currentTimeSlots = []
 let refreshInterval   = null
+let currentFetchId     = 0
+let confSearchSelect   = null
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -73,22 +75,22 @@ async function initDelegateData() {
 
 // ── Load conference dropdown ───────────────────────────────────────────────
 async function initConferences() {
-  const select = document.getElementById('conf-select')
+  const container = document.getElementById('conf-select-container')
   try {
     const conferences = await conferenceService.fetchAll()
     allConferences = conferences
 
-    if (!conferences.length) {
-      select.innerHTML = '<option value="">No conferences found</option>'
-      return
-    }
-    select.innerHTML = '<option value="">Select a conference to view report...</option>' +
-      conferences.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join('')
-
-    select.onchange = (e) => loadGlobalReport(e.target.value)
+    const opts = conferences.map(c => ({ value: c.id, label: c.title }))
+    
+    confSearchSelect = createSearchSelect(
+      container, 
+      opts, 
+      'Select a conference to view report...', 
+      (val) => loadGlobalReport(val)
+    )
   } catch (err) {
     console.error('Failed to load conferences:', err)
-    select.innerHTML = '<option value="">Error loading conferences</option>'
+    container.innerHTML = '<div style="color:var(--red); font-size:12px;">Error loading conferences</div>'
   }
 }
 
@@ -98,6 +100,15 @@ async function loadGlobalReport(confId) {
   const prompt    = document.getElementById('empty-prompt')
   const btnExport = document.getElementById('btn-export')
 
+  // Increment fetch ID to ignore previous pending requests
+  const fetchId = ++currentFetchId
+  
+  // Clear old interval immediately when switching
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+  }
+
   if (!confId) {
     results.style.display   = 'none'
     prompt.style.display    = 'block'
@@ -106,30 +117,30 @@ async function loadGlobalReport(confId) {
     currentMeals      = []
     currentTimeSlots  = []
     globalReportData  = []
+    
+    // Clear timestamp
+    const timeLabel = document.getElementById('last-updated')
+    if (timeLabel) timeLabel.textContent = ''
     return
   }
 
+  // Update currentConference immediately
   currentConference = allConferences.find(c => c.id === confId) || null
 
   const btnRefresh = document.getElementById('btn-refresh')
   if (btnRefresh) btnRefresh.style.display = confId ? 'inline-flex' : 'none'
 
-  // Start/Stop polling
+  // Show "Loading..." state in results
   if (confId) {
-    if (!refreshInterval) {
-      refreshInterval = setInterval(() => {
-        // Only auto-refresh if tab is active to save resources
-        if (document.visibilityState === 'visible') {
-          console.log('🔄 Auto-refreshing report...')
-          refreshReport(true)
-        }
-      }, 60000) // 1 minute
-    }
-  } else {
-    clearInterval(refreshInterval)
-    refreshInterval = null
-    const timeLabel = document.getElementById('last-updated')
-    if (timeLabel) timeLabel.textContent = ''
+    results.style.display = 'block'
+    prompt.style.display  = 'none'
+    // Clear old data displays to avoid confusion
+    document.getElementById('summary-cards').innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-3);">
+        <div class="spinning" style="margin-bottom: 12px;"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></div>
+        Fetching report data...
+      </div>`
+    document.getElementById('global-list-body').innerHTML = `<tr><td colspan="3" style="padding: 40px; text-align: center; color: var(--text-3);">Loading delegate status...</td></tr>`
   }
 
   try {
@@ -140,6 +151,9 @@ async function loadGlobalReport(confId) {
       mealService.fetchByConference(confId),
       conferenceService.fetchTimeSlots(confId)
     ])
+
+    // If a newer request has started, ignore this one
+    if (fetchId !== currentFetchId) return
 
     conferenceDays   = days        || []
     rawAttendance    = attendance  || []
@@ -200,6 +214,16 @@ async function loadGlobalReport(confId) {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     const timeLabel = document.getElementById('last-updated')
     if (timeLabel) timeLabel.textContent = `Last updated: ${timeStr}`
+
+    // Setup refresh interval ONLY after successful load and if it's still the active request
+    if (confId && !refreshInterval && fetchId === currentFetchId) {
+      refreshInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          console.log('🔄 Auto-refreshing report...')
+          refreshReport(true)
+        }
+      }, 60000)
+    }
 
   } catch (err) {
     console.error('loadGlobalReport error:', err)

@@ -28,14 +28,6 @@
     .l-name { font-size:13px; font-weight:500; color:var(--text); }
     .l-sub  { font-size:11px; color:var(--text-3); }
     /* Premium Search Bar */
-    .search-wrap {
-      height: 40px; background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 0 14px; display: flex; align-items: center;
-      gap: 10px; transition: all 0.2s; width: 300px;
-    }
-    .search-wrap:focus-within { border-color: var(--red); box-shadow: 0 4px 12px rgba(207, 73, 73, 0.1); }
-    .search-wrap input { flex: 1; border: none; background: transparent; font-size: 13px; color: var(--text); outline: none; font-weight: 500;}
-    .search-wrap input::placeholder { color: var(--text-3); font-weight:400; }
     .search-wrap svg { width: 16px; height: 16px; stroke: var(--text-3); stroke-width: 2.5; fill: none; transition: stroke 0.2s; }
     .search-wrap:focus-within svg { stroke: var(--red); }
 
@@ -92,10 +84,10 @@
       </div>
 
       <!-- Selector -->
-      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:14px; margin-bottom:16px;">
+      <div class="card" style="padding:16px; margin-bottom:16px;">
         <div class="form-field">
           <label class="form-label">Select Conference</label>
-          <select class="select-input" id="conf-select" style="max-width:380px;"><option value="">Loading...</option></select>
+          <div id="conf-select-container" style="max-width:420px;"></div>
         </div>
       </div>
 
@@ -151,6 +143,7 @@
 <script src="js/services/disciple.service.js"></script>
 <script src="js/services/conference.service.js"></script>
 <script src="js/services/attendance.service.js"></script>
+<script src="js/services/meal.service.js"></script>
 <script src="js/services/scan_log.service.js"></script>
 <script src="js/pages/reports.js"></script>
 </body>
