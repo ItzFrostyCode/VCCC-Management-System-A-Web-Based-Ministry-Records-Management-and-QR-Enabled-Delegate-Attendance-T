@@ -115,6 +115,7 @@ function applyFilters() {
     const matchesQuery =
       (p.full_name || '').toLowerCase().includes(query) ||
       (p.wife_name || '').toLowerCase().includes(query) ||
+      (p.contact_number || '').toLowerCase().includes(query) ||
       (p.church_name || '').toLowerCase().includes(query)
 
     const matchesDist = !distId || String(p.district_id) === String(distId)
@@ -149,10 +150,11 @@ function renderTable() {
 
   body.innerHTML = paginatedItems.map(p => `
     <div class="data-table-row cols-pastors">
-      <div class="cell-name-primary" data-label="Pastor">${esc(p.full_name)}</div>
-      <div style="font-size:13px; color:var(--text); font-weight:500;" data-label="Wife">${esc(p.wife_name) || '—'}</div>
-      <div style="font-size:12px; color:var(--text-2); opacity:0.8;" data-label="District">${esc(p.district_name)}</div>
-      <div style="font-size:12px; color:var(--text-2); opacity:0.8;" data-label="Church">${esc(p.church_name)}</div>
+      <div class="cell-name-primary" data-label="Pastor" title="${esc(p.full_name)}">${esc(p.full_name)}</div>
+      <div style="color:var(--text); font-weight:500;" data-label="Wife" title="${esc(p.wife_name)}">${esc(p.wife_name) || '—'}</div>
+      <div style="color:var(--text); font-weight:600;" data-label="Contact" title="${esc(p.contact_number)}">${esc(p.contact_number) || '—'}</div>
+      <div style="color:var(--text-2); opacity:0.8;" data-label="District" title="${esc(p.district_name)}">${esc(p.district_name)}</div>
+      <div style="color:var(--text-2); opacity:0.8;" data-label="Church" title="${esc(p.church_name)}">${esc(p.church_name)}</div>
       <div class="row-actions">
         <button class="btn-icon btn-edit" onclick="openModal('${p.id}')" title="Edit">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -166,8 +168,11 @@ function renderTable() {
     </div>
   `).join('')
 
-  document.getElementById('pagination').style.display = 'flex'
-  document.getElementById('page-info').textContent = `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredPastors.length)} of ${filteredPastors.length}`
+  const pagination = document.getElementById('pagination')
+  if (pagination) {
+    pagination.style.display = 'flex'
+    document.getElementById('page-info').textContent = `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredPastors.length)} of ${filteredPastors.length}`
+  }
   
   const btnPrev = document.getElementById('btn-prev')
   const btnNext = document.getElementById('btn-next')
@@ -206,6 +211,7 @@ function openModal(id = null) {
 
     document.getElementById('item-name').value = p.full_name || ''
     document.getElementById('wife-name').value = p.wife_name || ''
+    document.getElementById('contact-number').value = p.contact_number || ''
 
     selModalDist.setValue(p.district_name)
 
@@ -221,6 +227,7 @@ function openModal(id = null) {
 
     document.getElementById('item-name').value = ''
     document.getElementById('wife-name').value = ''
+    document.getElementById('contact-number').value = ''
 
     selModalDist.reset()
     selModalChurch.reset()
@@ -262,6 +269,7 @@ async function saveItem() {
      const data = {
        full_name: name,
        wife_name: wife || null,
+       contact_number: document.getElementById('contact-number').value.trim() || null,
        district_id: distId,
        church_id: churchId
      }
@@ -314,6 +322,7 @@ function exportCSV() {
   downloadCSV('pastors.csv', filteredPastors.map(p => ({
     Name: p.full_name,
     Wife: p.wife_name,
+    Contact: p.contact_number,
     District: p.district_name,
     Church: p.church_name
   })))

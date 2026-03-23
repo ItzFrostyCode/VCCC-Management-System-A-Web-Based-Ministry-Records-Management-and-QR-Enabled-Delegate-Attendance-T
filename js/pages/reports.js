@@ -1,4 +1,3 @@
-// ── State ─────────────────────────────────────────────────────────────────
 let allDelegates    = []
 let rawAttendance   = []
 let conferenceDays  = []
@@ -10,6 +9,7 @@ let currentTimeSlots = []
 let refreshInterval   = null
 let currentFetchId     = 0
 let confSearchSelect   = null
+let currentRoleFilter  = 'ALL'
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -124,6 +124,12 @@ async function loadGlobalReport(confId) {
     return
   }
 
+  // Reset role filter for new conference
+  currentRoleFilter = 'ALL'
+  document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('active'))
+  const allChip = document.getElementById('chip-all')
+  if (allChip) allChip.classList.add('active')
+
   // Update currentConference immediately
   currentConference = allConferences.find(c => c.id === confId) || null
 
@@ -132,7 +138,7 @@ async function loadGlobalReport(confId) {
 
   // Show "Loading..." state in results
   if (confId) {
-    results.style.display = 'block'
+    results.style.display = 'flex'
     prompt.style.display  = 'none'
     // Clear old data displays to avoid confusion
     document.getElementById('summary-cards').innerHTML = `
@@ -202,7 +208,7 @@ async function loadGlobalReport(confId) {
 
     globalReportData = Array.from(reportMap.values())
 
-    results.style.display   = 'block'
+    results.style.display   = 'flex'
     prompt.style.display    = 'none'
     btnExport.style.display = 'flex'
 
@@ -233,7 +239,7 @@ async function loadGlobalReport(confId) {
 
 // ── Summary Cards ─────────────────────────────────────────────────────────
 function renderSummaryCards() {
-  const container     = document.getElementById('summary-cards')
+  const container      = document.getElementById('summary-cards')
   const totalDelegates = allDelegates.length
 
   let totalActive  = 0
@@ -256,30 +262,74 @@ function renderSummaryCards() {
   const pct = totalDelegates ? Math.round((totalActive / totalDelegates) * 100) : 0
 
   container.innerHTML = `
-    <div class="card" style="padding:20px; border-left:4px solid var(--red);">
-      <div style="font-size:12px; color:var(--text-3); font-weight:600; text-transform:uppercase; margin-bottom:8px;">Total Active Attendees</div>
-      <div style="font-size:32px; font-weight:800; color:var(--text); line-height:1;">${totalActive} <span style="font-size:14px; font-weight:500; color:var(--text-3);">/ ${totalDelegates}</span></div>
-      <div style="margin-top:12px; height:6px; background:var(--bg-input); border-radius:3px; overflow:hidden;">
-        <div style="width:${pct}%; height:100%; background:var(--red); border-radius:3px;"></div>
+    <div class="stat-card accent">
+      <div class="stat-icon si-red">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </div>
-      <div style="font-size:12px; color:var(--red); font-weight:600; margin-top:4px;">${pct}% Engagement</div>
+      <div class="stat-val">${totalActive} <span style="font-size:16px; font-weight:500; color:var(--text-3);">/ ${totalDelegates}</span></div>
+      <div class="stat-label">Total Active Attendees</div>
+      <div style="margin-top:10px; height:5px; background:var(--bg-input); border-radius:3px; overflow:hidden; border:1px solid var(--border);">
+        <div style="width:${pct}%; height:100%; background:var(--red); border-radius:3px; transition:width .4s;"></div>
+      </div>
+      <div class="stat-sub" style="margin-top:4px; color:var(--red); font-weight:600;">${pct}% Engagement</div>
     </div>
 
-    <div class="card" style="padding:20px; border-left:4px solid #e2e8f0;">
-      <div style="font-size:12px; color:var(--text-3); font-weight:600; text-transform:uppercase; margin-bottom:8px;">Missing Delegates</div>
-      <div style="font-size:32px; font-weight:800; color:var(--text-2); line-height:1;">${totalMissing}</div>
-      <div style="font-size:12px; color:var(--text-3); margin-top:12px;">Have not scanned at all during this conference.</div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--bg-input);">
+        <svg viewBox="0 0 24 24" style="stroke:var(--text-3);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="stat-val" style="color:var(--text-2);">${totalMissing}</div>
+      <div class="stat-label">Not Checked In</div>
+      <div class="stat-sub">Have not scanned at all during this conference</div>
     </div>
 
-    <div class="card" style="padding:20px; border-left:4px solid var(--blue);">
-      <div style="font-size:12px; color:var(--text-3); font-weight:600; text-transform:uppercase; margin-bottom:8px;">Active Breakdown</div>
-      <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
-        <div style="display:flex; justify-content:space-between; font-size:13px;"><span><span class="l-avatar la-p" style="display:inline-flex; width:16px; height:16px; font-size:10px; margin-right:6px;">P</span>Pastors</span> <strong>${pastScans}</strong></div>
-        <div style="display:flex; justify-content:space-between; font-size:13px;"><span><span class="l-avatar la-w" style="display:inline-flex; width:16px; height:16px; font-size:10px; margin-right:6px;">W</span>Wives</span> <strong>${wifeScans}</strong></div>
-        <div style="display:flex; justify-content:space-between; font-size:13px;"><span><span class="l-avatar la-d" style="display:inline-flex; width:16px; height:16px; font-size:10px; margin-right:6px;">D</span>Disciples</span> <strong>${discScans}</strong></div>
+    <div class="stat-card" style="border-left-color:var(--blue);">
+      <div class="stat-icon si-blue">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      <div class="stat-label" style="margin-bottom:10px;">Active Breakdown</div>
+      <div style="display:flex; flex-direction:column; gap:7px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+          <span style="display:flex; align-items:center; gap:7px;"><span class="l-avatar la-p" style="width:20px;height:20px;font-size:9px;">P</span> Pastors</span>
+          <span class="pill pill-pastor">${pastScans}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+          <span style="display:flex; align-items:center; gap:7px;"><span class="l-avatar la-w" style="width:20px;height:20px;font-size:9px;">W</span> Wives</span>
+          <span class="pill pill-wife">${wifeScans}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+          <span style="display:flex; align-items:center; gap:7px;"><span class="l-avatar la-d" style="width:20px;height:20px;font-size:9px;">D</span> Disciples</span>
+          <span class="pill pill-disciple">${discScans}</span>
+        </div>
       </div>
     </div>
   `
+
+  updateChipCounts()
+}
+
+// ── Role Filter ───────────────────────────────────────────────────────────
+function filterByRole(role) {
+  currentRoleFilter = role
+  // Update chips
+  document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('active'))
+  const chipMap = { ALL: 'chip-all', PASTOR: 'chip-pastor', WIFE: 'chip-wife', DISCIPLE: 'chip-disciple' }
+  const el = document.getElementById(chipMap[role])
+  if (el) el.classList.add('active')
+  renderGlobalList()
+}
+
+function updateChipCounts() {
+  const counts = { ALL: 0, PASTOR: 0, WIFE: 0, DISCIPLE: 0 }
+  globalReportData.forEach(row => {
+    counts.ALL++
+    counts[row.delegate.role] = (counts[row.delegate.role] || 0) + 1
+  })
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val }
+  set('count-all', counts.ALL)
+  set('count-pastor', counts.PASTOR)
+  set('count-wife', counts.WIFE)
+  set('count-disciple', counts.DISCIPLE)
 }
 
 // ── Global Delegate List ──────────────────────────────────────────────────
@@ -288,13 +338,17 @@ function renderGlobalList() {
   const searchInput = document.getElementById('log-search')
   const search      = searchInput ? searchInput.value.toLowerCase().trim() : ''
 
-  // BUG FIX: Do NOT sort globalReportData in-place; work on a copy
   let list = [...globalReportData]
 
+  // Role filter
+  if (currentRoleFilter !== 'ALL') {
+    list = list.filter(row => row.delegate.role === currentRoleFilter)
+  }
+
+  // Search filter
   if (search) {
     list = list.filter(row => {
       const d = row.delegate
-      // BUG FIX: null-guard church and district before calling .toLowerCase()
       return (
         (d.fullName || '').toLowerCase().includes(search) ||
         (d.church   || '').toLowerCase().includes(search) ||
@@ -304,7 +358,7 @@ function renderGlobalList() {
     })
   }
 
-  // Sort: Missing at top, then alphabetical
+  // Sort: Missing first, then alphabetical
   list.sort((a, b) => {
     if (a.totalScans === 0 && b.totalScans > 0) return -1
     if (a.totalScans > 0 && b.totalScans === 0) return 1
@@ -318,26 +372,33 @@ function renderGlobalList() {
 
   container.innerHTML = list.map(row => {
     const d = row.delegate
-    const statusPill = row.totalScans > 0
-      ? `<span style="display:inline-block; padding:4px 10px; background:var(--green-bg); color:var(--green); border-radius:12px; font-size:11px; font-weight:700;">Active (${row.totalScans} scans)</span>`
-      : `<span style="display:inline-block; padding:4px 10px; background:var(--bg-input); color:var(--text-3); border-radius:12px; font-size:11px; font-weight:600;">Missing</span>`
+    const isActive = row.totalScans > 0
+    const statusPill = isActive
+      ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;background:var(--green-bg);color:var(--green);border-radius:12px;font-size:11px;font-weight:700;">
+           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+           Active &middot; ${row.totalScans} scan${row.totalScans !== 1 ? 's' : ''}
+         </span>`
+      : `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;background:var(--bg-input);color:var(--text-3);border:1px solid var(--border);border-radius:12px;font-size:11px;font-weight:600;">
+           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+           Missing
+         </span>`
 
     return `
-    <tr style="border-bottom:1px solid var(--border-light);">
-      <td style="padding:12px 16px;">
+    <tr class="report-tr">
+      <td class="report-td">
         <div style="display:flex; align-items:center; gap:10px;">
           <div class="l-avatar ${avClass(d.role)}">${(d.role || 'X')[0]}</div>
           <div>
-            <div style="font-size:13px; font-weight:600; color:var(--text);">${esc(d.fullName)}</div>
-            <span class="pill ${pillClass(d.role)}" style="font-size:9px; margin-top:4px;">${d.role}</span>
+            <div style="font-size:13px; font-weight:600; color:var(--text); line-height:1.3;">${esc(d.fullName)}</div>
+            <span class="pill ${pillClass(d.role)}" style="font-size:10px; margin-top:3px; display:inline-block;">${d.role}</span>
           </div>
         </div>
       </td>
-      <td style="padding:12px 16px; font-size:12px; color:var(--text-2);">
-        <div style="font-weight:500;">${esc(d.church)}</div>
-        <div style="color:var(--text-3); font-size:11px;">${esc(d.district)}</div>
+      <td class="report-td" style="font-size:12px;">
+        <div style="font-weight:500; color:var(--text);">${esc(d.church)}</div>
+        <div style="color:var(--text-3); font-size:11px; margin-top:1px;">${esc(d.district)}</div>
       </td>
-      <td style="padding:12px 16px;">${statusPill}</td>
+      <td class="report-td">${statusPill}</td>
     </tr>`
   }).join('')
 }

@@ -8,36 +8,43 @@
   <link rel="stylesheet" href="css/components.css" />
   <link rel="icon" type="image/png" href="assets/VCCC-Logo.png">
   <style>
-    .summary-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .sum-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; }
-    .sum-pastor   { background:var(--red-light);   color:var(--red-dark); }
-    .sum-wife     { background:var(--blue-bg);      color:var(--blue); }
-    .sum-disciple { background:var(--green-bg);     color:var(--green); }
-    .sum-total    { background:var(--bg-input); border:1px solid var(--border); color:var(--text-2); }
-    .meal-chip-row { display:flex; flex-wrap:wrap; gap:8px; }
-    .meal-chip { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--bg-input); font-size:12px; font-weight:500; color:var(--text); cursor:pointer; transition:all .15s; }
-    .meal-chip:hover  { border-color:var(--red); color:var(--red); }
-    .meal-chip.active { background:var(--red-light); border-color:var(--red); color:var(--red-dark); }
-    .list-row { display:flex; align-items:center; gap:10px; padding:11px 16px; border-bottom:1px solid var(--border); }
-    .list-row:last-child { border:none; }
-    .l-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+    /* ── Avatar colors ── */
+    .l-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
     .la-p { background:var(--red-light);  color:var(--red-dark); }
     .la-w { background:var(--blue-bg);    color:var(--blue); }
     .la-d { background:var(--green-bg);   color:var(--green); }
-    .l-info { flex:1; min-width:0; }
-    .l-name { font-size:13px; font-weight:500; color:var(--text); }
-    .l-sub  { font-size:11px; color:var(--text-3); }
-    /* Premium Search Bar */
-    .search-wrap svg { width: 16px; height: 16px; stroke: var(--text-3); stroke-width: 2.5; fill: none; transition: stroke 0.2s; }
-    .search-wrap:focus-within svg { stroke: var(--red); }
 
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    .spinning svg {
-      animation: spin 1s linear infinite;
-    }
+    /* ── Role filter chips ── */
+    .role-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 14px; border-radius:20px; border:1px solid var(--border); background:var(--bg-input); font-size:12px; font-weight:600; color:var(--text-2); cursor:pointer; transition:all .15s; white-space:nowrap; }
+    .role-chip:hover { border-color:var(--red); color:var(--red); background:var(--red-light); }
+    .role-chip.active { background:var(--red-light); border-color:var(--red); color:var(--red-dark); }
+    .role-chip .chip-count { background:rgba(0,0,0,0.08); color:inherit; border-radius:10px; padding:1px 6px; font-size:11px; }
+    .role-chip.active .chip-count { background:rgba(185,28,28,0.12); }
+
+    /* ── Delegate table rows ── */
+    .report-tr { border-bottom:1px solid var(--border); transition:background .15s; }
+    .report-tr:last-child { border:none; }
+    .report-tr:hover { background:#fafafa; }
+    .report-td { padding:13px 16px; vertical-align:middle; }
+
+    /* ── Spinning loader ── */
+    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+    .spinning svg { animation:spin 1s linear infinite; }
+
+    /* ── Empty state for reports ── */
+    .report-empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 24px; gap:12px; text-align:center; }
+    .report-empty-icon { width:52px; height:52px; border-radius:16px; background:var(--bg-input); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
+    .report-empty-icon svg { width:24px; height:24px; stroke:var(--text-3); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .report-empty-title { font-size:15px; font-weight:600; color:var(--text-2); }
+    .report-empty-desc  { font-size:13px; color:var(--text-3); max-width:260px; line-height:1.5; }
+
+    /* ── Stat cards layout ── */
+    .report-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
+
+    /* ── Table toolbar ── */
+    .table-toolbar { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+    .table-toolbar-title { font-size:14px; font-weight:700; color:var(--text); flex:1; min-width:120px; }
+    @media (max-width:600px) { .table-toolbar { flex-direction:column; align-items:stretch; } .table-toolbar-title { flex:none; } }
   </style>
 </head>
 <body>
@@ -67,55 +74,79 @@
   <div class="app-main">
     <header class="topbar"><div class="topbar-title">Global Reports</div></header>
     <main class="page-content">
+
+      <!-- Page Header -->
       <div class="page-header">
-        <div style="display:flex; flex-direction:column; gap:2px;">
+        <div class="page-header-info" style="flex-direction:column; align-items:flex-start; gap:2px;">
           <span class="page-header-title">Global Reports</span>
           <span id="last-updated" style="font-size:11px; color:var(--text-3); font-weight:500;"></span>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button class="btn btn-ghost" id="btn-refresh" onclick="refreshReport()" style="display:none; padding:8px; border-radius:10px;">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        <div class="page-header-actions">
+          <button class="btn btn-ghost" id="btn-refresh" onclick="refreshReport()" style="display:none; width:38px; padding:0;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
           </button>
-          <button class="btn btn-primary" onclick="exportToExcel()" id="btn-export" style="display:none; gap:8px;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Export Excel
+          <button class="btn btn-primary" onclick="exportToExcel()" id="btn-export" style="display:none;">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export
           </button>
         </div>
       </div>
 
-      <!-- Selector -->
-      <div class="card" style="padding:16px; margin-bottom:16px;">
+      <!-- Conference Selector -->
+      <div class="card" style="padding:16px 20px; overflow:visible;">
         <div class="form-field">
-          <label class="form-label">Select Conference</label>
-          <div id="conf-select-container" style="max-width:420px;"></div>
+          <label class="form-label">Conference</label>
+          <div id="conf-select-container" style="max-width:520px; width:100%;"></div>
         </div>
       </div>
 
-      <!-- Results Dashboard -->
-      <div id="results-section" style="display:none;">
-        
-        <!-- Premium Summary Cards -->
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;" id="summary-cards">
+      <!-- Empty Prompt -->
+      <div id="empty-prompt" class="card">
+        <div class="report-empty-state">
+          <div class="report-empty-icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+          </div>
+          <div class="report-empty-title">No Conference Selected</div>
+          <div class="report-empty-desc">Select a conference above to generate the global attendance report.</div>
+        </div>
+      </div>
+
+      <!-- Results Dashboard (hidden by default) -->
+      <div id="results-section" style="display:none; flex-direction:column; gap:16px;">
+
+        <!-- Summary Stat Cards -->
+        <div class="report-stats" id="summary-cards">
           <!-- Populated via JS -->
         </div>
 
-        <!-- Unified Data Table -->
+        <!-- Delegate Table Card -->
         <div class="card">
-        <div class="filter-bar" style="margin-bottom:0; border-bottom:1px solid var(--border); border-radius:12px 12px 0 0; box-shadow:none;">
-          <div style="font-weight:700; color:var(--text); font-size:14px;">All Delegates Status</div>
-          <div class="search-wrap">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="log-search" placeholder="Search delegates..." onkeyup="renderGlobalList()" autocomplete="off" />
+
+          <!-- Toolbar: Title + Search -->
+          <div class="table-toolbar">
+            <div class="table-toolbar-title">Delegate Status</div>
+            <div class="search-wrap" style="max-width:280px; height:38px;">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="log-search" placeholder="Search delegates..." oninput="renderGlobalList()" autocomplete="off" />
+            </div>
           </div>
-        </div>
-          
-          <div class="table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-            <table class="data-table" style="width:100%; text-align:left; border-collapse:collapse;">
+
+          <!-- Role Filter Chips -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--bg-input);">
+            <button class="role-chip active" id="chip-all"       onclick="filterByRole('ALL')"     >All <span class="chip-count" id="count-all">0</span></button>
+            <button class="role-chip"        id="chip-pastor"    onclick="filterByRole('PASTOR')"  >Pastors <span class="chip-count" id="count-pastor">0</span></button>
+            <button class="role-chip"        id="chip-wife"      onclick="filterByRole('WIFE')"    >Wives <span class="chip-count" id="count-wife">0</span></button>
+            <button class="role-chip"        id="chip-disciple"  onclick="filterByRole('DISCIPLE')">Disciples <span class="chip-count" id="count-disciple">0</span></button>
+          </div>
+
+          <!-- Table -->
+          <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
               <thead>
-                <tr>
-                  <th style="padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-2); font-size:12px; font-weight:600;">Delegate</th>
-                  <th style="padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-2); font-size:12px; font-weight:600;">Role / Location</th>
-                  <th style="padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-2); font-size:12px; font-weight:600;">Status</th>
+                <tr style="background:var(--bg-input);">
+                  <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border);">Delegate</th>
+                  <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border);">Church / District</th>
+                  <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border);">Status</th>
                 </tr>
               </thead>
               <tbody id="global-list-body">
@@ -123,10 +154,10 @@
               </tbody>
             </table>
           </div>
+
         </div>
       </div>
 
-      <div id="empty-prompt" style="padding:40px 20px;text-align:center;font-size:13px;color:var(--text-3);">Select a conference to generate the global report.</div>
     </main>
   </div>
 </div>
