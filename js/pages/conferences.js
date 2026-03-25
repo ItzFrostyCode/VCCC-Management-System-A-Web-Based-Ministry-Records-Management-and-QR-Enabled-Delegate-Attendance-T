@@ -55,18 +55,14 @@ function renderList() {
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
             Scan
           </a>
-          ${(typeof authService !== 'undefined' && authService.getCurrentUser()?.role === 'Staff') ? `
-          <button class="btn-icon btn-edit" title="Edit" onclick="openEditConf('${c.id}')">
-            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          ` : `
+          ${(typeof authService === 'undefined' || authService.getCurrentUser()?.role !== 'Staff') ? `
           <button class="btn-icon btn-edit" title="Edit" onclick="openEditConf('${c.id}')">
             <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
           <button class="btn-icon btn-delete" title="Delete" onclick="openDeleteConf('${c.id}','${esc(c.title)}')">
             <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           </button>
-          `}
+          ` : ''}
         </div>
       </div>
     </div>`

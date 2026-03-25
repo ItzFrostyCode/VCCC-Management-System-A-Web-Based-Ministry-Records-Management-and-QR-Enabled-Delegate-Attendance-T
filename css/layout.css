@@ -82,7 +82,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  overflow-x: hidden;
   min-height: 0;
+  min-width: 0; /* prevent flex blowout */
 }
 
 /* ── Topbar ── */
@@ -135,6 +137,27 @@
   display: flex; flex-direction: column; gap: 16px;
   -webkit-overflow-scrolling: touch;
   min-height: 0;
+  min-width: 0; /* prevent flex blowout at mid-widths */
+}
+
+/* ── Intermediate breakpoint: small desktop / large tablet ── */
+@media (max-width: 1100px) {
+  .page-content {
+    padding: 16px 16px 80px 16px;
+  }
+  .page-header {
+    gap: 8px;
+  }
+  .filter-bar, .filter-row {
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cols-pastors {
+    grid-template-columns: 1.4fr 1fr 1fr 0.8fr 1fr 80px;
+  }
 }
 
 /* ── Page header ── */

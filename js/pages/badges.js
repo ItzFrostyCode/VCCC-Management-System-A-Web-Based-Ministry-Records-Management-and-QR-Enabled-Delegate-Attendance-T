@@ -496,7 +496,9 @@ async function batchDownloadRef(event, forceKey, forceType) {
   let zipName = 'badges.zip'
   
   if (type === 'all') {
-    targets = filteredDelegates
+    // Use allDelegates (not filteredDelegates) so search/filter state never drops delegates from bulk export.
+    // Only respect the role toggle buttons (activeRoles).
+    targets = allDelegates.filter(d => activeRoles.has(d.role))
     zipName = 'all_badges.zip'
   } else if (type === 'district') {
     targets = filteredDelegates.filter(d => d.districtName === key)

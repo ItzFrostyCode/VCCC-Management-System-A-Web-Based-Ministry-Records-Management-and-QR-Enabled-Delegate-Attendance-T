@@ -42,7 +42,7 @@ async function initData() {
     filteredPastors = [...allPastors]
   } catch (e) {
     console.error('Initial load failed:', e)
-    document.getElementById('table-body').innerHTML = `<tr><td colspan="5" style="padding:20px; color:var(--red); text-align:center;"><strong>Database Connection Error:</strong><br>${esc(e.message)}<br><small>Did you run the Supabase SQL script?</small></td></tr>`
+    document.getElementById('table-body').innerHTML = `<div style="padding:20px; color:var(--red); text-align:center;"><strong>Database Connection Error:</strong><br>${esc(e.message)}</div>`
   }
 }
 
@@ -92,18 +92,18 @@ function initFilters() {
 }
 
 function initEventListeners() {
-  const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
-  const isStaff = user && user.role === 'Staff';
-  
+  const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+  const isStaff = user && user.role === 'Staff'
+
   if (isStaff) {
-    const btnExport = document.getElementById('btn-export');
-    if (btnExport) btnExport.style.display = 'none';
+    const btnExport = document.getElementById('btn-export')
+    if (btnExport) btnExport.style.display = 'none'
   }
 
   document.getElementById('search-input').addEventListener('input', applyFilters)
   document.getElementById('btn-add').onclick = () => { openModal() }
   document.getElementById('btn-save').onclick = saveItem
-  document.getElementById('btn-export').onclick = () => { if(!isStaff) exportCSV() }
+  document.getElementById('btn-export').onclick = () => { if (!isStaff) exportCSV() }
 }
 
 function applyFilters() {
@@ -145,10 +145,17 @@ function renderTable() {
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedItems = filteredPastors.slice(startIndex, endIndex)
 
-  const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
-  const isStaff = user && user.role === 'Staff';
+  const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+  const isStaff = user && user.role === 'Staff'
 
-  body.innerHTML = paginatedItems.map(p => `
+  // Use a function body (not template) so HTML quoting is clean
+  body.innerHTML = paginatedItems.map(p => {
+    const deleteBtn = !isStaff
+      ? `<button class="btn-icon btn-delete" onclick="confirmDelete('${p.id}')" title="Remove">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>`
+      : ''
+    return `
     <div class="data-table-row cols-pastors">
       <div class="cell-name-primary" data-label="Pastor" title="${esc(p.full_name)}">${esc(p.full_name)}</div>
       <div style="color:var(--text); font-weight:500;" data-label="Wife" title="${esc(p.wife_name)}">${esc(p.wife_name) || '—'}</div>
@@ -159,24 +166,20 @@ function renderTable() {
         <button class="btn-icon btn-edit" onclick="openModal('${p.id}')" title="Edit">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        ${!isStaff ? `
-        <button class="btn-icon btn-delete" onclick="confirmDelete('${p.id}')" title="Remove">
-          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-        </button>
-        ` : ''}
+        ${deleteBtn}
       </div>
-    </div>
-  `).join('')
+    </div>`
+  }).join('')
 
   const pagination = document.getElementById('pagination')
   if (pagination) {
     pagination.style.display = 'flex'
     document.getElementById('page-info').textContent = `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredPastors.length)} of ${filteredPastors.length}`
   }
-  
+
   const btnPrev = document.getElementById('btn-prev')
   const btnNext = document.getElementById('btn-next')
-  
+
   if (currentPage === 1) { btnPrev.disabled = true; btnPrev.style.opacity = '0.5' } else { btnPrev.disabled = false; btnPrev.style.opacity = '1' }
   if (currentPage === totalPages) { btnNext.disabled = true; btnNext.style.opacity = '0.5' } else { btnNext.disabled = false; btnNext.style.opacity = '1' }
 }
@@ -244,11 +247,9 @@ function closeModal() {
 }
 
 async function saveItem() {
-  const id      = editingId 
-  const name    = document.getElementById('item-name').value.trim()
-  const wife    = document.getElementById('wife-name').value.trim()
-  
-  // Need to get UUIDs from strings for the service
+  const id       = editingId
+  const name     = document.getElementById('item-name').value.trim()
+  const wife     = document.getElementById('wife-name').value.trim()
   const distName = selModalDist.getValue()
   const churchName = selModalChurch.getValue()
 
@@ -262,27 +263,26 @@ async function saveItem() {
   btn.textContent = 'Ensuring IDs...'
 
   try {
-     // We need actual UUIDs for the service call
-     const { distId, churchId } = await dataManager.ensureDistrictAndChurch(distName, churchName)
+    const { distId, churchId } = await dataManager.ensureDistrictAndChurch(distName, churchName)
 
-     btn.textContent = 'Saving...'
-     const data = {
-       full_name: name,
-       wife_name: wife || null,
-       contact_number: document.getElementById('contact-number').value.trim() || null,
-       district_id: distId,
-       church_id: churchId
-     }
+    btn.textContent = 'Saving...'
+    const data = {
+      full_name: name,
+      wife_name: wife || null,
+      contact_number: document.getElementById('contact-number').value.trim() || null,
+      district_id: distId,
+      church_id: churchId
+    }
 
-     if (id) {
-       await pastorService.update(id, data)
-     } else {
-       await pastorService.create(data)
-     }
+    if (id) {
+      await pastorService.update(id, data)
+    } else {
+      await pastorService.create(data)
+    }
 
-     closeModal()
-     await initData() 
-     applyFilters() 
+    closeModal()
+    await initData()
+    applyFilters()
   } catch (err) {
     console.error(err)
     if (err.code === '23505') {

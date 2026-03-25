@@ -201,9 +201,18 @@
   border: 1px solid var(--red);
   border-top: none;
   border-radius: 0 0 10px 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  z-index: 1100; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  z-index: 2000; overflow: hidden;
   margin-top: -1px; /* Overlap to hide double border */
+}
+
+/* Portal variant — mounted on body, positioned via JS FixedRect */
+.ss-portal {
+  position: fixed !important;
+  background: var(--bg-card);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+  overflow: hidden;
+  z-index: 99999 !important;
 }
 .ss-search-wrap {
   display: flex; align-items: center; gap: 10px;
@@ -245,13 +254,13 @@
   background: var(--bg-card);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
-  width: 100%; max-width: 580px;
+  width: 100%; max-width: 640px; min-width: 320px;
   box-shadow: 0 12px 48px rgba(0,0,0,0.3);
   display: flex; flex-direction: column;
-  max-height: 85vh;
+  max-height: 90vh;
+  overflow-y: auto; /* Scroll lives HERE, not on modal-body */
   transform: translateY(15px) scale(.99);
   transition: transform .3s cubic-bezier(0.165, 0.84, 0.44, 1);
-  overflow: visible !important; /* Allow dropdowns to overflow if needed */
 }
 .modal-box.modal-sm { max-width: 400px; }
 .modal-overlay.open .modal-box { transform: none; }
@@ -273,7 +282,8 @@
 .modal-close:hover { background: var(--border); color: var(--text); }
 
 .modal-body {
-  padding: 24px; overflow-y: auto;
+  padding: 24px;
+  overflow: visible; /* CRITICAL: lets absolute-positioned dropdowns escape */
   display: flex; flex-direction: column; gap: 18px;
   flex: 1; /* Expand to fill space and push footer down */
 }
