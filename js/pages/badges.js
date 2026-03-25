@@ -270,7 +270,7 @@ function selectDelegate(id, role, shouldJump = true) {
   if (document.getElementById('canvas-actions')) document.getElementById('canvas-actions').style.display = 'flex'
   if (document.getElementById('no-selection-msg')) document.getElementById('no-selection-msg').style.display = 'none'
   renderBadge()
-  if (shouldJump) { const tb = document.querySelector('.mobile-tabbar'); if (tb && getComputedStyle(tb).display!=='none') switchTab('preview') }
+  if (shouldJump) { const tb = document.querySelector('.mobile-tabbar'); if (tb && getComputedStyle(tb).display!=='none' && window.innerWidth <= 640) switchTab('preview') }
 }
 
 function switchTab(view) {
@@ -325,6 +325,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (distEl) selFilterDist = createSearchSelect(distEl, districts.map(d => ({ value:d.id, label:d.name })), 'District', (v) => { filterDistVal = v||null; filterChurchVal = null; const fc = churches.filter(c => !filterDistVal || c.district_id === filterDistVal); if(selFilterChurch){ selFilterChurch.setOptions([{value:'',label:'All churches'}, ...fc.map(c=>({value:c.id,label:c.name}))]); selFilterChurch.reset() } applyFilters() })
     if (churchEl) selFilterChurch = createSearchSelect(churchEl, [{ value:'', label:'All churches' }, ...churches.map(c => ({ value:c.id, label:c.name }))], 'All churches', (v) => { filterChurchVal = v||null; applyFilters() })
     applyFilters(); renderTools()
+    
+    // Default tab on mobile
+    if (window.innerWidth <= 640) switchTab('delegates')
   } catch (err) { console.error('Init failed:', err) }
 })
 
@@ -333,8 +336,24 @@ async function renderBadge() {
   if (!selectedDelegate) return
   const wrap = document.getElementById('badge-preview-wrap'); wrap.innerHTML = '<div style="font-size:13px;color:var(--text-3);">Rendering...</div>'
   try {
-    const canvas = document.createElement('canvas'); canvas.width = cfg.canvasWidth; canvas.height = cfg.canvasHeight; canvas.style.maxWidth = '100%'; canvas.style.maxHeight = window.innerWidth<600?'500px':'380px'; canvas.style.height='auto'; canvas.style.display='block'; canvas.style.margin='0 auto'
-    await drawBadge(canvas, selectedDelegate); wrap.innerHTML = ''; wrap.appendChild(canvas); badgeCanvas = canvas
+    const isMobile = window.innerWidth <= 640;
+    const isTablet = window.innerWidth > 640 && window.innerWidth <= 1100;
+    let maxH = '380px';
+    if (isMobile) maxH = '500px';
+    else if (isTablet) maxH = '320px';
+
+    const canvas = document.createElement('canvas'); 
+    canvas.width = cfg.canvasWidth; 
+    canvas.height = cfg.canvasHeight; 
+    canvas.style.maxWidth = '100%'; 
+    canvas.style.maxHeight = maxH; 
+    canvas.style.height='auto'; 
+    canvas.style.display='block'; 
+    canvas.style.margin='0 auto'
+    await drawBadge(canvas, selectedDelegate); 
+    wrap.innerHTML = ''; 
+    wrap.appendChild(canvas); 
+    badgeCanvas = canvas
   } catch(e) { wrap.innerHTML=`<div style="color:red;font-size:13px;">Error: ${e.message}</div>` }
 }
 async function drawBadge(canvas, d) {

@@ -51,7 +51,7 @@ body.badges-page {
 /* ── Visibility Utilities ──────────────────────────────────── */
 .desktop-only { display: flex; }
 .mobile-only  { display: none !important; }
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .desktop-only { display: none !important; }
   .mobile-only  { display: flex !important; }
 }
@@ -160,7 +160,7 @@ body.badges-page {
   color: var(--primary-hover);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .tb-label { display: none; }
   .topbar-mid { display: none; }
   .tb-btn { padding: 0 10px; }
@@ -500,25 +500,33 @@ body.badges-page {
 .mobile-tabbar {
   position: fixed; bottom: 0; left: 0; right: 0;
   height: var(--mobile-tab-h);
-  background: #fff;
-  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
   display: none;
   align-items: center;
   justify-content: space-around;
-  z-index: 300;
-  padding: 0 8px;
+  z-index: 500;
+  padding: 0 12px;
   padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
 }
 .tab-btn {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px;
   border: none; background: transparent;
-  font-size: 10px; font-weight: 600; color: var(--text-4);
-  cursor: pointer; padding: 8px; border-radius: var(--radius-sm);
-  transition: all 0.2s;
+  font-size: 10px; font-weight: 700; color: var(--text-4);
+  cursor: pointer; padding: 10px 4px; border-radius: var(--radius-sm);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 .tab-btn.active { color: var(--primary); }
-.tab-btn svg { stroke: currentColor; }
+.tab-btn.active::after {
+  content: ''; position: absolute; top: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--primary);
+}
+.tab-btn svg { stroke: currentColor; transition: transform 0.25s; }
+.tab-btn.active svg { transform: translateY(-1px); }
 
 /* ══════════════════════════════════════════════════════════════
    SLIMSELECT OVERRIDES (inside delegates panel)
@@ -709,7 +717,7 @@ body.badges-page {
 /* ══════════════════════════════════════════════════════════════
    MOBILE RESPONSIVE
    ══════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .mobile-tabbar { display: flex; }
 
   .editor-shell {
@@ -729,36 +737,146 @@ body.badges-page {
 
   .slides-panel.active,
   .canvas-workspace.active,
-  .props-panel.active { display: flex; flex-direction: column; }
+  .props-panel.active { 
+    display: flex; 
+    flex-direction: column; 
+    animation: mobile-fade-in 0.3s ease-out forwards;
+  }
 
-  /* Canvas workspace is special */
+  @keyframes mobile-fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Sticky Search on Mobile */
+  .slides-search {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    border-bottom: 1.5px solid var(--border);
+  }
+
+  /* Refined Cards on Mobile */
+  .del-card {
+    min-height: 58px;
+    padding: 8px 12px;
+  }
+  .del-av { width: 36px; height: 36px; font-size: 12px; }
+  .del-name { font-size: 12px; }
+  .del-sub { font-size: 10.5px; }
+
   .canvas-workspace {
-    padding: 16px 12px 24px;
+    padding: 16px 12px 60px; /* Extra bottom padding for tabbar */
     background: var(--bg-canvas);
   }
 
   .canvas-frame {
     width: 100%;
     box-shadow: var(--shadow);
+    border-radius: var(--radius);
   }
 
   /* Props panel scrolls */
-  .props-body { padding: 12px; }
+  .props-body { padding: 12px 12px 80px; }
 
   /* Delegates: full list */
   .slides-panel { border-right: none; }
+  .slides-list { padding-bottom: 80px; }
 
   .bg-topbar { padding: 0 12px; }
 
   input, select, textarea { font-size: 16px !important; }
 }
 
-@media (max-width: 1100px) and (min-width: 769px) {
-  /* Tablet: collapse right panel */
+/* ══════════════════════════════════════════════════════════════
+   ULTRA-SMALL SCREEN (iPhone SE, 320px)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 360px) {
+  .topbar-brand { font-size: 13px; gap: 4px; }
+  .topbar-brand svg { width: 14px; height: 14px; }
+  .badge-dim-label { display: none; } /* Hide dimensions to save space */
+  
+  .slides-search { padding: 8px 10px; }
+  .ss-filter-row { gap: 4px; }
+  .ss-role-chips { gap: 4px; }
+  .role-chip { padding: 4px 6px; font-size: 10px; }
+  
+  .del-card { gap: 8px; padding: 6px 10px; min-height: 52px; }
+  .del-av { width: 32px; height: 32px; font-size: 11px; }
+  .del-name { font-size: 11px; }
+  .del-sub { font-size: 10px; }
+  .del-role-tag { font-size: 9px; padding: 2px 6px; }
+
+  .canvas-workspace { padding: 12px 10px 60px; }
+  .ca-btn { height: 34px; padding: 0 12px; font-size: 12px; }
+
+  .props-body { padding: 10px; gap: 10px; }
+  .prop-item input, .prop-item select { height: 32px; font-size: 14px; }
+  
+  .mobile-tabbar { padding: 0 4px; }
+  .tab-btn { font-size: 9px; padding: 8px 2px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TABLET RESPONSIVE (641px - 1100px)
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 641px) and (max-width: 1100px) {
   .editor-shell {
-    grid-template-columns: var(--panel-left-w) 1fr;
+    grid-template-areas:
+      "slides preview"
+      "slides props";
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 1fr auto;
+    height: calc(100vh - var(--topbar-h));
   }
-  .props-panel {
-    display: none;
+
+  .slides-panel { 
+    grid-area: slides;
+    border-right: 1px solid var(--border);
+  }
+
+  .canvas-workspace { 
+    grid-area: preview;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .props-panel { 
+    grid-area: props;
+    display: flex;
+    flex-direction: column;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: 280px; /* Limit height so preview remains visible */
+  }
+
+  .props-body {
+    padding: 12px 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .editor-toolbar {
+    display: contents; /* Let children participate in the props-body grid */
+  }
+
+  .editor-sel-wrap {
+    grid-column: 1 / -1; /* Selection box takes full width */
+    margin-bottom: 4px;
+  }
+
+  .editor-prop-wrap {
+    display: contents;
+  }
+
+  .prop-item {
+    margin-bottom: 0;
+  }
+
+  .canvas-frame {
+    max-width: 500px; /* Smaller core size for tablet stack */
   }
 }
