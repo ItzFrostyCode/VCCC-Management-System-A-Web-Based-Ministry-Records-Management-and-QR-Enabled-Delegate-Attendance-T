@@ -363,7 +363,7 @@ input[type="file"]:hover::file-selector-button {
 
 /* Grid columns for specific entities */
 .cols-disciples { grid-template-columns: 1.5fr 1.2fr 1fr 100px; }
-.cols-pastors   { grid-template-columns: 1.2fr 1.1fr 1fr 0.8fr 0.9fr 0.9fr 75px; gap: 8px; }
+.cols-pastors   { grid-template-columns: 1.2fr 1.1fr 1fr 0.8fr 0.9fr 0.9fr 0.8fr 75px; gap: 8px; }
 .cols-pastors > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .cols-pastors .cell-name-primary { font-size: 13px; }
 .cols-pastors .row-actions { overflow: visible; }
@@ -409,6 +409,18 @@ input[type="file"]:hover::file-selector-button {
     padding-top: 12px;
     margin-top: 4px;
     border-top: 1px dashed var(--border);
+  }
+
+  /* Specific tweaks for Pastors table on mobile */
+  .cols-pastors > div[data-label="Birthdate"],
+  .cols-pastors > div[data-label="Age"] {
+    display: inline-flex !important;
+    width: 50% !important;
+    border-bottom: none !important;
+  }
+  .cols-pastors > div[data-label="Age"] {
+    justify-content: flex-end;
+    text-align: right;
   }
 
   .filter-bar {

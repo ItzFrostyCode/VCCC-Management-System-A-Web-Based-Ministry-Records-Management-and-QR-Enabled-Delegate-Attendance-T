@@ -893,3 +893,108 @@ body.badges-page {
     max-width: 500px; /* Smaller core size for tablet stack */
   }
 }
+
+/* ── Mini Switch (for field toggles) ── */
+.switch-mini {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+}
+.switch-mini input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider-mini {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border);
+  transition: .2s;
+  border-radius: 18px;
+}
+.slider-mini:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+}
+input:checked + .slider-mini {
+  background-color: var(--primary);
+}
+input:checked + .slider-mini:before {
+  transform: translateX(14px);
+}
+/* ── Template Gallery ────────────────────────────────────────── */
+.tpl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+.tpl-card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-panel);
+  transition: all 0.2s;
+  position: relative;
+}
+.tpl-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+}
+.tpl-thumb {
+  height: 60px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.tpl-card.active .tpl-thumb {
+  border-bottom-color: var(--primary);
+}
+.tpl-footer {
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tpl-tag {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-4);
+  letter-spacing: 0.5px;
+}
+.tpl-card.active .tpl-tag {
+  color: var(--primary);
+}
+.tpl-delete-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  opacity: 0.6;
+}
+.tpl-delete-btn:hover {
+  background: #fee2e2;
+  opacity: 1;
+}
+.tpl-delete-btn svg {
+  width: 13px;
+  height: 13px;
+}

@@ -6,6 +6,7 @@ const discipleService = {
         id,
         full_name,
         church_id,
+        disciple_image_url,
         is_deleted,
         created_at,
         churches (
@@ -23,6 +24,7 @@ const discipleService = {
       id: d.id,
       full_name: d.full_name,
       church_id: d.church_id,
+      disciple_image_url: d.disciple_image_url || null,
       church_name: d.churches?.church_name || '—',
       district_id: d.churches?.district_id || '',
       district_name: d.churches?.districts?.district_name || '—'
@@ -44,7 +46,7 @@ const discipleService = {
     const { data, error } = await db
       .from('disciples')
       .select(`
-        id, full_name, church_id,
+        id, full_name, church_id, disciple_image_url,
         churches ( id, church_name, district_id, districts ( id, district_name ) )
       `)
       .eq('id', id)
@@ -56,6 +58,7 @@ const discipleService = {
       id: data.id,
       full_name: data.full_name,
       church_id: data.church_id,
+      disciple_image_url: data.disciple_image_url || null,
       church_name: data.churches?.church_name || '—',
       district_id: data.churches?.district_id || '',
       district_name: data.churches?.districts?.district_name || '—'
@@ -64,18 +67,21 @@ const discipleService = {
 
   async create(data) {
     const { full_name, church_id } = data
-    const { data: result, error } = await db
+    const { data: results, error } = await db
       .from('disciples')
       .insert({
         full_name: full_name.trim().toUpperCase(),
-        church_id: church_id
+        church_id: church_id,
+        disciple_image_url: data.disciple_image_url || null
       })
       .select(`
-        id, full_name, church_id,
+        id, full_name, church_id, disciple_image_url,
         churches ( id, church_name, district_id, districts ( id, district_name ) )
       `)
-      .single()
+
     if (error) throw error
+    if (!results || results.length === 0) throw new Error('Failed to create disciple record.')
+    const result = results[0]
 
     if (result) {
       const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
@@ -86,6 +92,7 @@ const discipleService = {
       id: result.id,
       full_name: result.full_name,
       church_id: result.church_id,
+      disciple_image_url: result.disciple_image_url || null,
       church_name: result.churches?.church_name || '—',
       district_id: result.churches?.district_id || '',
       district_name: result.churches?.districts?.district_name || '—'
@@ -94,19 +101,22 @@ const discipleService = {
 
   async update(id, data) {
     const { full_name, church_id } = data
-    const { data: result, error } = await db
+    const { data: results, error } = await db
       .from('disciples')
       .update({
         full_name: full_name.trim().toUpperCase(),
-        church_id: church_id
+        church_id: church_id,
+        disciple_image_url: data.disciple_image_url || null
       })
       .eq('id', id)
       .select(`
-        id, full_name, church_id,
+        id, full_name, church_id, disciple_image_url,
         churches ( id, church_name, district_id, districts ( id, district_name ) )
       `)
-      .single()
+
     if (error) throw error
+    if (!results || results.length === 0) throw new Error('Record not found or update unauthorized.')
+    const result = results[0]
 
     if (result) {
       const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
@@ -117,6 +127,7 @@ const discipleService = {
       id: result.id,
       full_name: result.full_name,
       church_id: result.church_id,
+      disciple_image_url: result.disciple_image_url || null,
       church_name: result.churches?.church_name || '—',
       district_id: result.churches?.district_id || '',
       district_name: result.churches?.districts?.district_name || '—'

@@ -301,19 +301,28 @@ function switchMobileView(v){ switchTab(v==='delegates'?'delegates':'editor') }
 
 // ── Config ───────────────────────────────────────────────────
 const CONFIG_KEY = 'momentum_badge_config_v1'
+const TEMPLATES_KEY = 'momentum_badge_templates_v1'
 const DEFAULT_CONFIG = {
   canvasWidth: 1050,
   canvasHeight: 750,
   templateUrl: 'assets/2026%20Conf%20ID%20front.png',
-  name:     { x: 100, y: 350, fontSize: 45, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'center', maxWidth: 850 },
-  role:     { x: 100, y: 410, fontSize: 75, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'center', maxWidth: 850 },
-  district: { x: 100, y: 500, fontSize: 34, fontWeight: 'bold', fontStyle: 'normal', color: '#333333', textAlign: 'center', maxWidth: 850 },
-  church:   { x: 705, y: 665, fontSize: 52, fontWeight: 'bold', fontStyle: 'italic', color: '#ffffff', textAlign: 'center', maxWidth: 850 },
-  qr:       { x: 735, y: 300, size: 293 }
+  name:     { x: 20, y: 350, fontSize: 45, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 850, enabled: true },
+  role:     { x: 20, y: 410, fontSize: 75, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 850, enabled: true },
+  district: { x: 20, y: 500, fontSize: 34, fontWeight: 'bold', fontStyle: 'normal', color: '#333333', textAlign: 'left', maxWidth: 850, enabled: true },
+  church:   { x: 570, y: 665, fontSize: 52, fontWeight: 'bold', fontStyle: 'italic', color: '#ffffff', textAlign: 'left', maxWidth: 460, enabled: true },
+  qr:       { x: 735, y: 300, size: 293, enabled: true },
+  profile:  { x: 50, y: 50, size: 250, enabled: false }
 }
 
 let cfg = getConfig(); function getConfig(){ try{ let s=JSON.parse(localStorage.getItem(CONFIG_KEY))||{}, m={...DEFAULT_CONFIG}; Object.keys(DEFAULT_CONFIG).forEach(k=>{ if(s[k]) m[k]=typeof s[k]==='object'?{...DEFAULT_CONFIG[k],...s[k]}:s[k] }); return m }catch{ return {...DEFAULT_CONFIG} } }
 function saveConfig(){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)) }
+
+function getLocalTemplates() { try{ return JSON.parse(localStorage.getItem(TEMPLATES_KEY))||[] }catch{ return [] } }
+function saveLocalTemplates(t) { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(t)) }
+function addLocalTemplate(dataUrl) { const t = getLocalTemplates(); t.push({ id: Date.now(), url: dataUrl }); saveLocalTemplates(t); renderTools() }
+function deleteLocalTemplate(id) { if(confirm('Delete template?')){ const t = getLocalTemplates().filter(x => x.id !== id); saveLocalTemplates(t); renderTools() } }
+function applyLocalTemplate(url) { cfg.templateUrl = url; saveConfig(); renderBadge(); renderTools() }
+
 function resetConfig(){ if(confirm('Reset layout?')){ localStorage.removeItem(CONFIG_KEY); cfg={...DEFAULT_CONFIG}; renderTools(); renderBadge() } }
 
 function downloadSingle() {
@@ -352,7 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     })
     disciples.forEach(d => {
-      allDelegates.push({ id: d.id, fullName: d.full_name, role: 'DISCIPLE', districtId: d.district_id, districtName: d.district_name || '', churchId: d.church_id, churchName: d.church_name || '', imageUrl: null })
+      allDelegates.push({ id: d.id, fullName: d.full_name, role: 'DISCIPLE', districtId: d.district_id, districtName: d.district_name || '', churchId: d.church_id, churchName: d.church_name || '', imageUrl: d.disciple_image_url || null })
     })
 
     const distEl = document.getElementById('filter-district-badge'), churchEl = document.getElementById('filter-church-badge')
@@ -397,14 +406,27 @@ async function drawBadge(canvas, d, preLoadedTemplate = null) {
     ctx.drawImage(img,0,0,canvas.width,canvas.height);
   } catch(e){}
 
-  drawText(ctx, d.fullName, cfg.name); 
-  drawText(ctx, d.role, cfg.role); 
-  drawText(ctx, d.districtName, cfg.district); 
-  drawText(ctx, d.churchName, cfg.church)
+  // Draw Profile Picture if enabled and available
+  if (cfg.profile && cfg.profile.enabled && d.imageUrl) {
+    try {
+      const pImg = await loadImg(d.imageUrl);
+      ctx.save();
+      // Draw image at specified coordinates and size
+      ctx.drawImage(pImg, cfg.profile.x, cfg.profile.y, cfg.profile.size, cfg.profile.size);
+      ctx.restore();
+    } catch(err) { console.error('Profile image load failed', err); }
+  }
+
+  if (cfg.name.enabled !== false) drawText(ctx, d.fullName, cfg.name); 
+  if (cfg.role.enabled !== false) drawText(ctx, d.role, cfg.role); 
+  if (cfg.district.enabled !== false) drawText(ctx, d.districtName, cfg.district); 
+  if (cfg.church.enabled !== false) drawText(ctx, d.churchName, cfg.church)
   
-  const qrc = document.createElement('canvas'), lib = window.QRCode||window.qrcode; 
-  await lib.toCanvas(qrc, encodeQR(d.role, d.id), {width:cfg.qr.size, margin:1}); 
-  ctx.drawImage(qrc, cfg.qr.x, cfg.qr.y, cfg.qr.size, cfg.qr.size)
+  if (cfg.qr.enabled !== false) {
+    const qrc = document.createElement('canvas'), lib = window.QRCode||window.qrcode; 
+    await lib.toCanvas(qrc, encodeQR(d.role, d.id), {width:cfg.qr.size, margin:1}); 
+    ctx.drawImage(qrc, cfg.qr.x, cfg.qr.y, cfg.qr.size, cfg.qr.size)
+  }
 }
 
 function drawText(ctx, t='', f) { 
@@ -413,15 +435,21 @@ function drawText(ctx, t='', f) {
   const weight = f.fontWeight==='bold'?700:400, style=f.fontStyle==='italic'?'italic ':''; 
   let fSize = f.fontSize;
   const maxWidth = f.maxWidth || 850;
+  const align = f.textAlign || 'left';
   
+  // Smart Auto-Resize: Limit maxWidth to canvas edge if left-aligned
+  let effectiveMaxWidth = maxWidth;
+  if (align === 'left' && (f.x + effectiveMaxWidth > 1030)) {
+     effectiveMaxWidth = 1030 - f.x;
+  }
+
   ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
-  while (ctx.measureText(t).width > maxWidth && fSize > 8) {
+  while (ctx.measureText(t).width > effectiveMaxWidth && fSize > 8) {
     fSize--;
     ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
   }
 
   const tw = ctx.measureText(t).width;
-  const align = f.textAlign || 'left';
   let drawX = f.x;
 
   // Prevent negative overflow if centered/right-aligned at a low X coordinate
@@ -479,19 +507,92 @@ let DISTRICT_COLORS = {}
 
 function renderTools() {
   const b = document.getElementById('editor-fields-body'); if(!b) return
-  if(!b.querySelector('.editor-toolbar')){ b.innerHTML=`<div class="editor-toolbar"><div class="editor-sel-wrap" id="f-sel-box"></div><div class="editor-prop-wrap" id="editor-properties-body"></div></div>`; selFieldEditor = createSearchSelect(document.getElementById('f-sel-box'), [{value:'name',label:'Name'},{value:'role',label:'Role'},{value:'district',label:'District'},{value:'church',label:'Church'},{value:'qr',label:'QR'}], 'Select...', (v)=>{ if(v){activeFieldKey=v;renderTools()} }); selFieldEditor.setValue(activeFieldKey) }
-  const p = document.getElementById('editor-properties-body'), f = cfg[activeFieldKey]
+  if(!b.querySelector('.editor-toolbar')){ 
+    b.innerHTML=`<div class="editor-toolbar"><div class="editor-sel-wrap" id="f-sel-box"></div><div class="editor-prop-wrap" id="editor-properties-body"></div></div>`; 
+    selFieldEditor = createSearchSelect(document.getElementById('f-sel-box'), [
+      {value:'name',label:'Name'},
+      {value:'role',label:'Role'},
+      {value:'district',label:'District'},
+      {value:'church',label:'Church'},
+      {value:'qr',label:'QR'},
+      {value:'profile',label:'Profile'},
+      {value:'templates',label:'Templates'}
+    ], 'Select...', (v)=>{ if(v){activeFieldKey=v;renderTools()} }); 
+    selFieldEditor.setValue(activeFieldKey) 
+  }
+  const p = document.getElementById('editor-properties-body')
+  
+  if (activeFieldKey === 'templates') {
+    const ts = getLocalTemplates()
+    const isDefaultUsed = cfg.templateUrl === DEFAULT_CONFIG.templateUrl
+    
+    p.innerHTML = `
+      <div class="prop-section-title" style="margin-top:0;">Background Templates</div>
+      <div style="margin-bottom:15px;">
+        <button class="btn btn-ghost" style="width:100%; height:36px; border:1px dashed var(--border); font-size:12px;" onclick="document.getElementById('tpl-upload').click()">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Template
+        </button>
+        <input type="file" id="tpl-upload" accept="image/*" style="display:none;" onchange="handleTemplateUpload(this)" />
+      </div>
+      
+      <div class="tpl-grid">
+        <!-- Default -->
+        <div class="tpl-card ${isDefaultUsed?'active':''}">
+           <div class="tpl-thumb" style="background-image:url('${DEFAULT_CONFIG.templateUrl}')" onclick="applyLocalTemplate('${DEFAULT_CONFIG.templateUrl}')"></div>
+           <div class="tpl-footer">
+             <span class="tpl-tag">Default</span>
+           </div>
+        </div>
+        
+        ${ts.map(t => {
+          const isActive = cfg.templateUrl === t.url
+          return `
+            <div class="tpl-card ${isActive?'active':''}">
+               <div class="tpl-thumb" style="background-image:url('${t.url}')" onclick="applyLocalTemplate('${t.url}')"></div>
+               <div class="tpl-footer">
+                 <span class="tpl-tag">Custom</span>
+                 <button class="tpl-delete-btn" onclick="deleteLocalTemplate(${t.id})">
+                   <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                 </button>
+               </div>
+            </div>
+          `
+        }).join('')}
+      </div>
+    `
+    return
+  }
+
+  const f = cfg[activeFieldKey]
   
   updateCoordsLabel(f.x, f.y)
 
+  const visibilityToggle = `
+    <div class="prop-item" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+        <div class="prop-label" style="font-weight:700; color:var(--text-2);">Field Visible</div>
+        <label class="switch-mini">
+          <input type="checkbox" ${f.enabled!==false?'checked':''} onchange="cfg.${activeFieldKey}.enabled=this.checked;saveConfig();renderBadge()" />
+          <span class="slider-mini"></span>
+        </label>
+      </div>
+    </div>
+  `;
+
   if(activeFieldKey==='qr') {
-    p.innerHTML = `
+    p.innerHTML = visibilityToggle + `
       <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.qr.x=+this.value;updateCoordsLabel(+this.value, cfg.qr.y);saveConfig();renderBadge()" /></div>
       <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.qr.y=+this.value;updateCoordsLabel(cfg.qr.x, +this.value);saveConfig();renderBadge()" /></div>
       <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.size}" oninput="cfg.qr.size=+this.value;saveConfig();renderBadge()" /></div>
     `
+  } else if (activeFieldKey==='profile') {
+    p.innerHTML = visibilityToggle + `
+      <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.profile.x=+this.value;updateCoordsLabel(+this.value, cfg.profile.y);saveConfig();renderBadge()" /></div>
+      <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.profile.y=+this.value;updateCoordsLabel(cfg.profile.x, +this.value);saveConfig();renderBadge()" /></div>
+      <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.size}" oninput="cfg.profile.size=+this.value;saveConfig();renderBadge()" /></div>
+    `
   } else {
-    p.innerHTML = `
+    p.innerHTML = visibilityToggle + `
       <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value, cfg.${activeFieldKey}.y);saveConfig();renderBadge()" /></div>
       <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x, +this.value);saveConfig();renderBadge()" /></div>
       <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.fontSize}" oninput="cfg.${activeFieldKey}.fontSize=+this.value;saveConfig();renderBadge()" /></div>
@@ -511,6 +612,11 @@ function renderTools() {
 function updateCoordsLabel(x,y) {
   const el = document.getElementById('coords-label')
   if(el) el.textContent = `${activeFieldKey.toUpperCase()} X: ${x}, Y: ${y}`
+}
+
+function handleTemplateUpload(input) {
+  const file = input.files[0]; if(!file) return
+  const reader = new FileReader(); reader.onload = (e) => { addLocalTemplate(e.target.result) }; reader.readAsDataURL(file)
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }

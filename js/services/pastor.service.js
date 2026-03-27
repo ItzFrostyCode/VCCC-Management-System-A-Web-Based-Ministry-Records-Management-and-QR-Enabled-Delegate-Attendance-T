@@ -109,7 +109,7 @@ const pastorService = {
       notes, current_status_code
     } = data
 
-    const { data: result, error } = await db
+    const { data: results, error } = await db
       .from('pastors')
       .insert({
         full_name: full_name.trim().toUpperCase(),
@@ -124,9 +124,10 @@ const pastorService = {
         current_status_code: current_status_code || 'undeployed'
       })
       .select('id, full_name, wife_name, contact_number, current_status_code')
-      .single()
 
     if (error) throw error
+    if (!results || results.length === 0) throw new Error('Failed to create pastor record.')
+    const result = results[0]
 
     if (result) {
       const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
@@ -156,7 +157,7 @@ const pastorService = {
       notes, current_status_code
     } = data
 
-    const { data: result, error } = await db
+    const { data: results, error } = await db
       .from('pastors')
       .update({
         full_name: full_name.trim().toUpperCase(),
@@ -173,9 +174,10 @@ const pastorService = {
       })
       .eq('id', id)
       .select('id, full_name, wife_name, contact_number, current_status_code')
-      .single()
 
     if (error) throw error
+    if (!results || results.length === 0) throw new Error('Record not found or update unauthorized.')
+    const result = results[0]
 
     if (result) {
       const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null

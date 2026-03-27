@@ -34,13 +34,6 @@ async function loadData(id) {
     document.getElementById('loading-state').style.display = 'none'
     document.getElementById('content-area').style.display = 'block'
 
-    document.getElementById('btn-edit-pastor').onclick = () => {
-      // For now, redirect back to pastors and open edit modal might be complex 
-      // since it's a different page. Ideally, pastors.html could handle this with a URL param.
-      // But let's just show an alert for now or implement a dedicated edit page later.
-      alert('Edit functionality from this view is coming soon. Please edit from the Pastors list for now.')
-    }
-
   } catch (err) {
     console.error('Data load failed:', err)
     document.getElementById('loading-state').innerHTML = `
@@ -55,13 +48,23 @@ async function loadData(id) {
 
 function renderProfile(p) {
   document.getElementById('p-name').textContent = p.full_name
-  document.getElementById('p-avatar-main').innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name)
-  
+  const mainAvatarEl = document.getElementById('p-avatar-main')
+  mainAvatarEl.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name)
+  if (p.pastor_image_url) {
+    mainAvatarEl.style.cursor = 'pointer'
+    mainAvatarEl.onclick = () => openImageViewer(p.pastor_image_url, 'Pastor ' + p.full_name)
+  }
+
+  const wifeAvatarEl = document.getElementById('p-avatar-wife')
   if (p.wife_name) {
-    document.getElementById('p-avatar-wife').innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name)
-    document.getElementById('p-avatar-wife').style.display = 'block'
+    wifeAvatarEl.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name)
+    wifeAvatarEl.style.display = 'block'
+    if (p.wife_image_url) {
+      wifeAvatarEl.style.cursor = 'pointer'
+      wifeAvatarEl.onclick = () => openImageViewer(p.wife_image_url, 'Wife ' + p.wife_name)
+    }
   } else {
-    document.getElementById('p-avatar-wife').style.display = 'none'
+    wifeAvatarEl.style.display = 'none'
   }
 
   const statusMap = {
@@ -76,8 +79,17 @@ function renderProfile(p) {
   document.getElementById('p-status').innerHTML = `<span class="status-badge" style="background:${st.bg}; color:${st.color};">${st.label}</span>`
   
   document.getElementById('p-phone').textContent = p.contact_number || 'No contact provided'
-  document.getElementById('p-bday').textContent = p.birthdate ? 'Born ' + formatDate(p.birthdate) : 'Birthdate unknown'
-  document.getElementById('p-notes').textContent = p.notes || ''
+  
+  const pAge = p.birthdate ? ` (${calculateAge(p.birthdate)} yrs)` : ''
+  document.getElementById('p-bday').textContent = p.birthdate ? 'Born ' + formatDate(p.birthdate) + pAge : 'Birthdate unknown'
+  
+  let notesHtml = p.notes || ''
+  if (p.wife_name) {
+    const wAge = p.wife_birthdate ? ` (${calculateAge(p.wife_birthdate)} yrs)` : ''
+    const wBday = p.wife_birthdate ? formatDate(p.wife_birthdate) : 'unknown'
+    notesHtml = `<strong>Wife:</strong> ${p.wife_name} (Born ${wBday}${wAge})<br><br>${notesHtml}`
+  }
+  document.getElementById('p-notes').innerHTML = notesHtml
 }
 
 function renderStats(p, history, disciples) {
@@ -148,6 +160,25 @@ function renderDisciples(disciples) {
       ${esc(d.full_name)}
     </div>
   `).join('')
+}
+
+function openImageViewer(url, title) {
+  if (!url) return
+  const modal = document.getElementById('modal-image-viewer')
+  const img = document.getElementById('full-image-display')
+  const titleEl = document.getElementById('image-viewer-title')
+  
+  img.src = url
+  titleEl.textContent = title || 'View Image'
+  modal.classList.add('open')
+}
+
+function closeImageViewer() {
+  const modal = document.getElementById('modal-image-viewer')
+  modal.classList.remove('open')
+  setTimeout(() => {
+    document.getElementById('full-image-display').src = ''
+  }, 300)
 }
 
 function formatTimelineDate(d) {

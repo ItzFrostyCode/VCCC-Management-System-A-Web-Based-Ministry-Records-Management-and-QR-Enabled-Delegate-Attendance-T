@@ -22,6 +22,19 @@ function formatDateTime(iso) {
   })
 }
 
+function calculateAge(birthdate) {
+  if (!birthdate) return 0
+  const birthDate = new Date(birthdate)
+  if (isNaN(birthDate.getTime())) return 0
+  const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const m = today.getMonth() - birthDate.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
+}
+
 // ── QR Payload ────────────────────────────────────────────
 // Format: {"t":"PASTOR","id":"uuid"}
 // t = delegate type, id = uuid (for WIFE, id = pastor's uuid)

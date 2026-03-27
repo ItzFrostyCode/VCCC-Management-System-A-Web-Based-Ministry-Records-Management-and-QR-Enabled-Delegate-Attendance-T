@@ -157,7 +157,9 @@ function renderTable() {
         const safeName = esc(d.full_name).replace(/'/g, '&#39;')
         return `
         <div class="data-table-row cols-disciples">
-            <div class="cell-name-primary" data-label="Disciple">${esc(d.full_name)}</div>
+            <div class="cell-name-primary" data-label="Disciple" style="display:flex;align-items:center;gap:10px;">
+                ${getAvatarHtml(d.disciple_image_url, d.full_name)}${esc(d.full_name)}
+            </div>
             <div style="font-size:13px; color:var(--text); font-weight:500;" data-label="Church">${esc(d.church_name) || '—'}</div>
             <div style="font-size:12px; color:var(--text-2); opacity:0.8;" data-label="District">${esc(d.district_name)}</div>
             <div class="row-actions">
@@ -204,6 +206,7 @@ function openCreate() {
     editingId = null
     document.getElementById('item-id').value = ''
     document.getElementById('item-name').value = ''
+    document.getElementById('disciple-image').value = ''
     selModalDistrictFilter.setValue('')
     updateModalChurchOptions('')
     selModalChurch.setValue('')
@@ -222,6 +225,7 @@ function openEdit(id) {
     selModalDistrictFilter.setValue(d.district_id || '')
     updateModalChurchOptions(d.district_id || '')
     selModalChurch.setValue(d.church_id)
+    document.getElementById('disciple-image').value = ''
     
     document.getElementById('modal-title').textContent = 'Edit disciple'
     document.getElementById('modal-form').classList.add('open')
@@ -237,10 +241,21 @@ function closeModal() {
     document.getElementById('modal-form').classList.remove('open')
 }
 
+// Helper function to upload an image to Supabase Storage
+async function uploadFileToSupabase(file, folder) {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${folder}/${Math.random()}.${fileExt}`
+    const { data, error } = await db.storage.from('avatars').upload(fileName, file, { cacheControl: '3600', upsert: true })
+    if (error) throw error
+    const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(fileName)
+    return publicUrl
+}
+
 async function saveItem() {
     const id = document.getElementById('item-id').value
     const name = document.getElementById('item-name').value.trim()
     const churchId = selModalChurch.getValue()
+    const imgFile = document.getElementById('disciple-image').files[0]
 
     if (!name || !churchId) {
         alert('Please fill in both name and church.')
@@ -252,8 +267,25 @@ async function saveItem() {
     btn.textContent = 'Saving...'
 
     try {
-        const data = { full_name: name, church_id: churchId }
+        let finalImageUrl = null
         if (id) {
+            const existing = allDisciples.find(x => x.id === id)
+            if (existing) finalImageUrl = existing.disciple_image_url
+        }
+
+        if (imgFile) {
+            btn.textContent = 'Uploading image...'
+            finalImageUrl = await uploadFileToSupabase(imgFile, 'disciples')
+        }
+
+        const data = { 
+            full_name: name, 
+            church_id: churchId,
+            disciple_image_url: finalImageUrl
+        }
+
+        const isUpdate = id && id !== 'null' && id !== 'undefined'
+        if (isUpdate) {
             await discipleService.update(id, data)
         } else {
             await discipleService.create(data)
@@ -307,6 +339,17 @@ function bindEvents() {
     document.getElementById('btn-delete-confirm').onclick = deleteItem
     document.getElementById('search-input').addEventListener('input', () => { currentPage = 1; renderTable(); })
     document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open') }))
+}
+
+function getAvatarHtml(imageUrl, name) {
+    if (imageUrl) {
+        return `<img src="${imageUrl}" class="avatar-img" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" />`
+    }
+    const initials = String(name || '?').charAt(0).toUpperCase()
+    const charCode = initials.charCodeAt(0)
+    const bgIndex = (charCode % 5) + 1
+    // Reusing the same class system if exists, else inline style
+    return `<div class="avatar-initials bg-avatar-${bgIndex}" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;">${initials}</div>`
 }
 
 function esc(str) {

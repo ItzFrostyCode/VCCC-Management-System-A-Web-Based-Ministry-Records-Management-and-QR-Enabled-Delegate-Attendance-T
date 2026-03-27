@@ -162,6 +162,10 @@ function renderTable() {
         </div>
       </div>` : ''
 
+    const pAge = p.birthdate ? calculateAge(p.birthdate) : '—'
+    const wAge = p.wife_birthdate ? calculateAge(p.wife_birthdate) : '—'
+    const ageDisplay = p.wife_name ? `${pAge} / ${wAge}` : pAge
+
     return `
     <div class="data-table-row cols-pastors">
       <div class="cell-name-primary" data-label="Pastor" title="${esc(p.full_name)}" style="display:flex;align-items:center;">
@@ -173,6 +177,7 @@ function renderTable() {
       <div style="color:var(--text); font-weight:600;" data-label="Contact" title="${esc(p.contact_number)}">${esc(p.contact_number) || '—'}</div>
       <div data-label="Status">${statusBadge}</div>
       <div style="color:var(--text-2); opacity:0.8;" data-label="Birthdate" title="${esc(p.birthdate)}">${esc(p.birthdate) || '—'}</div>
+      <div style="color:var(--text); font-weight:600;" data-label="Age">${ageDisplay}</div>
       <div style="color:var(--text-2); opacity:0.8;" data-label="Since" title="${esc(p.pastoring_start_date)}">${esc(p.pastoring_start_date) || '—'}</div>
       <div class="row-actions">
         <button class="btn-icon" onclick="window.location.href='pastor-view.html?id=${p.id}'" title="View Profile" style="background:hsla(150, 100%, 97%, 1); color:hsl(150, 80%, 35%); border-color:hsla(150, 100%, 90%, 1);">
@@ -246,6 +251,21 @@ function openModal(id = null) {
     document.getElementById('pastoring-start').value = p.pastoring_start_date || ''
     document.getElementById('status-code').value = p.current_status_code || 'undeployed'
 
+    // Show removal options if images exist
+    const pRemoveWrap = document.getElementById('p-img-remove-wrap')
+    const wRemoveWrap = document.getElementById('w-img-remove-wrap')
+    const pRemoveChk  = document.getElementById('remove-p-img')
+    const wRemoveChk  = document.getElementById('remove-w-img')
+
+    pRemoveChk.checked = false
+    wRemoveChk.checked = false
+
+    if (p.pastor_image_url) pRemoveWrap.style.display = 'block'
+    else pRemoveWrap.style.display = 'none'
+
+    if (p.wife_image_url) wRemoveWrap.style.display = 'block'
+    else wRemoveWrap.style.display = 'none'
+
   } else {
     title.textContent = 'Add pastor'
     btnSave.textContent = 'Save pastor'
@@ -259,6 +279,11 @@ function openModal(id = null) {
     document.getElementById('wife-birthdate').value = ''
     document.getElementById('pastoring-start').value = ''
     document.getElementById('status-code').value = 'undeployed'
+
+    document.getElementById('p-img-remove-wrap').style.display = 'none'
+    document.getElementById('w-img-remove-wrap').style.display = 'none'
+    document.getElementById('remove-p-img').checked = false
+    document.getElementById('remove-w-img').checked = false
   }
 
   modal.classList.add('open')
@@ -301,6 +326,12 @@ async function saveItem() {
         finalWifeImageUrl = existingPastor.wife_image_url
       }
     }
+    // Check removal options
+    const pRemove = document.getElementById('remove-p-img').checked
+    const wRemove = document.getElementById('remove-w-img').checked
+
+    if (pRemove) finalPastorImageUrl = null
+    if (wRemove) finalWifeImageUrl = null
 
     // Helper function to upload an image to Supabase Storage
     const uploadFileToSupabase = async (file, folder) => {
@@ -336,21 +367,18 @@ async function saveItem() {
       current_status_code: status
     }
 
-    if (id) {
-      await pastorService.update(id, data)
-    } else {
-      await pastorService.create(data)
-    }
+    const isUpdate = id && id !== 'null' && id !== 'undefined'
+    await (isUpdate ? pastorService.update(id, data) : pastorService.create(data))
 
     closeModal()
     await initData()
     applyFilters()
   } catch (err) {
-    console.error(err)
+    console.error('SAVE_ERROR_DETAILS:', err)
     if (err.code === '23505') {
       alert('This pastor already exists.')
     } else {
-      alert('Failed to save pastor: ' + err.message)
+      alert(`Failed to save pastor: ${err.message || 'Unknown error'}. Check console for details.`)
     }
   } finally {
     btn.disabled = false
@@ -454,9 +482,9 @@ async function openViewModal(id) {
 
   // Grid Details
   document.getElementById('view-contact').textContent = p.contact_number || '—'
-  document.getElementById('view-birthdate').textContent = p.birthdate || '—'
+  document.getElementById('view-birthdate').textContent = p.birthdate ? `${p.birthdate} (${calculateAge(p.birthdate)} yrs)` : '—'
   document.getElementById('view-wife').textContent = p.wife_name || '—'
-  document.getElementById('view-wife-birthdate').textContent = p.wife_birthdate || '—'
+  document.getElementById('view-wife-birthdate').textContent = p.wife_birthdate ? `${p.wife_birthdate} (${calculateAge(p.wife_birthdate)} yrs)` : '—'
   document.getElementById('view-since').textContent = p.pastoring_start_date || '—'
   document.getElementById('view-district').textContent = p.district_name || '—'
   document.getElementById('view-church').textContent = p.church_name || '—'

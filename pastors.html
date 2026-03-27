@@ -61,6 +61,7 @@
           <span>Contact</span>
           <span>Status</span>
           <span>Birthdate</span>
+          <span>Age</span>
           <span>Since</span>
           <span></span>
         </div>
@@ -97,8 +98,24 @@
         <div class="form-field"><label class="form-label">Wife's name <span class="opt">(optional)</span></label><input class="input" type="text" id="wife-name" placeholder="Wife's name" /></div>
       </div>
       <div class="form-row-2">
-        <div class="form-field"><label class="form-label">Pastor Image <span class="opt">(optional)</span></label><input class="input" type="file" id="pastor-image" accept="image/*" /></div>
-        <div class="form-field"><label class="form-label">Wife Image <span class="opt">(optional)</span></label><input class="input" type="file" id="wife-image" accept="image/*" /></div>
+        <div class="form-field">
+          <label class="form-label">Pastor Image <span class="opt">(optional)</span></label>
+          <input class="input" type="file" id="pastor-image" accept="image/*" />
+          <div id="p-img-remove-wrap" style="display:none; margin-top:4px;">
+            <label style="font-size:11px; display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-2);">
+              <input type="checkbox" id="remove-p-img" /> Remove current photo
+            </label>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Wife Image <span class="opt">(optional)</span></label>
+          <input class="input" type="file" id="wife-image" accept="image/*" />
+          <div id="w-img-remove-wrap" style="display:none; margin-top:4px;">
+            <label style="font-size:11px; display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-2);">
+              <input type="checkbox" id="remove-w-img" /> Remove current photo
+            </label>
+          </div>
+        </div>
       </div>
       <div class="form-field"><label class="form-label">Contact number <span class="opt">(optional)</span></label><input class="input" type="text" id="contact-number" placeholder="Enter contact number" /></div>
       <div class="form-row-2">
