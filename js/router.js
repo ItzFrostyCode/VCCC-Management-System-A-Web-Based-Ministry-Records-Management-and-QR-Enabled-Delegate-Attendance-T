@@ -55,15 +55,15 @@ function injectMobileNav() {
         <div style="padding:4px 16px 2px; font-size:10px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em;">Church Org</div>
         <a href="/church.html" class="mob-nav-link" data-page="church">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          Church <span style="font-size:10px;color:var(--text-3);font-weight:400;margin-left:auto;padding:2px 6px;border-radius:4px;background:var(--bg-input);">Soon</span>
-        </a>
-        <a href="/district.html" class="mob-nav-link" data-page="district">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          District <span style="font-size:10px;color:var(--text-3);font-weight:400;margin-left:auto;padding:2px 6px;border-radius:4px;background:var(--bg-input);">Soon</span>
+          Church
         </a>
         <a href="/assignment.html" class="mob-nav-link" data-page="assignment">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
-          Assignment <span style="font-size:10px;color:var(--text-3);font-weight:400;margin-left:auto;padding:2px 6px;border-radius:4px;background:var(--bg-input);">Soon</span>
+          Assignment
+        </a>
+        <a href="/district.html" class="mob-nav-link" data-page="district">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          District
         </a>
 
         <!-- Events -->
@@ -84,11 +84,6 @@ function injectMobileNav() {
 
         <!-- Data -->
         <div style="height:1px; background:var(--border); margin:6px 8px; opacity:0.6;"></div>
-        <div style="padding:4px 16px 2px; font-size:10px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em;">Data</div>
-        <a href="/reports.html" class="mob-nav-link" data-page="reports">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-          Reports
-        </a>
         <a href="/admin_logs.html" class="mob-nav-link admin-only" data-page="logs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           Activity Logs

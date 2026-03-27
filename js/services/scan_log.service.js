@@ -1,7 +1,7 @@
 // Scan Logs Service → scan_logs table
 
 const scanLogService = {
-  async insert(conferenceId, dayId, slotId, delegateId, delegateType, status) {
+  async insert(conferenceId, dayId, slotId, delegateId, delegateName, delegateRole, delegateDistrict, delegateChurch, status) {
     const { data, error } = await db
       .from('scan_logs')
       .insert({
@@ -9,7 +9,11 @@ const scanLogService = {
         day_id: dayId,
         slot_id: slotId,
         delegate_id: delegateId,
-        delegate_type: delegateType || null,
+        delegate_name: delegateName || null,
+        delegate_role: delegateRole || null,
+        delegate_district: delegateDistrict || null,
+        delegate_church: delegateChurch || null,
+        delegate_type: delegateRole || null, // Keeping for backward compatibility constraints
         status: status, // 'SUCCESS' | 'ALREADY_SCANNED' | 'INVALID_TIME'
         timestamp: new Date().toISOString()
       })
@@ -19,6 +23,7 @@ const scanLogService = {
     if (error) throw error
     return data
   },
+
 
   async fetchRecent(conferenceId, limit = 50) {
     const { data, error } = await db

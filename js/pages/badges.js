@@ -82,9 +82,10 @@ function renderModalContent() {
   const cQuery = (window.modalChurQuery || '').toLowerCase()
   const iQuery = (modalSearchQuery || '').toLowerCase()
   
-  const distList = districts.filter(d => !dQuery || d.name.toLowerCase().includes(dQuery))
-  const churList = churches.filter(c => !cQuery || c.name.toLowerCase().includes(cQuery))
+  const distList = districts.filter(d => !dQuery || (d.district_name||'').toLowerCase().includes(dQuery))
+  const churList = churches.filter(c => !cQuery || (c.church_name||'').toLowerCase().includes(cQuery))
   const indList = allDelegates.filter(d => !iQuery || (d.fullName||'').toLowerCase().includes(iQuery)).slice(0, 30)
+
 
   let html = `
     <div class="modal-unified-wrap">
@@ -117,10 +118,11 @@ function renderModalContent() {
             const isSel = modalDistrictsMulti.includes(d.id)
             return `<div class="modal-picker-item" onclick="toggleAdvancedPick('dist','${d.id}')">
               <input type="checkbox" class="modal-picker-cb" ${isSel?'checked':''} />
-              <div class="modal-picker-name">${esc(d.name)}</div>
+              <div class="modal-picker-name">${esc(d.district_name)}</div>
             </div>`
           }).join('')}
         </div>
+
       </div>
 
       <!-- Part 3: Churches -->
@@ -134,10 +136,11 @@ function renderModalContent() {
             const isSel = modalChurchesMulti.includes(c.id)
             return `<div class="modal-picker-item" onclick="toggleAdvancedPick('chur','${c.id}')">
               <input type="checkbox" class="modal-picker-cb" ${isSel?'checked':''} />
-              <div class="modal-picker-name">${esc(c.name)}</div>
+              <div class="modal-picker-name">${esc(c.church_name)}</div>
             </div>`
           }).join('')}
         </div>
+
       </div>
 
       <!-- Part 4: Individual Pick -->
@@ -210,26 +213,38 @@ async function startExport(type) {
   else await executeBatchDownload(filteredDelegates, 'VCCC_Filtered.zip')
 }
 
-// ── Export Engine (Legacy Stable) ───────────────────────────
+// ── Export Engine (Optimized) ───────────────────────────────
 async function executeBatchDownload(targets, zipName) {
   const fill = document.getElementById('batch-fill'), lab = document.getElementById('batch-label'), prog = document.getElementById('batch-progress')
-  if (prog) prog.style.display='block'; const zip = new JSZip(), safe = s => (s||'').replace(/[/\\?%*:|"<>]/g, '_').trim()
+  if (prog) prog.style.display='block'; 
+  const zip = new JSZip(), safe = s => (s||'').replace(/[/\\?%*:|"<>]/g, '_').trim()
+  
   try {
+    // Pre-load template image once to optimize
+    const templateImg = await loadImg(cfg.templateUrl)
+    
     for (let i=0; i<targets.length; i++) {
-      const d = targets[i], canvas = document.createElement('canvas')
-      canvas.width = cfg.canvasWidth; canvas.height = cfg.canvasHeight
-      await drawBadge(canvas, d)
-      const path = `${safe(d.districtName)}/${safe(d.churchName)}/${d.role==='DISCIPLE'?'Disciples/':''}${d.role}_${safe(d.fullName)}.jpg`
-      zip.file(path, canvas.toDataURL('image/jpeg', 0.92).split(',')[1], {base64:true})
-      if (fill) fill.style.width = ((i+1)/targets.length*100)+'%'
-      if (lab) lab.textContent = `Rendering ${i+1}/${targets.length}: ${d.fullName}`
-      if (i%10===0) await new Promise(r=>setTimeout(r, 0))
+        const d = targets[i], canvas = document.createElement('canvas')
+        canvas.width = cfg.canvasWidth; canvas.height = cfg.canvasHeight
+        await drawBadge(canvas, d, templateImg)
+        
+        const path = `${safe(d.districtName)}/${safe(d.churchName)}/${d.role==='DISCIPLE'?'Disciples/':''}${d.role}_${safe(d.fullName)}.jpg`
+        zip.file(path, canvas.toDataURL('image/jpeg', 0.92).split(',')[1], {base64:true})
+        
+        if (fill) fill.style.width = ((i+1)/targets.length*100)+'%'
+        if (lab) lab.textContent = `Rendering ${i+1}/${targets.length}: ${d.fullName}`
+        if (i%10===0) await new Promise(r=>setTimeout(r, 0))
     }
     const blob = await zip.generateAsync({type:'blob'}), a = document.createElement('a')
     a.href=URL.createObjectURL(blob); a.download=zipName; a.click()
-  } catch (err) { console.error('Export Error', err); alert('Export Failed') }
-  finally { if(prog) prog.style.display='none' }
+  } catch (err) { 
+    console.error('Export Error', err); 
+    alert('Export Failed: ' + err.message) 
+  } finally { 
+    if(prog) prog.style.display='none' 
+  }
 }
+
 
 // ── Filtering Logic ──────────────────────────────────────────
 function toggleRole(btn) {
@@ -285,7 +300,18 @@ function switchTab(view) {
 function switchMobileView(v){ switchTab(v==='delegates'?'delegates':'editor') }
 
 // ── Config ───────────────────────────────────────────────────
-const CONFIG_KEY = 'momentum_badge_config_v1', DEFAULT_CONFIG = { canvasWidth:1050, canvasHeight:750, thumbnailUrl:'../assets/2026%20Conf%20ID%20front.png', templateUrl:'../assets/2026%20Conf%20ID%20front.png', name:{x:20,y:350,fontSize:45,fontWeight:'bold',fontStyle:'normal',color:'#111111'}, role:{x:20,y:440,fontSize:75,fontWeight:'bold',fontStyle:'normal',color:'#111111'}, district:{x:20,y:500,fontSize:34,fontWeight:'bold',fontStyle:'normal',color:'#111111'}, church:{x:600,y:700,fontSize:52,fontWeight:'bold',fontStyle:'italic',color:'#ffffff'}, qr:{x:735,y:300,size:293} }
+const CONFIG_KEY = 'momentum_badge_config_v1'
+const DEFAULT_CONFIG = {
+  canvasWidth: 1050,
+  canvasHeight: 750,
+  templateUrl: 'assets/2026%20Conf%20ID%20front.png',
+  name:     { x: 100, y: 350, fontSize: 45, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'center', maxWidth: 850 },
+  role:     { x: 100, y: 410, fontSize: 75, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'center', maxWidth: 850 },
+  district: { x: 100, y: 500, fontSize: 34, fontWeight: 'bold', fontStyle: 'normal', color: '#333333', textAlign: 'center', maxWidth: 850 },
+  church:   { x: 705, y: 665, fontSize: 52, fontWeight: 'bold', fontStyle: 'italic', color: '#ffffff', textAlign: 'center', maxWidth: 850 },
+  qr:       { x: 735, y: 300, size: 293 }
+}
+
 let cfg = getConfig(); function getConfig(){ try{ let s=JSON.parse(localStorage.getItem(CONFIG_KEY))||{}, m={...DEFAULT_CONFIG}; Object.keys(DEFAULT_CONFIG).forEach(k=>{ if(s[k]) m[k]=typeof s[k]==='object'?{...DEFAULT_CONFIG[k],...s[k]}:s[k] }); return m }catch{ return {...DEFAULT_CONFIG} } }
 function saveConfig(){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)) }
 function resetConfig(){ if(confirm('Reset layout?')){ localStorage.removeItem(CONFIG_KEY); cfg={...DEFAULT_CONFIG}; renderTools(); renderBadge() } }
@@ -306,27 +332,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     await requireAuth()
     const [dRes, cRes, pastors, disciples] = await Promise.all([ districtService.fetchAll(), churchService.fetchAll(), pastorService.fetchAll(), discipleService.fetchAll() ])
     districts = dRes; churches = cRes
+    
+    districts.forEach(d => {
+      if (d.theme_color) DISTRICT_COLORS[d.district_name.trim().toUpperCase()] = d.theme_color
+    })
+
     const distMap = {}, churchMap = {}, pastorMap = {}
-    districts.forEach(d => distMap[d.id] = d.name)
-    churches.forEach(c => churchMap[c.id] = { name: c.name, distId: c.district_id })
+    districts.forEach(d => distMap[d.id] = d.district_name)
+    churches.forEach(c => churchMap[c.id] = { name: c.church_name, distId: c.district_id })
+
     allDelegates = []
     pastors.forEach(p => {
-      const dn = distMap[p.district_id]||'Unknown', cn = churchMap[p.church_id]?.name||'No Church'
-      pastorMap[p.id] = { districtId: p.district_id, districtName: dn, churchId: p.church_id, churchName: cn, fullName: p.full_name }
-      allDelegates.push({ id:p.id, fullName:p.full_name, role:'PASTOR', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn })
-      if(p.wife_name) allDelegates.push({ id:p.id, fullName:p.wife_name, role:'WIFE', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, pastorName:p.full_name })
+      const dn = p.district_name || distMap[p.district_id] || ''
+      const cn = p.church_name || churchMap[p.church_id]?.name || ''
+      pastorMap[p.id] = { districtId: p.district_id, districtName: dn, churchId: p.church_id, churchName: cn, fullName: p.full_name, imageUrl: p.pastor_image_url }
+      allDelegates.push({ id:p.id, fullName:p.full_name, role:'PASTOR', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, imageUrl: p.pastor_image_url })
+      if(p.wife_name) {
+        allDelegates.push({ id:p.id, fullName:p.wife_name, role:'WIFE', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, pastorName:p.full_name, imageUrl: p.wife_image_url })
+      }
     })
     disciples.forEach(d => {
-      const p = pastorMap[d.pastor_id]||{}, dn = p.districtName||'Unknown', cn = p.churchName||'No Church'
-      allDelegates.push({ id:d.id, fullName:d.full_name, role:'DISCIPLE', districtId:p.districtId, districtName:dn, churchId:p.churchId, churchName:cn, pastorName:p.fullName||null })
+      allDelegates.push({ id: d.id, fullName: d.full_name, role: 'DISCIPLE', districtId: d.district_id, districtName: d.district_name || '', churchId: d.church_id, churchName: d.church_name || '', imageUrl: null })
     })
 
     const distEl = document.getElementById('filter-district-badge'), churchEl = document.getElementById('filter-church-badge')
-    if (distEl) selFilterDist = createSearchSelect(distEl, districts.map(d => ({ value:d.id, label:d.name })), 'District', (v) => { filterDistVal = v||null; filterChurchVal = null; const fc = churches.filter(c => !filterDistVal || c.district_id === filterDistVal); if(selFilterChurch){ selFilterChurch.setOptions([{value:'',label:'All churches'}, ...fc.map(c=>({value:c.id,label:c.name}))]); selFilterChurch.reset() } applyFilters() })
-    if (churchEl) selFilterChurch = createSearchSelect(churchEl, [{ value:'', label:'All churches' }, ...churches.map(c => ({ value:c.id, label:c.name }))], 'All churches', (v) => { filterChurchVal = v||null; applyFilters() })
+    if (distEl) selFilterDist = createSearchSelect(distEl, districts.map(d => ({ value:d.id, label:d.district_name })), 'District', (v) => { filterDistVal = v||null; filterChurchVal = null; const fc = churches.filter(c => !filterDistVal || c.district_id === filterDistVal); if(selFilterChurch){ selFilterChurch.setOptions([{value:'',label:'All churches'}, ...fc.map(c=>({value:c.id,label:c.church_name}))]); selFilterChurch.reset() } applyFilters() })
+    if (churchEl) selFilterChurch = createSearchSelect(churchEl, [{ value:'', label:'All churches' }, ...churches.map(c => ({ value:c.id, label:c.church_name }))], 'All churches', (v) => { filterChurchVal = v||null; applyFilters() })
+
     applyFilters(); renderTools()
-    
-    // Default tab on mobile
     if (window.innerWidth <= 640) switchTab('delegates')
   } catch (err) { console.error('Init failed:', err) }
 })
@@ -356,32 +389,128 @@ async function renderBadge() {
     badgeCanvas = canvas
   } catch(e) { wrap.innerHTML=`<div style="color:red;font-size:13px;">Error: ${e.message}</div>` }
 }
-async function drawBadge(canvas, d) {
+
+async function drawBadge(canvas, d, preLoadedTemplate = null) {
   const ctx = canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height)
-  try { const img = await loadImg(cfg.templateUrl); ctx.drawImage(img,0,0,canvas.width,canvas.height) } catch(e){}
-  drawText(ctx, d.fullName, cfg.name); drawText(ctx, d.role, cfg.role); drawText(ctx, d.districtName, cfg.district); drawText(ctx, d.churchName, cfg.church)
-  const qrc = document.createElement('canvas'), lib = window.QRCode||window.qrcode; await lib.toCanvas(qrc, encodeQR(d.role, d.id), {width:cfg.qr.size, margin:1}); ctx.drawImage(qrc, cfg.qr.x, cfg.qr.y, cfg.qr.size, cfg.qr.size)
+  try { 
+    const img = preLoadedTemplate || await loadImg(cfg.templateUrl); 
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  } catch(e){}
+
+  drawText(ctx, d.fullName, cfg.name); 
+  drawText(ctx, d.role, cfg.role); 
+  drawText(ctx, d.districtName, cfg.district); 
+  drawText(ctx, d.churchName, cfg.church)
+  
+  const qrc = document.createElement('canvas'), lib = window.QRCode||window.qrcode; 
+  await lib.toCanvas(qrc, encodeQR(d.role, d.id), {width:cfg.qr.size, margin:1}); 
+  ctx.drawImage(qrc, cfg.qr.x, cfg.qr.y, cfg.qr.size, cfg.qr.size)
 }
-function drawText(ctx, t='', f) { ctx.save(); const w=f.fontWeight==='bold'?700:400, s=f.fontStyle==='italic'?'italic ':''; ctx.font=`${s}${w} ${f.fontSize}px "Public Sans", Arial, sans-serif`; ctx.fillStyle=f.color; ctx.fillText(t, f.x, f.y); ctx.restore() }
+
+function drawText(ctx, t='', f) { 
+  if (!t) return
+  ctx.save(); 
+  const weight = f.fontWeight==='bold'?700:400, style=f.fontStyle==='italic'?'italic ':''; 
+  let fSize = f.fontSize;
+  const maxWidth = f.maxWidth || 850;
+  
+  ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
+  while (ctx.measureText(t).width > maxWidth && fSize > 8) {
+    fSize--;
+    ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
+  }
+
+  const tw = ctx.measureText(t).width;
+  const align = f.textAlign || 'left';
+  let drawX = f.x;
+
+  // Prevent negative overflow if centered/right-aligned at a low X coordinate
+  if (align === 'center') {
+    if (drawX - tw/2 < 10) drawX = tw/2 + 10; // Keep at least 10px margin from left
+  } else if (align === 'right') {
+    if (drawX - tw < 10) drawX = tw + 10;
+  } else if (align === 'left') {
+    if (drawX < 10) drawX = 10;
+  }
+
+  ctx.fillStyle = f.color; 
+  ctx.textAlign = align;
+  ctx.textBaseline = 'top'; 
+  ctx.fillText(t, drawX, f.y); 
+  ctx.restore() 
+}
+
 function loadImg(src) { return new Promise((res, rej) => { const img = new Image(); img.crossOrigin='anonymous'; img.onload=()=>res(img); img.onerror=rej; img.src=src }) }
+
 function renderDelegateList() {
   const el = document.getElementById('delegate-list'), cnt = document.getElementById('delegate-count'); if(cnt) cnt.textContent = `${filteredDelegates.length} results`
   if(!el) return; if(!filteredDelegates.length){ el.innerHTML=`<div style="padding:40px 10px;text-align:center;color:var(--text-4)">No matches.</div>`; return }
   el.innerHTML = filteredDelegates.map(d => renderDelCard(d)).join('')
 }
+
 function renderDelCard(d) {
   const c = getDistColor(d.districtName), sel = selectedDelegate?.id===d.id && selectedDelegate?.role===d.role
   const ini = (d.fullName||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()
-  let sub = d.districtName||''; if(d.role==='WIFE') sub=`Spouse of ${d.pastorName||'Pastor'}`; if(d.role==='DISCIPLE') sub=`Under ${d.pastorName||'Pastor'}`
-  return `<button type="button" class="del-card ${sel?'sel':''}" data-id="${d.id}" data-role="${d.role}" style="--district-color:${c}" onclick="selectDelegate('${d.id}','${d.role}')"><div class="del-av" style="background:${c}">${ini}</div><div class="del-info"><div class="del-name">${esc(d.fullName)}</div><div class="del-sub">${esc(sub)}</div></div><span class="del-role-tag tag-${d.role.toLowerCase()}">${d.role}</span></button>`
+  let sub = d.districtName||''; 
+  if(d.role==='WIFE') sub=`Spouse of ${d.pastorName||'Pastor'}`; 
+  if(d.role==='DISCIPLE') sub=d.churchName || 'No Church';
+  
+  const avImg = d.imageUrl ? `<img src="${d.imageUrl}" class="del-av-img" />` : `<div class="del-av-fallback">${ini}</div>`
+  
+  return `
+    <button type="button" class="del-card ${sel?'sel':''}" data-id="${d.id}" data-role="${d.role}" style="--district-color:${c}" onclick="selectDelegate('${d.id}','${d.role}')">
+      <div class="del-av" style="background:${c}">${avImg}</div>
+      <div class="del-info">
+        <div class="del-name">${esc(d.fullName)}</div>
+        <div class="del-sub">${esc(sub)}</div>
+      </div>
+      <span class="del-role-tag tag-${d.role.toLowerCase()}">${d.role}</span>
+    </button>`
 }
-function getDistColor(n) { const nm=(n||'').trim().toLowerCase(), m=nm.match(/(\d+)/); if(nm.includes('palawan')) return DISTRICT_COLORS['Palawan']; if(m && DISTRICT_COLORS[`District ${m[1]}`]) return DISTRICT_COLORS[`District ${m[1]}`]; return DISTRICT_COLORS[n]||'#94a3b8' }
-const DISTRICT_COLORS = { 'District 1':'#6FA4A1', 'District 2':'#8A72A4', 'District 3':'#E3A3A2', 'District 4':'#DC8D38', 'District 5':'#C0C0C0', 'District 6':'#CF4A49', 'District 7':'#406845', 'District 8':'#3D539C', 'District 9':'#E5DE5F', 'Palawan':'#DCDCDC' }
+
+function getDistColor(n) { 
+  const nm = (n||'').trim().toUpperCase()
+  if (DISTRICT_COLORS[nm]) return DISTRICT_COLORS[nm]
+  const m = nm.match(/(\d+)/); 
+  if(m && DISTRICT_COLORS[`DISTRICT ${m[1]}`]) return DISTRICT_COLORS[`DISTRICT ${m[1]}`]
+  return '#94a3b8' 
+}
+let DISTRICT_COLORS = {}
+
 function renderTools() {
   const b = document.getElementById('editor-fields-body'); if(!b) return
   if(!b.querySelector('.editor-toolbar')){ b.innerHTML=`<div class="editor-toolbar"><div class="editor-sel-wrap" id="f-sel-box"></div><div class="editor-prop-wrap" id="editor-properties-body"></div></div>`; selFieldEditor = createSearchSelect(document.getElementById('f-sel-box'), [{value:'name',label:'Name'},{value:'role',label:'Role'},{value:'district',label:'District'},{value:'church',label:'Church'},{value:'qr',label:'QR'}], 'Select...', (v)=>{ if(v){activeFieldKey=v;renderTools()} }); selFieldEditor.setValue(activeFieldKey) }
   const p = document.getElementById('editor-properties-body'), f = cfg[activeFieldKey]
-  if(activeFieldKey==='qr') p.innerHTML = `<div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.qr.x=+this.value;saveConfig();renderBadge()" /></div><div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.qr.y=+this.value;saveConfig();renderBadge()" /></div><div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.size}" oninput="cfg.qr.size=+this.value;saveConfig();renderBadge()" /></div>`
-  else p.innerHTML=`<div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.${activeFieldKey}.x=+this.value;saveConfig();renderBadge()" /></div><div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.${activeFieldKey}.y=+this.value;saveConfig();renderBadge()" /></div><div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.fontSize}" oninput="cfg.${activeFieldKey}.fontSize=+this.value;saveConfig();renderBadge()" /></div><div class="prop-item"><div class="prop-label">Color</div><input type="color" value="${f.color}" onchange="cfg.${activeFieldKey}.color=this.value;saveConfig();renderBadge()" /></div>`
+  
+  updateCoordsLabel(f.x, f.y)
+
+  if(activeFieldKey==='qr') {
+    p.innerHTML = `
+      <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.qr.x=+this.value;updateCoordsLabel(+this.value, cfg.qr.y);saveConfig();renderBadge()" /></div>
+      <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.qr.y=+this.value;updateCoordsLabel(cfg.qr.x, +this.value);saveConfig();renderBadge()" /></div>
+      <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.size}" oninput="cfg.qr.size=+this.value;saveConfig();renderBadge()" /></div>
+    `
+  } else {
+    p.innerHTML = `
+      <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value, cfg.${activeFieldKey}.y);saveConfig();renderBadge()" /></div>
+      <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x, +this.value);saveConfig();renderBadge()" /></div>
+      <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.fontSize}" oninput="cfg.${activeFieldKey}.fontSize=+this.value;saveConfig();renderBadge()" /></div>
+      <div class="prop-item"><div class="prop-label">Max Width</div><input type="number" value="${f.maxWidth||800}" oninput="cfg.${activeFieldKey}.maxWidth=+this.value;saveConfig();renderBadge()" /></div>
+      <div class="prop-item"><div class="prop-label">Align</div>
+        <select class="input" style="height:32px; padding:0 8px; font-size:12px;" onchange="cfg.${activeFieldKey}.textAlign=this.value;saveConfig();renderBadge()">
+          <option value="left" ${f.textAlign==='left'?'selected':''}>Left</option>
+          <option value="center" ${f.textAlign==='center'?'selected':''}>Center</option>
+          <option value="right" ${f.textAlign==='right'?'selected':''}>Right</option>
+        </select>
+      </div>
+      <div class="prop-item"><div class="prop-label">Color</div><input type="color" value="${f.color}" onchange="cfg.${activeFieldKey}.color=this.value;saveConfig();renderBadge()" /></div>
+    `
+  }
 }
+
+function updateCoordsLabel(x,y) {
+  const el = document.getElementById('coords-label')
+  if(el) el.textContent = `${activeFieldKey.toUpperCase()} X: ${x}, Y: ${y}`
+}
+
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }

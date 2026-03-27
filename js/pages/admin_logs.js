@@ -17,6 +17,59 @@ function initEventListeners() {
   document.getElementById('btn-refresh').onclick = loadLogs
   document.getElementById('btn-prev').onclick = prevPage
   document.getElementById('btn-next').onclick = nextPage
+
+  // Modal handlers
+  document.getElementById('btn-create-user').onclick = () => {
+    document.getElementById('create-user-modal').classList.add('open')
+  }
+  const closeModal = () => {
+    document.getElementById('create-user-modal').classList.remove('open')
+    document.getElementById('create-user-form').reset()
+  }
+  document.getElementById('btn-close-modal').onclick = closeModal
+  document.getElementById('btn-close-modal-x').onclick = closeModal
+  
+  document.getElementById('create-user-form').onsubmit = handleCreateUser
+}
+
+async function handleCreateUser(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-save-user');
+  const originalText = btn.textContent;
+  btn.textContent = 'Creating...';
+  btn.disabled = true;
+
+  try {
+    const payload = {
+      p_full_name: document.getElementById('user-fullname').value.trim(),
+      p_username: document.getElementById('user-username').value.trim(),
+      p_password: document.getElementById('user-password').value.trim(),
+      p_role: document.getElementById('user-role').value,
+      p_scope: document.getElementById('user-scope').value.trim()
+    };
+
+    if (payload.p_password.length < 6) {
+        throw new Error('Password must be at least 6 characters.');
+    }
+
+    const { data, error } = await db.rpc('create_user_account', payload);
+    if (error) throw error;
+
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+        await authService.logAudit(currentUser.id, 'CREATE_ACCOUNT', `Created ${payload.p_role} account for ${payload.p_username}`);
+    }
+
+    alert('Account created successfully!');
+    document.getElementById('btn-close-modal').click();
+    loadLogs();
+  } catch (err) {
+    console.error('Account creation error:', err);
+    alert('Failed to create account: ' + (err.message || 'Unknown error. Check console.'));
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
 }
 
 async function loadLogs() {

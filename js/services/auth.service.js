@@ -14,23 +14,31 @@ class AuthService {
 
   async signIn(username, password) {
     try {
-      // 1. Check user
-      const { data: user, error: userError } = await db
-        .from('users')
-        .select('*')
-        .ilike('username', username)
-        .eq('password_hash', password)
-        .single();
+      // 1. Authenticate via Supabase Auth
+      const { data: authData, error: authError } = await db.auth.signInWithPassword({
+        email: username + '@vccc.local',
+        password: password
+      });
 
-      if (userError) {
-        if (userError.code === 'PGRST116') throw new Error('Invalid username or password');
-        if (userError.message?.includes('does not exist')) throw new Error('Database table "users" not found. Please run the SQL script in Supabase.');
-        throw new Error(userError.message || 'Verification failed');
+      console.log('--- LOGIN DB RESPONSE ---');
+      console.log('Data (Auth):', authData);
+      console.log('Error:', authError);
+
+      if (authError) {
+        throw new Error(authError.message || 'Invalid username or password');
       }
 
-      if (!user) {
-        throw new Error('Invalid username or password');
+      if (!authData || !authData.session) {
+        throw new Error('Failed to initialize secure session.');
       }
+
+      const user = {
+        id: authData.user.id,
+        username: authData.user.user_metadata?.username || username,
+        full_name: authData.user.user_metadata?.full_name,
+        role: authData.user.user_metadata?.role,
+        scope: authData.user.user_metadata?.scope
+      };
 
       // 2. Invalidate ALL existing active sessions for this user (Auto-Logout/Kick-out old devices)
       const { error: clearError } = await db
@@ -90,6 +98,7 @@ class AuthService {
     const user = this.getCurrentUser();
     if (!user) {
        this.clearSession();
+       await db.auth.signOut();
        return;
     }
     
@@ -104,6 +113,7 @@ class AuthService {
        console.error("Signout error", err);
     } finally {
       this.clearSession();
+      await db.auth.signOut();
     }
   }
 

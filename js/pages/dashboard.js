@@ -1,136 +1,321 @@
+// js/pages/dashboard.js
+
 document.addEventListener('DOMContentLoaded', async () => {
   await requireAuth()
-  loadStats()
-  loadRecentScans()
-  loadSlotAttendance()
+  
+  // Initial load
+  await loadDashboardAll();
+  
+  // Polling every 10 seconds for real-time updates
+  setInterval(loadDashboardAll, 10000);
+});
 
-  document.getElementById('global-search').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.value.trim()) {
-      window.location.href = `/pastors?q=${encodeURIComponent(e.target.value.trim())}`
-    }
-  })
-})
-
-async function loadStats() {
-  const [
-    { count: pastorCount },
-    { count: wifeCount   },
-    { count: discCount   },
-    { count: scanCount   },
-    { count: confCount   }
-  ] = await Promise.all([
-    db.from('pastors').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
-    db.from('pastors').select('*', { count: 'exact', head: true }).eq('is_deleted', false).not('wife_name', 'is', null),
-    db.from('disciples').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
-    db.from('attendance').select('*', { count: 'exact', head: true }),
-    db.from('conferences').select('*', { count: 'exact', head: true }).eq('is_deleted', false)
-  ])
-
-  const total = (pastorCount || 0) + (wifeCount || 0) + (discCount || 0)
-
-  const update = (id, val) => {
-    const el = document.getElementById(id)
-    if (el) {
-      el.classList.remove('skeleton')
-      el.style.height = 'auto'
-      el.style.width = 'auto'
-      el.textContent = val || 0
-    }
+async function loadDashboardAll() {
+  try {
+    await Promise.all([
+      loadKpis(),
+      loadChurchStatus(),
+      loadPastorDeployment(),
+      loadConferenceLive(),
+      loadScanFeed(),
+      loadAlerts(),
+      loadUserActivity(),
+      renderCalendar()
+    ]);
+  } catch (err) {
+    console.error("Dashboard Load Error: ", err);
   }
-
-  update('stat-pastors',  pastorCount)
-  update('stat-disciples', discCount)
-  update('stat-total',    total)
-  update('stat-scans',    scanCount)
-  update('stat-confs',    confCount)
-
-  const wifeEl = document.getElementById('stat-wife-count')
-  if (wifeEl) wifeEl.textContent = `${wifeCount || 0} with wife registered`
 }
 
-async function loadRecentScans() {
-  const el = document.getElementById('recent-scans-list')
+async function loadKpis() {
   try {
-    const rows = await attendanceService.fetchRecent(8)
-    if (!rows.length) {
-      el.innerHTML = `<div class="empty-state"><div class="empty-title">No scans yet</div></div>`
-      return
-    }
-    el.innerHTML = rows.map(r => `
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
-        <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;${avatarStyle(r.delegate_type)}">${(r.delegate_type||'?')[0]}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:500;">ID: ${(r.delegate_id||'').slice(0,8)}...</div>
-          <div style="font-size:11px;color:var(--text-3);">${formatDateTime(r.scanned_at)}</div>
-        </div>
-        <span class="pill ${pillClass(r.delegate_type)}">${r.delegate_type}</span>
+    const kpis = await dashboardService.getKpis();
+    const c = document.getElementById('kpi-container');
+    
+    c.innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-icon si-red"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><polyline points="9 9 9 9"/></svg></div>
+        <div class="kpi-info"><div class="kpi-val">${kpis.districts}</div><div class="kpi-label">Districts</div></div>
       </div>
-    `).join('')
-  } catch(e) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-title">Could not load scans</div></div>`
+      <div class="kpi-card">
+        <div class="kpi-icon si-blue"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div class="kpi-info"><div class="kpi-val">${kpis.churches}</div><div class="kpi-label">Churches</div></div>
+      </div>
+      <div class="kpi-card">
+         <div class="kpi-icon si-purple"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+         <div class="kpi-info"><div class="kpi-val">${kpis.pastors}</div><div class="kpi-label">Active Pastors</div></div>
+      </div>
+       <div class="kpi-card">
+         <div class="kpi-icon si-green"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a8 8 0 0 1 16 0v2"/></svg></div>
+         <div class="kpi-info"><div class="kpi-val">${kpis.disciples}</div><div class="kpi-label">Total Disciples</div></div>
+      </div>
+       <div class="kpi-card">
+         <div class="kpi-icon si-purple"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
+         <div class="kpi-info"><div class="kpi-val">${kpis.activeAssignments}</div><div class="kpi-label">Active Assignments</div></div>
+      </div>
+       <div class="kpi-card">
+         <div class="kpi-icon si-blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></div>
+         <div class="kpi-info"><div class="kpi-val">${kpis.conferences}</div><div class="kpi-label">Total Conferences</div></div>
+      </div>
+       <div class="kpi-card">
+         <div class="kpi-icon si-green"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></div>
+         <div class="kpi-info"><div class="kpi-val">${kpis.todayAttendance}</div><div class="kpi-label">Today Attendance</div></div>
+      </div>
+       <div class="kpi-card" style="${kpis.scanErrors > 0 ? 'border-color:var(--red); box-shadow:0 0 0 2px var(--red-light);' : ''}">
+         <div class="kpi-icon si-red"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+         <div class="kpi-info"><div class="kpi-val">${kpis.scanErrors}</div><div class="kpi-label" style="color:${kpis.scanErrors>0 ? 'var(--red)' : ''}">Scan Errors (Today)</div></div>
+      </div>
+    `;
+  } catch (e) {
+    console.error(e);
   }
 }
 
-async function loadSlotAttendance() {
-  const el = document.getElementById('meal-bars-list')
+async function loadChurchStatus() {
+  const tbody = document.getElementById('church-panel');
   try {
-    // Get latest conference
-    const { data: confs } = await db.from('conferences')
-      .select('id,title')
-      .eq('is_deleted', false)
-      .order('start_date', { ascending: false })
-      .limit(1)
-
-    if (!confs || !confs.length) {
-      el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text-3)">No conferences yet. <a href="/conferences.html" style="color:var(--red)">Add one</a></div>`
-      return
+    const data = await dashboardService.getChurchStatus();
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="center text-3">No churches found.</td></tr>`;
+      return;
     }
-
-    // Fetch time_slots for this conference
-    const slots = await conferenceService.fetchTimeSlots(confs[0].id)
-    if (!slots || !slots.length) {
-      el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text-3)">No time slots configured for this conference.</div>`
-      return
-    }
-
-    // Count attendance per slot
-    const counts = await Promise.all(slots.map(async s => {
-      const { count } = await db.from('attendance')
-        .select('*', { count: 'exact', head: true })
-        .eq('slot_id', s.id)
-      return count || 0
-    }))
-
-    const max     = Math.max(...counts, 1)
-    const EMOJI   = { MORNING: '🌅', AFTERNOON: '☀️', EVENING: '🌙' }
-
-    el.innerHTML = slots.map((s, i) => {
-      const label = `${EMOJI[s.name] || '⏱'} ${s.name}`
-      const pct   = Math.round(counts[i] / max * 100)
-      return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--border);">
-          <div style="font-size:12px;color:var(--text-2);width:120px;flex-shrink:0;">${label}</div>
-          <div style="flex:1;height:8px;background:var(--bg-input);border-radius:4px;overflow:hidden;">
-            <div style="height:100%;width:${pct}%;background:var(--red);border-radius:4px;transition:width .4s;"></div>
-          </div>
-          <div style="font-size:12px;font-weight:600;width:28px;text-align:right;">${counts[i]}</div>
-        </div>`
-    }).join('')
-  } catch(e) {
-    console.error('loadSlotAttendance:', e)
-    el.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text-3)">Could not load attendance data.</div>`
+    
+    tbody.innerHTML = data.slice(0, 7).map(c => `
+      <tr>
+        <td style="font-weight:600;">${c.name}</td>
+        <td><span class="dist-color-dot" style="background:${c.color}"></span>${c.district}</td>
+        <td>${c.pastor}</td>
+        <td><span class="status-badge ${c.statusCode === 'active' ? 'status-active' : 'status-critical'}">${c.status}</span></td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="4" class="center text-3">Error loading churches.</td></tr>`;
   }
 }
 
-function avatarStyle(type) {
-  if (type === 'PASTOR')   return 'background:var(--red-light);color:var(--red-dark);'
-  if (type === 'WIFE')     return 'background:var(--blue-bg);color:var(--blue);'
-  if (type === 'DISCIPLE') return 'background:var(--green-bg);color:var(--green);'
-  return ''
+async function loadPastorDeployment() {
+  const tbody = document.getElementById('pastor-panel');
+  try {
+    const data = await dashboardService.getPastorDeployment();
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="3" class="center text-3">No pastors found.</td></tr>`;
+      return;
+    }
+    
+    // Sort to show undeployed at top
+    data.sort((a,b) => {
+      if (a.status === 'undeployed' && b.status !== 'undeployed') return -1;
+      if (b.status === 'undeployed' && a.status !== 'undeployed') return 1;
+      return 0;
+    });
+
+    tbody.innerHTML = data.slice(0, 7).map(p => {
+      let badgeCls = 'status-neutral';
+      let statusFormat = p.status.toUpperCase();
+      if (p.status === 'active') badgeCls = 'status-active';
+      else if (p.status === 'undeployed') badgeCls = 'status-critical';
+      else if (p.status === 'transferred') badgeCls = 'status-warning';
+
+      return `
+      <tr>
+        <td style="font-weight:600;">${p.name}</td>
+        <td>${p.church}</td>
+        <td><span class="status-badge ${badgeCls}">${statusFormat}</span></td>
+      </tr>
+    `}).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="3" class="center text-3">Error loading pastors.</td></tr>`;
+  }
 }
-function pillClass(type) {
-  if (type === 'PASTOR')   return 'pill-pastor'
-  if (type === 'WIFE')     return 'pill-wife'
-  if (type === 'DISCIPLE') return 'pill-disciple'
-  return 'pill-gray'
+
+async function loadConferenceLive() {
+  const el = document.getElementById('cal-live-panel');
+  try {
+    const data = await dashboardService.getConferenceLive();
+    if (!data) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-desc">No active conference found.</div></div>`;
+      return;
+    }
+
+    let statsHTML = `<div style="margin-bottom: 12px; font-weight:600; font-size:15px; color:var(--red); display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          ACTIVE: ${data.title}
+        </div>`;
+    
+    if (Object.keys(data.slots).length === 0) {
+      statsHTML += `<div class="text-3">No slots configured.</div>`;
+    } else {
+      statsHTML += `<div style="display:flex; flex-direction:column; gap:8px;">`;
+      for (const [slot, count] of Object.entries(data.slots)) {
+        statsHTML += `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-input); padding:10px 14px; border-radius:8px;">
+            <span style="font-weight:600; font-size:13px; color:var(--text-2);">${slot}</span>
+            <span style="font-weight:700; font-size:16px;">${count} <span style="font-weight:400; font-size:12px; color:var(--text-3);">scans</span></span>
+          </div>
+        `;
+      }
+      statsHTML += `</div>`;
+    }
+
+    el.innerHTML = statsHTML;
+  } catch(e) {
+    el.innerHTML = `<div class="text-3 center">Error loading config.</div>`;
+  }
+}
+
+async function loadScanFeed() {
+  const el = document.getElementById('scan-panel');
+  try {
+    const data = await dashboardService.getScanFeed();
+    if (!data.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-desc">No scans recorded yet.</div></div>`;
+      return;
+    }
+
+    el.innerHTML = data.map(s => {
+      const isSuccess = s.status === 'SUCCESS';
+      const statusWrap = isSuccess ? 
+        `<span class="scan-status-ok"><span class="scan-status-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> ${s.status}</span>` :
+        `<span class="scan-status-err"><span class="scan-status-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span> ${s.status}</span>`;
+
+      return `
+      <div class="dash-list-row scan-feed-item">
+        <div class="scan-feed-header">
+           <div class="scan-time">[${formatTimeOnly(s.timestamp)}]</div>
+           ${statusWrap}
+        </div>
+        <div class="scan-delegate">${s.delegate_name || 'Unknown Delegate'} ${s.delegate_role ? `(${s.delegate_role})` : ''}</div>
+      </div>
+    `}).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="text-3 center">Feed error.</div>`;
+  }
+}
+
+async function loadAlerts() {
+  const el = document.getElementById('alerts-panel');
+  try {
+    const alerts = await dashboardService.getAlerts();
+    if (!alerts.length) {
+      el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:#4ade80;fill:none;stroke-width:2;"><polyline points="20 6 9 17 4 12"/></svg><div class="text-2 mt-8">System Healthy. No alerts.</div></div>`;
+      return;
+    }
+
+    const iconMap = {
+      scan_error: '<svg viewBox="0 0 24 24"><polyline points="3 7 12 18 21 7"/></svg>',
+      no_pastor: '<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="15" y2="22"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+      undeployed_pastor: '<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="19" y1="18" x2="19.01" y2="18"/></svg>'
+    };
+
+    el.innerHTML = alerts.map(a => `
+      <div class="alert-item">
+        <div class="alert-icon">${iconMap[a.type] || iconMap.scan_error}</div>
+        <div>
+          <div class="alert-content">${a.message}</div>
+          <div class="alert-time">${formatDateTimeRelative(a.time)}</div>
+        </div>
+      </div>
+    `).join('');
+
+  } catch (e) {
+    el.innerHTML = `<div class="text-3 center">Error loading alerts.</div>`;
+  }
+}
+
+async function loadUserActivity() {
+  const el = document.getElementById('activity-panel');
+  try {
+    const acts = await dashboardService.getUserActivity();
+    if (!acts.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-desc">No recent activity.</div></div>`;
+      return;
+    }
+
+    el.innerHTML = acts.map(a => `
+      <div class="dash-list-row activity-item">
+        <div class="activity-dot"></div>
+        <div>
+           <div class="activity-text"><span class="activity-actor">${a.actor}</span>: ${a.details || a.action}</div>
+           <div class="activity-time">${formatDateTimeRelative(a.time)}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="text-3 center">Error loading logs.</div>`;
+  }
+}
+
+// Minimal calendar renderer
+async function renderCalendar() {
+  const el = document.getElementById('calendar-widget');
+  try {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    
+    // Fetch conferences to check dates
+    const { data: confs } = await db.from('conferences').select('start_date, end_date').eq('is_deleted', false);
+    
+    const isConferenceDate = (dateObj) => {
+      // Return true if Date is within start_date & end_date across all confs
+      const time = dateObj.getTime();
+      return (confs || []).some(c => {
+         if(!c.start_date || !c.end_date) return false;
+         const start = new Date(c.start_date).getTime();
+         const end = new Date(c.end_date).getTime();
+         return time >= start && time <= end;
+      });
+    };
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    
+    let html = `
+      <div class="cal-header">
+        <div class="cal-month">${monthNames[currentMonth]} ${currentYear}</div>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-day-name">S</div><div class="cal-day-name">M</div><div class="cal-day-name">T</div>
+        <div class="cal-day-name">W</div><div class="cal-day-name">T</div><div class="cal-day-name">F</div><div class="cal-day-name">S</div>
+    `;
+
+    for (let i = 0; i < firstDay; i++) {
+       html += `<div class="cal-day empty"></div>`;
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+       const cellDate = new Date(currentYear, currentMonth, d);
+       const isToday = d === today.getDate() ? 'today' : '';
+       const isConf = isConferenceDate(cellDate) ? 'conference' : '';
+       
+       html += `<div class="cal-day ${isToday} ${isConf}">${d}</div>`;
+    }
+
+    html += `</div>`;
+    el.innerHTML = html;
+
+  } catch (e) {
+    el.innerHTML = `<div class="text-3 center">Error loading calendar.</div>`;
+  }
+}
+
+
+function formatTimeOnly(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateTimeRelative(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const now = new Date();
+  const diffSec = Math.floor((now - d) / 1000);
+  
+  if (diffSec < 60) return `Just now`;
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return `${Math.floor(diffSec / 86400)}d ago`;
 }

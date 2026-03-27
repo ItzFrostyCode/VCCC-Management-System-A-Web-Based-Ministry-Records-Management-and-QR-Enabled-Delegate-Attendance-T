@@ -8,9 +8,22 @@ let editingConfId = null
 let deletingConfId = null
 let managingConfId = null
 
+// Reporting state (Fused from reports.js)
+let allDelegates    = []
+let rawAttendance   = []
+let conferenceDays  = []
+let globalReportData = []
+let currentConference = null
+let currentMeals    = []
+let currentTimeSlots = []
+let currentRoleFilter  = 'ALL'
+let refreshInterval   = null
+let currentFetchId     = 0
+
 document.addEventListener('DOMContentLoaded', async () => {
   await requireAuth()
   try {
+    await initDelegateData()
     await reloadData()
   } catch (e) {
     console.error('Initial load failed:', e)
@@ -19,6 +32,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Bind events regardless so +New Conference button works
   bindEvents()
 })
+
+async function initDelegateData() {
+  try {
+    const [pastors, disciples] = await Promise.all([
+      pastorService.fetchAll(),
+      discipleService.fetchAll()
+    ])
+    allDelegates = []
+    pastors.forEach(p => {
+      allDelegates.push({
+        id: p.id, fullName: p.full_name, role: 'PASTOR', church: p.church_name || '', district: p.district_name || '', attendanceKey: `PASTOR_${p.id}`
+      })
+      if (p.wife_name && p.wife_name.trim()) {
+        allDelegates.push({
+          id: p.id, fullName: p.wife_name, role: 'WIFE', church: p.church_name || '', district: p.district_name || '', attendanceKey: `WIFE_${p.id}`
+        })
+      }
+    })
+    disciples.forEach(d => {
+      allDelegates.push({
+        id: d.id, fullName: d.full_name, role: 'DISCIPLE', church: d.church_name || '', district: d.district_name || '', attendanceKey: `DISCIPLE_${d.id}`
+      })
+    })
+  } catch (err) { console.error('Failed to load delegates:', err) }
+}
 
 async function reloadData() {
   allConfs = await conferenceService.fetchAll()
@@ -51,6 +89,10 @@ function renderList() {
           </div>
         </div>
         <div class="btn-action-group" style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-ghost" title="View Report" onclick="openReport('${c.id}')" style="height:32px; padding: 0 10px; border:1px solid var(--border);">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+            Report
+          </button>
           <a href="/scanner.html?confId=${c.id}" class="btn btn-primary" style="height:32px; padding: 0 12px;">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
             Scan
@@ -389,8 +431,129 @@ function bindEvents() {
   )
 }
 
-function esc(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+// ── Fused Reporting Logic (Migrated from reports.js) ──────────────────
+window.openReport = async function(id) {
+  const conf = allConfs.find(c => c.id === id)
+  if (!conf) return
+  currentConference = conf
+  document.getElementById('report-title').textContent = conf.theme || conf.title
+  document.getElementById('main-view').style.display = 'none'
+  document.getElementById('report-view').style.display = 'flex'
+  await loadGlobalReport(id)
+}
+
+window.closeReport = function() {
+  if (refreshInterval) clearInterval(refreshInterval)
+  refreshInterval = null
+  document.getElementById('main-view').style.display = 'block'
+  document.getElementById('report-view').style.display = 'none'
+  currentConference = null
+}
+
+async function loadGlobalReport(confId) {
+  const fetchId = ++currentFetchId
+  if (refreshInterval) clearInterval(refreshInterval)
+  
+  try {
+    const [days, attendance, meals, timeSlots] = await Promise.all([
+      conferenceService.fetchDays(confId),
+      attendanceService.fetchByConference(confId),
+      mealService.fetchByConference(confId),
+      conferenceService.fetchTimeSlots(confId)
+    ])
+    if (fetchId !== currentFetchId) return
+    conferenceDays = days || []; rawAttendance = attendance || []; currentMeals = meals || []; currentTimeSlots = timeSlots || []
+    
+    // Process Data (reused logic)
+    const slotLookup = {}; currentTimeSlots.forEach(s => slotLookup[s.id] = s)
+    const dayLookup = {}; conferenceDays.forEach(d => dayLookup[d.id] = d)
+    currentMeals = currentMeals.map(m => ({ ...m, day_number: dayLookup[m.day_id]?.day_index ?? '?', slot_name: slotLookup[m.slot_id]?.name ?? m.name ?? 'Slot' }))
+
+    const reportMap = new Map()
+    allDelegates.forEach(d => reportMap.set(d.attendanceKey, { delegate: d, scans: {}, totalScans: 0 }))
+    rawAttendance.forEach(a => {
+      const key = `${a.delegate_type}_${a.delegate_id}`
+      if (reportMap.has(key)) {
+        const record = reportMap.get(key); const scanKey = `${a.day_id}_${a.slot_id}`
+        if (!record.scans[scanKey]) { record.scans[scanKey] = a; record.totalScans++ }
+      }
+    })
+    globalReportData = Array.from(reportMap.values())
+    renderSummaryCards(); renderGlobalList()
+
+    const now = new Date(); const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    document.getElementById('last-updated').textContent = `Last updated: ${timeStr}`
+
+    if (!refreshInterval && fetchId === currentFetchId) {
+      refreshInterval = setInterval(() => { if (document.visibilityState === 'visible') refreshReport(true) }, 60000)
+    }
+  } catch (err) { alert('Error: ' + err.message) }
+}
+
+function renderSummaryCards() {
+  const container = document.getElementById('summary-cards')
+  const total = allDelegates.length
+  let active = 0; let m = 0; let p = 0; let w = 0; let d = 0
+  globalReportData.forEach(row => {
+    if (row.totalScans > 0) { active++; if (row.delegate.role === 'PASTOR') p++; if (row.delegate.role === 'WIFE') w++; if (row.delegate.role === 'DISCIPLE') d++; } else m++
+  })
+  const pct = total ? Math.round((active / total) * 100) : 0
+  container.innerHTML = `
+    <div class="stat-card accent"><div class="stat-val">${active} / ${total}</div><div class="stat-label">Active Attendees</div><div style="margin-top:10px; height:5px; background:var(--bg-input); border-radius:3px; overflow:hidden;"><div style="width:${pct}%; height:100%; background:var(--red);"></div></div><div class="stat-sub">${pct}% Engagement</div></div>
+    <div class="stat-card"><div class="stat-val">${m}</div><div class="stat-label">Not Checked In</div></div>
+    <div class="stat-card"><div class="stat-label" style="margin-bottom:8px;">Breakdown</div><div style="font-size:12px; display:flex; flex-direction:column; gap:4px;"><div>Pastors: ${p}</div><div>Wives: ${w}</div><div>Disciples: ${d}</div></div></div>
+  `
+  updateChipCounts()
+}
+
+window.filterByRole = (role) => {
+  currentRoleFilter = role
+  document.querySelectorAll('.role-chip').forEach(c => c.classList.toggle('active', c.id === ('chip-' + role.toLowerCase())))
+  renderGlobalList()
+}
+
+function updateChipCounts() {
+  const counts = { ALL: 0, PASTOR: 0, WIFE: 0, DISCIPLE: 0 }
+  globalReportData.forEach(row => { counts.ALL++; counts[row.delegate.role]++ })
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val }
+  set('count-all', counts.ALL); set('count-pastor', counts.PASTOR); set('count-wife', counts.WIFE); set('count-disciple', counts.DISCIPLE)
+}
+
+window.renderGlobalList = function() {
+  const container = document.getElementById('global-list-body')
+  const search = document.getElementById('log-search').value.toLowerCase().trim()
+  let list = [...globalReportData]
+  if (currentRoleFilter !== 'ALL') list = list.filter(row => row.delegate.role === currentRoleFilter)
+  if (search) list = list.filter(row => row.delegate.fullName.toLowerCase().includes(search) || row.delegate.church.toLowerCase().includes(search))
+  list.sort((a,b) => (a.totalScans === 0 && b.totalScans > 0) ? -1 : (a.totalScans > 0 && b.totalScans === 0) ? 1 : a.delegate.fullName.localeCompare(b.delegate.fullName))
+  
+  if (!list.length) { container.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;">No results.</td></tr>'; return }
+
+  container.innerHTML = list.map(row => {
+    const d = row.delegate; const active = row.totalScans > 0
+    return `<tr><td style="padding:12px 16px;"><strong>${esc(d.fullName)}</strong><br><small>${d.role}</small></td><td style="padding:12px 16px;">${esc(d.church)}<br><small>${esc(d.district)}</small></td><td style="padding:12px 16px;"><span class="pill ${active ? 'pill-green' : ''}">${active ? 'Active' : 'Missing'}</span></td></tr>`
+  }).join('')
+}
+
+window.refreshReport = async function(isAuto = false) {
+  if (currentConference) await loadGlobalReport(currentConference.id)
+}
+
+window.exportToExcel = function() {
+  if (!globalReportData.length) return alert('No data')
+  const aoa = [[`Conference: ${currentConference.title}`], []]
+  const slotOrder = { 'MORNING': 1, 'AFTERNOON': 2, 'EVENING': 3 }
+  const sortedMeals = [...currentMeals].sort((a, b) => a.day_number !== b.day_number ? (a.day_number - b.day_number) : (slotOrder[a.slot_name] - slotOrder[b.slot_name]))
+  const headers = ['Role', 'Name', 'Church', 'Status', 'Total']
+  sortedMeals.forEach(m => headers.push(`Day ${m.day_number} ${m.slot_name}`))
+  aoa.push(headers)
+  globalReportData.forEach(row => {
+    const line = [row.delegate.role, row.delegate.fullName, row.delegate.church, row.totalScans > 0 ? 'Active' : 'Missing', row.totalScans]
+    sortedMeals.forEach(m => line.push(row.scans[`${m.day_id}_${m.slot_id}`] ? 'Scanned' : '--'))
+    aoa.push(line)
+  })
+  const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Report')
+  XLSX.writeFile(wb, `Report_${currentConference.title}.xlsx`)
 }
 
 function formatDate(iso) {

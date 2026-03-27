@@ -6,7 +6,7 @@ const SUPABASE_ANON = 'sb_publishable_zOwCaEW4IE_isQ321B9UyQ_4SuHdom-'
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_ANON)
 
-console.log('🚀 VCCC is now connected to LIVE Supabase Database')
+console.log('VCCC is now connected to LIVE Supabase Database')
 
 // ── Auth guard & helpers ──────────────────────────────────
 async function requireAuth() {

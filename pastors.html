@@ -22,16 +22,14 @@
       <!-- Church Org -->
       <div class="sidebar-divider"></div>
       <a href="/church.html"      class="nav-item" data-page="church"      data-tip="Church"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
-      <a href="/district.html"    class="nav-item" data-page="district"    data-tip="District"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>
       <a href="/assignment.html"  class="nav-item" data-page="assignment"  data-tip="Assignment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><polyline points="9 9 9 9"/></svg></a>
+      <a href="/district.html"    class="nav-item" data-page="district"    data-tip="District"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>
       <!-- Events -->
       <div class="sidebar-divider"></div>
       <a href="/conferences.html" class="nav-item" data-page="conferences" data-tip="Conferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></a>
       <a href="/badges.html"      class="nav-item" data-page="badges"      data-tip="Badges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></a>
       <a href="/scanner.html"     class="nav-item" data-page="scanner"     data-tip="Scanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg></a>
-      <!-- Data -->
       <div class="sidebar-divider"></div>
-      <a href="/reports.html"     class="nav-item" data-page="reports"     data-tip="Reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></a>
       <a href="/admin_logs.html"  class="nav-item admin-only" data-page="logs" data-tip="Activity Logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></a>
     </nav>
     <div class="sidebar-bottom">
@@ -61,8 +59,9 @@
           <span>Pastor</span>
           <span>Wife</span>
           <span>Contact</span>
-          <span>District</span>
-          <span>Church</span>
+          <span>Status</span>
+          <span>Birthdate</span>
+          <span>Since</span>
           <span></span>
         </div>
         <div id="table-body">
@@ -93,11 +92,32 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="item-id" />
-      <div class="form-field"><label class="form-label">Full name <span class="req">*</span></label><input class="input" type="text" id="item-name" placeholder="Pastor full name" /></div>
-      <div class="form-field"><label class="form-label">Wife's name <span class="opt">(optional)</span></label><input class="input" type="text" id="wife-name" placeholder="Wife's name" /></div>
+      <div class="form-row-2">
+        <div class="form-field"><label class="form-label">Full name <span class="req">*</span></label><input class="input" type="text" id="item-name" placeholder="Pastor full name" /></div>
+        <div class="form-field"><label class="form-label">Wife's name <span class="opt">(optional)</span></label><input class="input" type="text" id="wife-name" placeholder="Wife's name" /></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-field"><label class="form-label">Pastor Image <span class="opt">(optional)</span></label><input class="input" type="file" id="pastor-image" accept="image/*" /></div>
+        <div class="form-field"><label class="form-label">Wife Image <span class="opt">(optional)</span></label><input class="input" type="file" id="wife-image" accept="image/*" /></div>
+      </div>
       <div class="form-field"><label class="form-label">Contact number <span class="opt">(optional)</span></label><input class="input" type="text" id="contact-number" placeholder="Enter contact number" /></div>
-      <div class="form-field"><label class="form-label">District <span class="req">*</span></label><div id="modal-district-sel"></div></div>
-      <div class="form-field"><label class="form-label">Church <span class="req">*</span></label><div id="modal-church-sel"></div><div class="form-hint" id="church-hint">Select a district first</div></div>
+      <div class="form-row-2">
+        <div class="form-field"><label class="form-label">Pastor Birthdate <span class="opt">(optional)</span></label><input class="input" type="date" id="birthdate" /></div>
+        <div class="form-field"><label class="form-label">Wife Birthdate <span class="opt">(optional)</span></label><input class="input" type="date" id="wife-birthdate" /></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-field"><label class="form-label">Pastoring Start <span class="opt">(optional)</span></label><input class="input" type="date" id="pastoring-start" /></div>
+        <div class="form-field">
+          <label class="form-label">Status</label>
+          <select id="status-code" class="input">
+            <option value="active">Active</option>
+            <option value="redirection">Redirection</option>
+            <option value="transferred">Transferred</option>
+            <option value="pullout">Pullout</option>
+            <option value="undeployed">Undeployed</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="btn-save">Save pastor</button></div>
   </div>
@@ -116,10 +136,59 @@
   </div>
 </div>
 
+<!-- Image Viewer Modal -->
+<div class="modal-overlay" id="modal-image-viewer">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title" id="image-viewer-title">View Image</span>
+      <button class="modal-close" onclick="closeImageViewer()">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding: 10px; background: #000; display: flex; align-items: center; justify-content: center; min-height: 300px;">
+      <img id="full-image-display" class="modal-img-full" src="" />
+    </div>
+  </div>
+</div>
+
+<!-- Pastor Details View -->
+<div class="modal-overlay" id="modal-view-details">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">Pastor Profile</span>
+      <button class="modal-close" onclick="document.getElementById('modal-view-details').classList.remove('open')">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid var(--border);">
+        <div id="view-avatar-container" class="avatar-container" style="width:80px; height:80px; margin:0;"></div>
+        <div>
+          <h2 id="view-pastor-name" style="margin:0; font-size:20px; color:var(--text);"></h2>
+          <div id="view-status-badge" style="margin-top:8px;"></div>
+        </div>
+      </div>
+      
+      <div class="detail-grid">
+        <div class="detail-item"><span class="detail-label">Contact Number</span><span class="detail-value" id="view-contact"></span></div>
+        <div class="detail-item"><span class="detail-label">Birthdate</span><span class="detail-value" id="view-birthdate"></span></div>
+        <div class="detail-item"><span class="detail-label">Wife's Name</span><span class="detail-value" id="view-wife"></span></div>
+        <div class="detail-item"><span class="detail-label">Wife's Birthdate</span><span class="detail-value" id="view-wife-birthdate"></span></div>
+        <div class="detail-item"><span class="detail-label">Pastoring Since</span><span class="detail-value" id="view-since"></span></div>
+        <div class="detail-item"><span class="detail-label">District</span><span class="detail-value" id="view-district"></span></div>
+        <div class="detail-item"><span class="detail-label">Church</span><span class="detail-value" id="view-church"></span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="btn-view-edit">Edit Pastor</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-view-details').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
 <script src="./js/libs/supabase.min.js"></script>
 <script src="./js/services/auth.service.js"></script>
 <script src="./js/supabase.js"></script><script src="./js/router.js"></script><script src="./js/utils/helper.js"></script>
-<script src="./js/utils/data-manager.js"></script>
 <script src="./js/services/district.service.js"></script><script src="./js/services/church.service.js"></script>
 <script src="./js/services/pastor.service.js"></script>
 <script src="./js/pages/pastors.js"></script>

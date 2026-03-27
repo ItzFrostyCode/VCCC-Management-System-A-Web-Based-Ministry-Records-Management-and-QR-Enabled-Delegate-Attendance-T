@@ -729,20 +729,34 @@ async function handleScan(qrRaw) {
 
     // Resolve Name from DB and VERIFY EXISTENCE
     let displayName = null
+    let displayRole = payload.type || 'Delegate'
+    let displayDistrict = 'Unknown'
+    let displayChurch = 'No Church'
+    
     try {
       if (payload.type === 'PASTOR') {
         const p = await pastorService.fetchById(payload.id)
-        if (p) displayName = p.full_name
+        if (p) {
+          displayName = p.full_name
+          displayDistrict = p.district_name || 'Unknown'
+          displayChurch = p.church_name || 'No Church'
+        }
       } else if (payload.type === 'WIFE') {
         const p = await pastorService.fetchById(payload.id)
         if (p) {
           // Verify wife actually exists on the pastor record before accepting
           if (!p.wife_name) throw new Error("No wife registered")
           displayName = p.wife_name
+          displayDistrict = p.district_name || 'Unknown'
+          displayChurch = p.church_name || 'No Church'
         }
       } else if (payload.type === 'DISCIPLE') {
         const d = await discipleService.fetchById(payload.id)
-        if (d) displayName = d.full_name
+        if (d) {
+          displayName = d.full_name
+          displayDistrict = d.district_name || 'Unknown'
+          displayChurch = d.church_name || 'No Church'
+        }
       }
     } catch (e) {
       console.warn('Lookup error:', e)
@@ -761,7 +775,7 @@ async function handleScan(qrRaw) {
       currentSession.day.id,
       currentSession.slot.id,
       payload.id,
-      payload.type
+      displayRole
     )
 
     await scanLogService.insert(
@@ -769,11 +783,16 @@ async function handleScan(qrRaw) {
       currentSession.day.id,
       currentSession.slot.id,
       payload.id,
-      displayName, // Log the Resolved Name, not the Type
+      displayName, // New: correct name saving
+      displayRole, // New: correct role saving
+      displayDistrict, // New: district
+      displayChurch, // New: church
       'SUCCESS'
     )
 
-    await showResult('success', displayName, `${payload.type || 'Delegate'} scan recorded`)
+    const metaSubtitle = `<span style="font-weight:700;letter-spacing:0.05em;color:var(--brand-main);">${displayRole}</span> &bull; ${esc(displayDistrict)}<br><span style="opacity:0.8;font-size:12px;">${esc(displayChurch)}</span>`
+    
+    await showResult('success', displayName, metaSubtitle, true)
     await refreshLogs()
     setStatus(`✔ Scan successful: ${displayName}`, 'success')
   } catch (err) {
@@ -847,7 +866,13 @@ function showResult(type, delegateName, subtitle) {
     iconEl.innerHTML = iconSvg
     nameEl.textContent = delegateName ? esc(delegateName) : '—'
     statusEl.textContent = statusText
-    metaEl.textContent = subtitle || ''
+    
+    if (arguments[3] === true) { // if extraHtml flag is true
+      metaEl.innerHTML = subtitle || ''
+    } else {
+      metaEl.textContent = subtitle || ''
+    }
+    
     overlay.classList.remove('hidden')
 
     setTimeout(() => {
@@ -909,8 +934,9 @@ function applyLogFilter(logs, filter, search) {
 
   if (search) {
     out = out.filter(l =>
-      (l.delegate_type || '').toLowerCase().includes(search) ||
-      (l.delegate_id || '').toLowerCase().includes(search)
+      (l.delegate_name || l.delegate_type || '').toLowerCase().includes(search) || // Fallback to type if name is missing from legacy data
+      (l.delegate_church || '').toLowerCase().includes(search) ||
+      (l.delegate_district || '').toLowerCase().includes(search)
     )
   }
 
@@ -939,8 +965,13 @@ function buildLogRows(list) {
     const day = confDays.find(d => d.id === log.day_id)
     const slotEmoji = SLOT_EMOJI[slot?.name] || '⏱'
     const dayLabel = day ? `Day ${day.day_index}` : ''
-    const nameLabel = log.delegate_type ? esc(log.delegate_type) : 'Unknown'
-    const idShort = log.delegate_id ? String(log.delegate_id).slice(-5) : '?'
+    
+    // Fallback logic for legacy logs that stored the name in the delegate_type column
+    const isLegacy = !log.delegate_name && log.delegate_type && log.delegate_type !== 'PASTOR' && log.delegate_type !== 'WIFE' && log.delegate_type !== 'DISCIPLE';
+    const nameLabel = log.delegate_name ? esc(log.delegate_name) : (isLegacy ? esc(log.delegate_type) : 'Unknown')
+    const roleLabel = log.delegate_role || (isLegacy ? '' : log.delegate_type) || ''
+    const orgLabel = log.delegate_church ? `${esc(log.delegate_district)} &bull; ${esc(log.delegate_church)}` : ''
+
 
     let rowCls = ''
     let statusCls = ''
@@ -965,10 +996,14 @@ function buildLogRows(list) {
         <div class="log-time">${timeStr}</div>
         <div class="log-name-cell">
           <div class="log-name">${nameLabel}</div>
-          <div class="log-sub">${slotEmoji} ${slot?.name || '?'} ${dayLabel ? '· ' + dayLabel : ''} · #${idShort}</div>
+          <div class="log-sub">
+            <span style="font-weight:600;color:var(--text-2);">${roleLabel}</span> 
+            ${orgLabel ? ' &bull; ' + orgLabel : ''}
+          </div>
         </div>
         <div class="log-status-cell ${statusCls}">${statusIcon} ${statusLabel}</div>
       </div>`
+
   }).join('')
 }
 

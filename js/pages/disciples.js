@@ -1,10 +1,16 @@
-let allPastors = []
+let allChurches = []
+let allDistricts = []
 let allDisciples = []
 let currentPage = 1
 const ITEMS_PER_PAGE = 20
 let editingId = null
 let deletingId = null
-let selModalPastor = null
+let selModalChurch = null
+let selModalDistrictFilter = null
+let selFilterDistrict = null
+let selFilterPastor = null
+let allPastors = []
+let filteredCount = 0
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -25,51 +31,84 @@ document.addEventListener('DOMContentLoaded', async () => {
 })
 
 function initUI() {
-    selModalPastor = createSearchSelect(
-        document.getElementById('modal-pastor-sel'),
+    selModalChurch = createSearchSelect(
+        document.getElementById('modal-church-sel'),
         [],
-        'Select Pastor'
+        'Select Church'
     )
+
+    selModalDistrictFilter = createSearchSelect(
+        document.getElementById('modal-district-filter'),
+        [],
+        'All Districts'
+    )
+
+    // When district filter changes, update church options
+    selModalDistrictFilter.onChange = (distId) => {
+        updateModalChurchOptions(distId)
+    }
+
+    selFilterDistrict = createSearchSelect(
+        document.getElementById('filter-district'),
+        [],
+        'All Districts'
+    )
+    selFilterDistrict.onChange = () => { currentPage = 1; renderTable(); }
+
+    selFilterPastor = createSearchSelect(
+        document.getElementById('filter-pastor'),
+        [],
+        'All Pastors'
+    )
+    selFilterPastor.onChange = () => { currentPage = 1; renderTable(); }
 }
 
-
+function updateModalChurchOptions(districtId) {
+    let filtered = allChurches
+    if (districtId) {
+        filtered = allChurches.filter(c => c.district_id === districtId)
+    }
+    selModalChurch.setOptions(filtered.map(c => ({ value: c.id, label: c.church_name })))
+}
 
 async function initData() {
     try {
         const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
         const userRole = user ? user.role : null;
 
-        const [p, d] = await Promise.all([
-            pastorService.fetchAll(),
-            discipleService.fetchAll()
+        const [ch, dists, d, p] = await Promise.all([
+            churchService.fetchAll(),
+            districtService.fetchAll(),
+            discipleService.fetchAll(),
+            pastorService.fetchAll()
         ])
 
-        allPastors = p.sort((a,b) => a.full_name.localeCompare(b.full_name))
-        let disciples = d.sort((a,b) => a.full_name.localeCompare(b.full_name));
+        allChurches = (ch || []).sort((a,b) => a.church_name.localeCompare(b.church_name))
+        allDistricts = (dists || []).sort((a,b) => a.district_name.localeCompare(b.district_name))
+        allDisciples = (d || []).sort((a,b) => a.full_name.localeCompare(b.full_name))
+        allPastors = (p || []).sort((a,b) => a.full_name.localeCompare(b.full_name))
 
-        if (userRole === 'Staff') {
-            allDisciples = disciples;
-        } else if (userRole === 'Admin') {
-            allDisciples = disciples;
-        } else {
-            allDisciples = [];
-        }
+        selModalDistrictFilter.setOptions([
+            { value: '', label: 'All Districts' },
+            ...allDistricts.map(d => ({ value: d.id, label: d.district_name }))
+        ])
 
-        allDisciples = allDisciples.map(disc => {
-            const pastor = allPastors.find(p => p.id === disc.pastor_id)
-            return {
-                ...disc,
-                pastor_name: pastor ? pastor.full_name : 'Unknown',
-                district_name: pastor ? pastor.district_name : '—',
-                church_name: pastor ? pastor.church_name : '—'
-            }
-        })
+        selFilterDistrict.setOptions([
+            { value: '', label: 'All Districts' },
+            ...allDistricts.map(d => ({ value: d.id, label: d.district_name }))
+        ])
 
-        selModalPastor.setOptions(allPastors.map(p => ({ value: p.id, label: p.full_name })))
+        selFilterPastor.setOptions([
+            { value: '', label: 'All Pastors' },
+            ...allPastors.map(p => ({ value: p.id, label: p.full_name }))
+        ])
+        
+        updateModalChurchOptions('')
         renderTable()
     } catch(e) {
         console.error(e)
-        alert('Error loading data')
+        const msg = e.message || 'Error loading data'
+        alert(msg)
     }
 }
 
@@ -77,12 +116,29 @@ function renderTable() {
     const body = document.getElementById('table-body')
     const countEl = document.getElementById('count-label')
     const search = document.getElementById('search-input').value.toLowerCase()
+    const distId = selFilterDistrict ? selFilterDistrict.getValue() : ''
+    const pastorId = selFilterPastor ? selFilterPastor.getValue() : ''
 
-    let filtered = allDisciples.filter(d => d.full_name.toLowerCase().includes(search) || d.pastor_name.toLowerCase().includes(search) || d.church_name.toLowerCase().includes(search))
+    let filtered = allDisciples.filter(d => {
+        const matchesSearch = d.full_name.toLowerCase().includes(search) || 
+                              d.church_name.toLowerCase().includes(search) || 
+                              d.district_name.toLowerCase().includes(search)
+        
+        const matchesDistrict = !distId || d.district_id === distId
 
-    if (countEl) countEl.textContent = `${filtered.length} disciples`
+        let matchesPastor = true
+        if (pastorId) {
+            const pastor = allPastors.find(p => p.id === pastorId)
+            matchesPastor = pastor && d.church_id === pastor.church_id
+        }
 
-    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+        return matchesSearch && matchesDistrict && matchesPastor
+    })
+
+    filteredCount = filtered.length
+    if (countEl) countEl.textContent = `${filteredCount} disciples`
+
+    const totalPages = Math.ceil(filteredCount / ITEMS_PER_PAGE)
     if (currentPage > totalPages) currentPage = totalPages || 1
 
     const start = (currentPage - 1) * ITEMS_PER_PAGE
@@ -102,9 +158,8 @@ function renderTable() {
         return `
         <div class="data-table-row cols-disciples">
             <div class="cell-name-primary" data-label="Disciple">${esc(d.full_name)}</div>
-            <div style="font-size:13px; color:var(--text); font-weight:500;" data-label="Pastor">${esc(d.pastor_name) || '—'}</div>
+            <div style="font-size:13px; color:var(--text); font-weight:500;" data-label="Church">${esc(d.church_name) || '—'}</div>
             <div style="font-size:12px; color:var(--text-2); opacity:0.8;" data-label="District">${esc(d.district_name)}</div>
-            <div style="font-size:12px; color:var(--text-2); opacity:0.8;" data-label="Church">${esc(d.church_name)}</div>
             <div class="row-actions">
                 <button class="btn-icon btn-edit" onclick="openEdit('${d.id}')" title="Edit">
                   <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -119,7 +174,7 @@ function renderTable() {
 `}).join('')
 
     document.getElementById('pagination').style.display = 'flex'
-    document.getElementById('page-info').textContent = `Showing ${start + 1}-${Math.min(start + ITEMS_PER_PAGE, filtered.length)} of ${filtered.length}`
+    document.getElementById('page-info').textContent = `Showing ${start + 1}-${Math.min(start + ITEMS_PER_PAGE, filteredCount)} of ${filteredCount}`
     document.getElementById('btn-prev').disabled = (currentPage === 1)
     document.getElementById('btn-next').disabled = (currentPage === totalPages || totalPages === 0)
 }
@@ -128,21 +183,30 @@ function prevPage() {
     if (currentPage > 1) {
         currentPage--;
         renderTable()
+        scrollToTableTop()
     }
 }
 
 function nextPage() {
-    if (currentPage < Math.ceil(allDisciples.length/ITEMS_PER_PAGE)) {
+    if (currentPage < Math.ceil(filteredCount / ITEMS_PER_PAGE)) {
         currentPage++;
         renderTable()
+        scrollToTableTop()
     }
+}
+
+function scrollToTableTop() {
+    const el = document.querySelector('.data-table')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function openCreate() {
     editingId = null
     document.getElementById('item-id').value = ''
     document.getElementById('item-name').value = ''
-    selModalPastor.setValue('')
+    selModalDistrictFilter.setValue('')
+    updateModalChurchOptions('')
+    selModalChurch.setValue('')
     document.getElementById('modal-title').textContent = 'Add disciple'
     document.getElementById('modal-form').classList.add('open')
 }
@@ -153,7 +217,12 @@ function openEdit(id) {
     editingId = id
     document.getElementById('item-id').value = id
     document.getElementById('item-name').value = d.full_name
-    selModalPastor.setValue(d.pastor_id)
+    
+    // Set district filter first to ensure the church is available in options
+    selModalDistrictFilter.setValue(d.district_id || '')
+    updateModalChurchOptions(d.district_id || '')
+    selModalChurch.setValue(d.church_id)
+    
     document.getElementById('modal-title').textContent = 'Edit disciple'
     document.getElementById('modal-form').classList.add('open')
 }
@@ -171,10 +240,10 @@ function closeModal() {
 async function saveItem() {
     const id = document.getElementById('item-id').value
     const name = document.getElementById('item-name').value.trim()
-    const pastorId = selModalPastor.getValue()
+    const churchId = selModalChurch.getValue()
 
-    if (!name || !pastorId) {
-        alert('Please fill in both name and pastor.')
+    if (!name || !churchId) {
+        alert('Please fill in both name and church.')
         return
     }
 
@@ -183,7 +252,7 @@ async function saveItem() {
     btn.textContent = 'Saving...'
 
     try {
-        const data = { full_name: name, pastor_id: pastorId }
+        const data = { full_name: name, church_id: churchId }
         if (id) {
             await discipleService.update(id, data)
         } else {
@@ -194,7 +263,7 @@ async function saveItem() {
     } catch (err) {
         console.error(err)
         if (err.code === '23505') {
-            alert('This disciple already exists for this pastor.')
+            alert('This disciple already exists for this church.')
         } else {
             alert('Failed to save disciple: ' + err.message)
         }
@@ -221,9 +290,8 @@ async function deleteItem() {
 function exportCSV() {
     downloadCSV('disciples.csv', allDisciples.map(d => ({
         'Full Name': d.full_name,
-        'Pastor': d.pastor_name,
-        'District': d.district_name,
-        'Church': d.church_name
+        'Church': d.church_name,
+        'District': d.district_name
     })))
 }
 

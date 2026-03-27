@@ -9,7 +9,7 @@
 /* Deskstop Table Layout */
 .cols-logs {
     display: grid;
-    grid-template-columns: 140px 180px 120px 1fr 180px;
+    grid-template-columns: 140px 180px 180px 1fr 180px;
     gap: 12px;
     align-items: center;
 }

@@ -74,16 +74,14 @@
       <!-- Church Org -->
       <div class="sidebar-divider"></div>
       <a href="/church.html"      class="nav-item" data-page="church"      data-tip="Church"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
-      <a href="/district.html"    class="nav-item" data-page="district"    data-tip="District"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>
       <a href="/assignment.html"  class="nav-item" data-page="assignment"  data-tip="Assignment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><polyline points="9 9 9 9"/></svg></a>
+      <a href="/district.html"    class="nav-item" data-page="district"    data-tip="District"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>
       <!-- Events -->
       <div class="sidebar-divider"></div>
       <a href="/conferences.html" class="nav-item active" data-page="conferences" data-tip="Conferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></a>
       <a href="/badges.html"      class="nav-item" data-page="badges"      data-tip="Badges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></a>
       <a href="/scanner.html"     class="nav-item" data-page="scanner"     data-tip="Scanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg></a>
-      <!-- Data -->
       <div class="sidebar-divider"></div>
-      <a href="/reports.html"     class="nav-item" data-page="reports"     data-tip="Reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></a>
       <a href="/admin_logs.html"  class="nav-item admin-only" data-page="logs" data-tip="Activity Logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></a>
     </nav>
     <div class="sidebar-bottom">
@@ -96,14 +94,74 @@
   <div class="app-main">
     <header class="topbar"><div class="topbar-title">Conferences</div></header>
     <main class="page-content">
-      <div class="page-header">
-        <div class="page-header-info"><span class="page-header-title">Conferences</span></div>
-        <button class="btn btn-primary btn-lg" id="btn-add">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
-          New Conference
-        </button>
+      <!-- MAIN LIST VIEW -->
+      <div id="main-view">
+        <div class="page-header">
+          <div class="page-header-info"><span class="page-header-title">Conferences</span></div>
+          <button class="btn btn-primary btn-lg" id="btn-add">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
+            New Conference
+          </button>
+        </div>
+        <div id="conf-list"><div class="skel-card skeleton"></div><div class="skel-card skeleton" style="margin-top:10px;"></div></div>
       </div>
-      <div id="conf-list"><div class="skel-card skeleton"></div><div class="skel-card skeleton" style="margin-top:10px;"></div></div>
+
+      <!-- REPORT VIEW (Hidden by default) -->
+      <div id="report-view" style="display:none; flex-direction:column; gap:20px;">
+        <div class="page-header">
+          <div class="page-header-info" style="flex-direction:column; align-items:flex-start; gap:2px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button class="btn btn-ghost" onclick="closeReport()" style="width:36px; padding:0; height:36px; border-radius:50%;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
+              <span class="page-header-title" id="report-title">Conference Report</span>
+            </div>
+            <span id="last-updated" style="font-size:11px; color:var(--text-3); font-weight:500; margin-left:48px;"></span>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-ghost" onclick="refreshReport()" style="width:38px; padding:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
+            <button class="btn btn-primary" onclick="exportToExcel()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Export</button>
+          </div>
+        </div>
+
+        <!-- Summary Stat Cards -->
+        <div class="report-stats" id="summary-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px;">
+          <!-- Populated via JS -->
+        </div>
+
+        <!-- Delegate Table Card -->
+        <div class="card">
+          <div class="table-toolbar" style="display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+            <div class="table-toolbar-title" style="font-size:14px; font-weight:700; color:var(--text); flex:1;">Delegate Status</div>
+            <div class="search-wrap" style="max-width:280px; height:38px;">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="log-search" placeholder="Search delegates..." oninput="renderGlobalList()" autocomplete="off" />
+            </div>
+          </div>
+
+          <!-- Role Filter Chips -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--bg-input);">
+            <button class="role-chip active" id="chip-all"       onclick="filterByRole('ALL')"     >All <span class="chip-count" id="count-all">0</span></button>
+            <button class="role-chip"        id="chip-pastor"    onclick="filterByRole('PASTOR')"  >Pastors <span class="chip-count" id="count-pastor">0</span></button>
+            <button class="role-chip"        id="chip-wife"      onclick="filterByRole('WIFE')"    >Wives <span class="chip-count" id="count-wife">0</span></button>
+            <button class="role-chip"        id="chip-disciple"  onclick="filterByRole('DISCIPLE')">Disciples <span class="chip-count" id="count-disciple">0</span></button>
+          </div>
+
+          <!-- Table -->
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+              <thead>
+                <tr style="background:var(--bg-input);">
+                  <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; border-bottom:1px solid var(--border);">Delegate</th>
+                  <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; border-bottom:1px solid var(--border);">Church / District</th>
+                  <th style="padding:11px 16px; font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; border-bottom:1px solid var(--border);">Status</th>
+                </tr>
+              </thead>
+              <tbody id="global-list-body">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </div>
@@ -175,11 +233,15 @@
   </div>
 </div>
 
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script src="js/libs/supabase.min.js"></script>
 <script src="js/services/auth.service.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/router.js"></script>
 <script src="js/utils/helper.js"></script>
+<script src="js/utils/formatters.js"></script>
+<script src="js/services/pastor.service.js"></script>
+<script src="js/services/disciple.service.js"></script>
 <script src="js/services/conference.service.js"></script>
 <script src="js/services/meal.service.js"></script>
 <script src="js/services/attendance.service.js"></script>

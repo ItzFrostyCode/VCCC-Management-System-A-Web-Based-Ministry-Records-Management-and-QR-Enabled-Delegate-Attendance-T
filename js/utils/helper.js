@@ -180,6 +180,7 @@ function createSearchSelect(container, options = [], placeholder = 'Select...', 
     trigger.classList.add('filled')
     close()
     if (onChange) onChange(value, label)
+    if (api.onChange) api.onChange(value, label)
   }
 
   function open() {
@@ -226,7 +227,8 @@ function createSearchSelect(container, options = [], placeholder = 'Select...', 
   })
 
   // Public API
-  return {
+  const api = {
+    onChange: null,
     getValue: ()    => selectedValue,
     setValue: (val) => {
       const opt = currentOptions.find(o => o.value === val)
@@ -259,4 +261,5 @@ function createSearchSelect(container, options = [], placeholder = 'Select...', 
       if (dropdown.parentNode) dropdown.parentNode.removeChild(dropdown)
     }
   }
+  return api
 }

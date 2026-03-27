@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pastor Profile — VCCC DAVAO MS</title>
+  <link rel="stylesheet" href="./css/app.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
+  <style>
+    /* Specific styles for Pastor View */
+    .profile-hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      gap: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+    .profile-hero::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, var(--red-light) 0%, transparent 70%);
+      opacity: 0.1;
+      pointer-events: none;
+    }
+    .profile-avatars {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+    .profile-avatar-main {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 4px solid var(--surface);
+      box-shadow: 0 0 0 1px var(--border), var(--shadow-md);
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .profile-avatar-wife {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 2px solid var(--surface);
+      box-shadow: 0 0 0 1px var(--border), var(--shadow-sm);
+      overflow: hidden;
+      margin-top: -30px;
+      margin-left: 60px;
+      cursor: pointer;
+    }
+    .profile-info { flex: 1; }
+    .profile-name {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .profile-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--red); }
+    .stat-label { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; }
+
+    .view-section {
+      margin-bottom: 32px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title svg { width: 20px; height: 20px; color: var(--red); }
+
+    .history-timeline {
+      position: relative;
+      padding-left: 24px;
+    }
+    .history-timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -24px; top: 6px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--red);
+      z-index: 1;
+    }
+    .timeline-item.active .timeline-dot { background: var(--red); }
+    .timeline-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .disciple-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .disciple-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a href="/" class="sidebar-logo"><img src="assets/VCCC-Logo.png" class="sidebar-logo-img" alt="Logo" /></a>
+    <nav class="sidebar-nav" id="sidebar-nav-container">
+      <!-- Injected by router.js or kept for consistency -->
+      <a href="/index.html" class="nav-item" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>
+      <a href="/pastors.html" class="nav-item active" data-page="pastors"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg></a>
+    </nav>
+  </aside>
+  <div class="app-main">
+    <header class="topbar">
+      <button class="btn-icon" onclick="history.back()" style="margin-right:12px;">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="topbar-title">Pastor Profile</div>
+    </header>
+    <main class="page-content">
+      <div id="loading-state" style="padding:100px; text-align:center;">
+        <div class="skeleton" style="width:80px; height:80px; border-radius:50%; margin: 0 auto 16px;"></div>
+        <div class="skeleton" style="width:200px; height:24px; margin: 0 auto;"></div>
+      </div>
+
+      <div id="content-area" style="display:none;">
+        <div class="profile-hero">
+          <div class="profile-avatars">
+            <div id="p-avatar-main" class="profile-avatar-main"></div>
+            <div id="p-avatar-wife" class="profile-avatar-wife"></div>
+          </div>
+          <div class="profile-info">
+            <div id="p-name" class="profile-name"></div>
+            <div class="profile-meta">
+              <span id="p-status"></span>
+              <span id="p-phone" class="pill pill-ghost"></span>
+              <span id="p-bday" class="pill pill-ghost"></span>
+            </div>
+            <div style="font-size:13px; color:var(--text-2); max-width: 600px;" id="p-notes"></div>
+          </div>
+          <div class="profile-actions" style="position:absolute; top:32px; right:32px;">
+             <button class="btn btn-primary" id="btn-edit-pastor"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Years of Service</div>
+            <div id="stat-years" class="stat-value">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Churches Served</div>
+            <div id="stat-churches" class="stat-value">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Disciples</div>
+            <div id="stat-disciples" class="stat-value">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Current Role</div>
+            <div id="stat-role" class="stat-value" style="font-size:16px;">—</div>
+          </div>
+        </div>
+
+        <div class="view-section">
+          <h3 class="section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Assignment History</h3>
+          <div id="assignment-history" class="history-timeline">
+            <!-- Injected -->
+          </div>
+        </div>
+
+        <div class="view-section">
+          <h3 class="section-title"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Disciples</h3>
+          <div id="disciple-list" class="disciple-list">
+            <!-- Injected -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="./js/libs/supabase.min.js"></script>
+<script src="./js/services/auth.service.js"></script>
+<script src="./js/supabase.js"></script>
+<script src="./js/router.js"></script>
+<script src="./js/utils/helper.js"></script>
+<script src="./js/services/district.service.js"></script>
+<script src="./js/services/church.service.js"></script>
+<script src="./js/services/pastor.service.js"></script>
+<script src="./js/services/assignment.service.js"></script>
+<script src="./js/services/disciple.service.js"></script>
+<script src="./js/pages/pastor-view.js"></script>
+</body>
+</html>

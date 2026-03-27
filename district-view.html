@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>District Dashboard — VCCC DAVAO MS</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="icon" type="image/png" href="assets/VCCC-Logo.png">
+  <style>
+    .district-header { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; margin-bottom:24px; overflow:hidden; }
+    .district-hero { height:120px; background:var(--red); padding:24px 32px; display:flex; align-items:flex-end; }
+    .district-hero-title { color:#fff; font-size:28px; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; text-shadow:0 2px 4px rgba(0,0,0,0.1); }
+    
+    .district-info-bar { padding:20px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px; }
+    .leader-profile { display:flex; align-items:center; gap:16px; }
+    .leader-avatar { width:64px; height:64px; border-radius:50%; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; border:4px solid #fff; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-top:-32px; position:relative; z-index:2; overflow:hidden; }
+    
+    .view-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px; }
+    .stat-box { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:20px; }
+    .stat-box-val { font-size:24px; font-weight:800; color:var(--text); margin-bottom:4px; }
+    .stat-box-label { font-size:12px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:0.02em; }
+    
+    .church-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; transition:all 0.2s; cursor:pointer; }
+    .church-card:hover { border-color:var(--red); transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,0.05); }
+    
+    .church-info { display:flex; align-items:center; gap:14px; }
+    .church-icon { width:40px; height:40px; border-radius:10px; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; }
+    
+    .church-name { font-weight:700; color:var(--text); font-size:15px; margin-bottom:2px; }
+    .church-pastor { font-size:13px; color:var(--text-3); font-weight:500; }
+    
+    .status-badge { padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; }
+    .status-occupied { background:#e8f5e9; color:#2e7d32; }
+    .status-vacant { background:#ffebee; color:#c62828; border:1px solid rgba(198,40,40,0.1); }
+    
+    #loading-state { padding:100px 0; text-align:center; color:var(--text-3); font-weight:500; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a href="/index.html" class="sidebar-logo">
+      <img src="assets/VCCC-Logo.png" class="sidebar-logo-img" alt="VCCC Logo" />
+    </a>
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- Side navigation injected or hardcoded -->
+    </nav>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-left" style="display:flex; align-items:center; gap:12px;">
+        <a href="district.html" class="btn btn-ghost" style="width:36px; padding:0; height:36px; border-radius:50%;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></a>
+        <div class="topbar-title">District View</div>
+      </div>
+    </header>
+
+    <div id="loading-state">
+      <div class="spinning"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+      <p style="margin-top:16px;">Loading District Dashboard...</p>
+    </div>
+
+    <main class="page-content" id="content-area" style="display:none;">
+      <!-- District Header -->
+      <div class="district-header">
+        <div class="district-hero" id="district-hero">
+          <div class="district-hero-title" id="d-name-hero">DISTRICT NAME</div>
+        </div>
+        <div class="district-info-bar">
+          <div class="leader-profile">
+            <div class="leader-avatar" id="leader-avatar"></div>
+            <div>
+              <div style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase;">District Leader</div>
+              <div style="font-size:16px; font-weight:700; color:var(--text);" id="leader-name">—</div>
+            </div>
+          </div>
+          <div id="d-notes" style="font-size:13px; color:var(--text-2); max-width:400px; line-height:1.4;"></div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="view-stats">
+        <div class="stat-box">
+          <div class="stat-box-val" id="stat-total">0</div>
+          <div class="stat-box-label">Total Churches</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-val" style="color:#2e7d32;" id="stat-occupied">0</div>
+          <div class="stat-box-label">Occupied</div>
+        </div>
+        <div class="stat-box" style="border-left: 3px solid var(--red);">
+          <div class="stat-box-val" style="color:var(--red);" id="stat-vacant">0</div>
+          <div class="stat-box-label">Vacant Churches</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-val" id="stat-pastors">0</div>
+          <div class="stat-box-label">Active Pastors</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <div class="search-wrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="search-input" placeholder="Search churches..." /></div>
+        <select class="input" id="filter-status" style="width:160px;">
+          <option value="all">All Churches</option>
+          <option value="occupied">Occupied</option>
+          <option value="vacant">Vacant</option>
+        </select>
+      </div>
+
+      <!-- Church List -->
+      <div id="church-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:16px;">
+        <!-- Filled by JS -->
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="js/libs/supabase.min.js"></script>
+<script src="js/services/auth.service.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/router.js"></script>
+<script src="js/utils/helper.js"></script>
+<script src="js/services/district.service.js"></script>
+<script src="js/services/church.service.js"></script>
+<script src="js/services/assignment.service.js"></script>
+<script src="js/pages/district-view.js"></script>
+<script>
+  // Simple sidebar sync
+  document.addEventListener('DOMContentLoaded', () => {
+    const nav = document.getElementById('sidebar-nav');
+    // Copy nav from conferences.html style
+    nav.innerHTML = `
+      <a href="/index.html"       class="nav-item" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>
+      <a href="/pastors.html"     class="nav-item" data-page="pastors"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg></a>
+      <a href="/disciples.html"   class="nav-item" data-page="disciples"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a8 8 0 0 1 16 0v2"/></svg></a>
+      <div class="sidebar-divider"></div>
+      <a href="/church.html"      class="nav-item" data-page="church"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="/assignment.html"  class="nav-item" data-page="assignment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></a>
+      <a href="/district.html"    class="nav-item active" data-page="district"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>
+      <div class="sidebar-divider"></div>
+      <a href="/conferences.html" class="nav-item" data-page="conferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></a>
+      <a href="/badges.html"      class="nav-item" data-page="badges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></a>
+      <a href="/scanner.html"     class="nav-item" data-page="scanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg></a>
+    `;
+  });
+</script>
+</body>
+</html>
