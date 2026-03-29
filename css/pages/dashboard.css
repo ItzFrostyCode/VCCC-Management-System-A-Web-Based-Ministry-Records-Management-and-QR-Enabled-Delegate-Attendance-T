@@ -164,7 +164,8 @@
 .dist-name { font-weight: 600; font-size: 14px; }
 .dist-stats { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); }
 .dist-color-dot {
-  width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px;
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;
+  vertical-align: middle;
 }
 
 /* Alert Items */
@@ -205,12 +206,16 @@
 .status-neutral { background: #F1F5F9; color: #64748B; }
 
 /* Table overrides in panels */
-.dash-table { width: 100%; border-collapse: collapse; }
+.dash-table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  table-layout: fixed; /* Keep columns exact */
+}
 .dash-table th {
   text-align: left;
   padding: 10px 20px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
   color: var(--text-3);
   background: #f8fafc;
@@ -218,13 +223,29 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  white-space: nowrap;
 }
 .dash-table td {
-  padding: 12px 20px;
+  padding: 10px 20px;
   font-size: 13px;
   border-bottom: 1px solid var(--border);
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+/* Explicit widths for Church Vacancy Board */
+#church-panel tr td.col-church { width: 35%; }
+#church-panel tr td.col-dist   { width: 22%; font-size: 11px; color: var(--text-2); }
+#church-panel tr td.col-pastor { width: 28%; }
+#church-panel tr td.col-status { width: 15%; text-align: right; }
+
+/* Explicit widths for Pastor Deployment */
+#pastor-panel tr td.col-pastor { width: 40%; }
+#pastor-panel tr td.col-church { width: 40%; }
+#pastor-panel tr td.col-status { width: 20%; text-align: right; }
+
 .dash-table tr:hover td { background: var(--bg-input); }
 
 /* Scan Log Feed */

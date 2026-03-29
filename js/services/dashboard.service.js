@@ -255,10 +255,10 @@ const dashboardService = {
     const { data, error } = await db
       .from('audit_logs')
       .select(`
-        action, details, created_at,
+        action, details, timestamp,
         users ( full_name )
       `)
-      .order('created_at', { ascending: false })
+      .order('timestamp', { ascending: false })
       .limit(15);
     
     if (error) throw error;
@@ -266,7 +266,7 @@ const dashboardService = {
       actor: d.users?.full_name || 'System',
       action: d.action,
       details: d.details,
-      time: d.created_at
+      time: d.timestamp
     }));
   }
 };

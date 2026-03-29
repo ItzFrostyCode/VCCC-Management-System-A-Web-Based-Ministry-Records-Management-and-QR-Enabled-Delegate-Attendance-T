@@ -82,10 +82,10 @@ async function loadChurchStatus() {
     
     tbody.innerHTML = data.slice(0, 7).map(c => `
       <tr>
-        <td style="font-weight:600;">${c.name}</td>
-        <td><span class="dist-color-dot" style="background:${c.color}"></span>${c.district}</td>
-        <td>${c.pastor}</td>
-        <td><span class="status-badge ${c.statusCode === 'active' ? 'status-active' : 'status-critical'}">${c.status}</span></td>
+        <td class="col-church" style="font-weight:600;">${c.name}</td>
+        <td class="col-dist"><span class="dist-color-dot" style="background:${c.color}"></span>${c.district}</td>
+        <td class="col-pastor">${c.pastor}</td>
+        <td class="col-status"><span class="status-badge ${c.statusCode === 'active' ? 'status-active' : 'status-critical'}">${c.status}</span></td>
       </tr>
     `).join('');
   } catch (e) {
@@ -118,9 +118,9 @@ async function loadPastorDeployment() {
 
       return `
       <tr>
-        <td style="font-weight:600;">${p.name}</td>
-        <td>${p.church}</td>
-        <td><span class="status-badge ${badgeCls}">${statusFormat}</span></td>
+        <td class="col-pastor" style="font-weight:600;">${p.name}</td>
+        <td class="col-church">${p.church}</td>
+        <td class="col-status"><span class="status-badge ${badgeCls}">${statusFormat}</span></td>
       </tr>
     `}).join('');
   } catch (e) {

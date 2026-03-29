@@ -28,6 +28,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 })
 
+// Re-render when orientation/size crosses the mobile breakpoint
+let _lastIsMobile = window.innerWidth <= 768
+window.addEventListener('resize', () => {
+  const nowMobile = window.innerWidth <= 768
+  if (nowMobile !== _lastIsMobile) {
+    _lastIsMobile = nowMobile
+    renderTable()
+  }
+})
+
+
+
 
 async function initData() {
   try {
@@ -130,8 +142,8 @@ function renderTable() {
 
   const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
   const isStaff = user && user.role === 'Staff'
+  const isMobile = window.innerWidth <= 768
 
-  // Use a function body (not template) so HTML quoting is clean
   body.innerHTML = paginatedItems.map(p => {
     const deleteBtn = !isStaff
       ? `<button class="btn-icon btn-delete" onclick="confirmDelete('${p.id}')" title="Remove">
@@ -166,6 +178,63 @@ function renderTable() {
     const wAge = p.wife_birthdate ? calculateAge(p.wife_birthdate) : '—'
     const ageDisplay = p.wife_name ? `${pAge} / ${wAge}` : pAge
 
+    // ─── Mobile Card Layout ───────────────────────────────────────────
+    if (isMobile) {
+      return `
+      <div class="pastor-card-mobile">
+        <div class="pcm-header">
+          <div class="pcm-avatars">
+            <div class="pcm-avatar-wrap" onclick="openImageViewer('${p.pastor_image_url || ''}', 'Pastor ${esc(p.full_name)}')">
+              ${getAvatarHtml(p.pastor_image_url, p.full_name)}
+            </div>
+            ${p.wife_name ? `<div class="pcm-avatar-wrap pcm-avatar-wife" onclick="openImageViewer('${p.wife_image_url || ''}', 'Wife ${esc(p.wife_name)}')">
+              ${getAvatarHtml(p.wife_image_url, p.wife_name)}
+            </div>` : ''}
+          </div>
+          <div class="pcm-title-area">
+            <div class="pcm-name">${esc(p.full_name)}</div>
+            ${p.wife_name ? `<div class="pcm-wife-name">w/ ${esc(p.wife_name)}</div>` : ''}
+          </div>
+          ${statusBadge}
+        </div>
+
+        <div class="pcm-info-grid">
+          <div class="pcm-info-item">
+            <span class="pcm-info-label">Contact</span>
+            <span class="pcm-info-value">${esc(p.contact_number) || '—'}</span>
+          </div>
+          <div class="pcm-info-item">
+            <span class="pcm-info-label">Age</span>
+            <span class="pcm-info-value">${ageDisplay}</span>
+          </div>
+          <div class="pcm-info-item">
+            <span class="pcm-info-label">Since</span>
+            <span class="pcm-info-value">${esc(p.pastoring_start_date) || '—'}</span>
+          </div>
+          <div class="pcm-info-item">
+            <span class="pcm-info-label">Church</span>
+            <span class="pcm-info-value" style="font-size:11px;">${esc(p.church_name) || '—'}</span>
+          </div>
+        </div>
+
+        <div class="pcm-actions">
+          <button class="pcm-action-btn pcm-view" onclick="window.location.href='pastor-view.html?id=${p.id}'" title="View Profile">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            View
+          </button>
+          <button class="pcm-action-btn pcm-edit" onclick="openModal('${p.id}')" title="Edit">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          ${!isStaff ? `<button class="pcm-action-btn pcm-delete" onclick="confirmDelete('${p.id}')" title="Remove">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            Delete
+          </button>` : ''}
+        </div>
+      </div>`
+    }
+
+    // ─── Desktop Grid Layout ──────────────────────────────────────────
     return `
     <div class="data-table-row cols-pastors">
       <div class="cell-name-primary" data-label="Pastor" title="${esc(p.full_name)}" style="display:flex;align-items:center;">
@@ -203,6 +272,7 @@ function renderTable() {
   if (currentPage === 1) { btnPrev.disabled = true; btnPrev.style.opacity = '0.5' } else { btnPrev.disabled = false; btnPrev.style.opacity = '1' }
   if (currentPage === totalPages) { btnNext.disabled = true; btnNext.style.opacity = '0.5' } else { btnNext.disabled = false; btnNext.style.opacity = '1' }
 }
+
 
 function prevPage() {
   if (currentPage > 1) {
