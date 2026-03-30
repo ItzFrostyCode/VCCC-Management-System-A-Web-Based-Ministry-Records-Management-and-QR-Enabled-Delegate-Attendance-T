@@ -188,7 +188,7 @@ function injectGuideUI() {
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        box-shadow: var(--shadow-lg);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -196,12 +196,12 @@ function injectGuideUI() {
         cursor: pointer;
         border: 2px solid #fff;
         transition: transform 0.2s ease, box-shadow 0.2s ease, bottom 0.3s ease;
-        background-color: var(--primary);
+        background-color: var(--red);
         color: white;
       }
       .guide-fab:hover {
         transform: scale(1.08);
-        box-shadow: var(--shadow-xl);
+        box-shadow: 0 8px 24px rgba(232, 56, 32, 0.4);
       }
     </style>
   `;

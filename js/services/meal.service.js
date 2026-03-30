@@ -12,6 +12,17 @@ const mealService = {
     return data
   },
 
+  async fetchByConferenceBulk(conferenceIds) {
+    if (!conferenceIds || conferenceIds.length === 0) return []
+    const { data, error } = await db
+      .from('meals')
+      .select('*')
+      .in('conference_id', conferenceIds)
+
+    if (error) throw error
+    return data
+  },
+
   async create(conferenceId, dayId, slotId, name, notes) {
     const { data, error } = await db
       .from('meals')

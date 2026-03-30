@@ -372,11 +372,3 @@ function bindEvents() {
   const overlay = document.getElementById('church-modal-overlay')
   if (overlay) overlay.addEventListener('click', e => { if (e.target === overlay) closeModal() })
 }
-
-function esc(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}

@@ -59,14 +59,39 @@ async function initDelegateData() {
 }
 
 async function reloadData() {
+  // 1. Fetch all conferences first
   allConfs = await conferenceService.fetchAll()
-  for (const c of allConfs) {
-    if (!daysMap[c.id]) {
-      daysMap[c.id] = await conferenceService.fetchDays(c.id)
-      slotsMap[c.id] = await conferenceService.fetchTimeSlots(c.id)
-    }
-    mealMap[c.id] = await mealService.fetchByConference(c.id)
+  const confIds = allConfs.map(c => c.id)
+
+  if (confIds.length === 0) {
+    renderList()
+    return
   }
+
+  // 2. Fetch all details in parallel (Bulk)
+  const [allDays, allSlots, allMeals] = await Promise.all([
+    conferenceService.fetchDaysBulk(confIds),
+    conferenceService.fetchTimeSlotsBulk(confIds),
+    mealService.fetchByConferenceBulk(confIds)
+  ])
+
+  // 3. Clear and rebuild maps
+  daysMap = {}
+  slotsMap = {}
+  mealMap = {}
+
+  // Initialize maps for all conferences to ensure no undefined errors
+  confIds.forEach(id => {
+    daysMap[id] = []
+    slotsMap[id] = []
+    mealMap[id] = []
+  })
+
+  // 4. Group data by conference_id
+  allDays.forEach(d => { if (daysMap[d.conference_id]) daysMap[d.conference_id].push(d) })
+  allSlots.forEach(s => { if (slotsMap[s.conference_id]) slotsMap[s.conference_id].push(s) })
+  allMeals.forEach(m => { if (mealMap[m.conference_id]) mealMap[m.conference_id].push(m) })
+
   renderList()
 }
 
@@ -559,15 +584,6 @@ window.exportToExcel = function() {
 function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function esc(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 function getAvatarHtml(imageUrl, name) {

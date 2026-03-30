@@ -150,7 +150,3 @@ function renderTable() {
 
 function prevPage() { if (currentPage > 1) { currentPage--; renderTable() } }
 function nextPage() { if (currentPage < Math.ceil(allLogs.length/ITEMS_PER_PAGE)) { currentPage++; renderTable() } }
-
-function esc(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-}

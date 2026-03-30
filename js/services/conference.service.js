@@ -52,6 +52,29 @@ const conferenceService = {
     return data
   },
 
+  async fetchDaysBulk(conferenceIds) {
+    if (!conferenceIds || conferenceIds.length === 0) return []
+    const { data, error } = await db
+      .from('conference_days')
+      .select('*')
+      .in('conference_id', conferenceIds)
+      .order('day_index', { ascending: true })
+
+    if (error) throw error
+    return data
+  },
+
+  async fetchTimeSlotsBulk(conferenceIds) {
+    if (!conferenceIds || conferenceIds.length === 0) return []
+    const { data, error } = await db
+      .from('time_slots')
+      .select('*')
+      .in('conference_id', conferenceIds)
+
+    if (error) throw error
+    return data
+  },
+
   async create(title, theme, location, startDate, endDate, slotsMap = null) {
     const { data, error } = await db
       .from('conferences')

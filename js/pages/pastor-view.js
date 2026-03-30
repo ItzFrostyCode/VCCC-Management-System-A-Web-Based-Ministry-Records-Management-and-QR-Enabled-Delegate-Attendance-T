@@ -415,14 +415,6 @@ function formatTimelineDate(d) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
 
-function esc(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
 function getAvatarHtml(imageUrl, name) {
   if (imageUrl) {
     return `<img src="${imageUrl}" style="width:100%; height:100%; object-fit:cover;" />`

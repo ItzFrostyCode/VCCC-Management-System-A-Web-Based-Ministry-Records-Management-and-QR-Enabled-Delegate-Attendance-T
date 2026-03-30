@@ -779,5 +779,3 @@ function handleTemplateUpload(input) {
   const file = input.files[0]; if(!file) return
   const reader = new FileReader(); reader.onload = (e) => { addLocalTemplate(e.target.result) }; reader.readAsDataURL(file)
 }
-
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }

@@ -489,14 +489,6 @@ function exportCSV() {
   })))
 }
 
-function esc(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
 function getAvatarHtml(imageUrl, name) {
   if (imageUrl) {
     return `<img src="${imageUrl}" class="avatar-img" />`

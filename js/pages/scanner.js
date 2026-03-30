@@ -1007,15 +1007,6 @@ function buildLogRows(list) {
   }).join('')
 }
 
-// ── esc ──────────────────────────────────────────────────────
-function esc(str) {
-  if (!str) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  MOBILE LOGS DRAWER
@@ -1143,12 +1134,4 @@ async function clearLogs() {
     console.error('clearLogs:', e)
     setStatus('Failed to clear logs', 'error')
   }
-}
-
-function esc(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

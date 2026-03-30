@@ -351,11 +351,3 @@ function getAvatarHtml(imageUrl, name) {
     // Reusing the same class system if exists, else inline style
     return `<div class="avatar-initials bg-avatar-${bgIndex}" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;">${initials}</div>`
 }
-
-function esc(str) {
-    return String(str||'')
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-}

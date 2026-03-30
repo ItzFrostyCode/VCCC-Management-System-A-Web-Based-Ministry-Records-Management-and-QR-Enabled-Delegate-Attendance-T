@@ -132,7 +132,3 @@ function initListeners() {
     document.getElementById('search-input').oninput = renderList
     document.getElementById('filter-status').onchange = renderList
 }
-
-function esc(str) {
-    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}

@@ -16,8 +16,10 @@ const dashboardService = {
     ] = await Promise.all([
       db.from('districts').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
       db.from('churches').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
-      db.from('pastors').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('current_status_code', 'active'),
+      // Active Pastors: derived from assignments (source of truth) — not the denormalized current_status_code
+      db.from('assignments').select('*', { count: 'exact', head: true }).eq('status_code', 'active').is('end_date', null),
       db.from('disciples').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
+      // Active Assignments mirrors Active Pastors (open, non-ended assignments)
       db.from('assignments').select('*', { count: 'exact', head: true }).eq('status_code', 'active').is('end_date', null),
       db.from('conferences').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
       // Today Attendance
@@ -128,10 +130,12 @@ const dashboardService = {
 
     return data.map(p => {
       const activeAss = p.assignments.find(a => a.status_code === 'active' && !a.end_date);
+      // Derive status from the live assignment record — never trust the denormalized current_status_code column
+      const derivedStatus = activeAss ? 'active' : 'undeployed';
       return {
         id: p.id,
         name: p.full_name,
-        status: p.current_status_code || 'undeployed',
+        status: derivedStatus,
         church: activeAss?.churches?.church_name || '—',
         startDate: activeAss?.start_date || '—'
       };
