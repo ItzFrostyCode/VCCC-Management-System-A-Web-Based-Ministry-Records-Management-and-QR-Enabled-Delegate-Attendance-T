@@ -14,7 +14,7 @@ class AuthService {
       date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
       expires = "; expires=" + date.toUTCString();
     }
-    document.cookie = name + "=" + (value || "")  + expires + "; path=/; secure; samesite=strict";
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/; SameSite=Lax; Secure";
   }
 
   eraseCookie(name) {
@@ -127,6 +127,20 @@ class AuthService {
 
     if (!sessionId || !user || !user.id) return false;
     return true;
+  }
+
+  /**
+   * Re-syncs cookies from localStorage. Useful if cookies are lost in a webview
+   * but localStorage is still there.
+   */
+  async syncCookies() {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      this.setCookie('sb-access-token',  session.access_token, 7);
+      this.setCookie('sb-refresh-token', session.refresh_token, 7);
+      return true;
+    }
+    return false;
   }
 
   // ── Audit ──────────────────────────────────────────────────────────────────

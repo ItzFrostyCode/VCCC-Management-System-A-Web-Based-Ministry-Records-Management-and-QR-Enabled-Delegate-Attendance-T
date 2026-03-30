@@ -18,8 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // If already have a valid local session, redirect
   if (authService.isAuthenticated()) {
-    const user = authService.getCurrentUser()
-    window.location.href = user?.role === 'Scanner' ? '/scanner.html' : '/index.html'
+    // 🧠 FIX: Before redirecting, ensure cookies are synced for Middleware
+    authService.syncCookies().then(() => {
+      const user = authService.getCurrentUser()
+      window.location.href = user?.role === 'Scanner' ? '/scanner.html' : '/index.html'
+    });
     return
   }
 
