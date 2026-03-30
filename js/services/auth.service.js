@@ -38,6 +38,9 @@ class AuthService {
         throw new Error(authError?.message || 'Invalid email or password.');
       }
 
+      // 1.5 Give the SDK a moment to latch the session internally for RLS
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // 2. Fetch the user's role/scope from the new `profiles` table
       const { data: profile, error: profileErr } = await db
         .from('profiles')
