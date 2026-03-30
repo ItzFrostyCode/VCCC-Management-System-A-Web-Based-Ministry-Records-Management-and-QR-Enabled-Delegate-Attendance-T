@@ -341,11 +341,10 @@ function bindEvents() {
         const existing = await assignmentService.fetchActiveByPastor(pastorId)
         if (existing) await assignmentService.close(existing.id, startDate, 'transferred')
         // Create new active assignment
-        await assignmentService.create({
+        await assignmentService.transferPastor({
           pastor_id: pastorId, church_id: churchId,
-          assignment_type: 'regular', status_code: 'active',
-          start_date: startDate, end_date: null,
-          notes: 'Assigned via District Tree'
+          role_code: 'Lead Pastor', event_type: 'Transfer',
+          transfer_date: startDate, notes: 'Assigned via District Tree'
         })
         closeAllModals()
         await initData()

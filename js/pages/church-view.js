@@ -92,7 +92,7 @@ function renderCurrentPastor(history) {
       </div>
       <div class="pastor-info">
         <h4>${esc(active.pastor_name)}</h4>
-        <p>Current ${esc(active.assignment_type)} Pastor since ${formatDate(active.start_date)}</p>
+        <p>Current ${esc(active.role_code)} (${esc(active.event_type)}) since ${formatDate(active.start_date)}</p>
       </div>
       <div style="margin-left:auto;">
         <button class="btn btn-ghost" onclick="window.location.href='pastor-view.html?id=${active.pastor_id}'">View Profile</button>
@@ -140,7 +140,10 @@ function renderHistory(history) {
       <td>
         <div style="font-weight:500;">${formatDate(h.start_date)} — ${h.end_date ? formatDate(h.end_date) : 'Present'}</div>
       </td>
-      <td><span class="pill pill-ghost" style="font-size:11px;">${esc(h.assignment_type)}</span></td>
+      <td>
+        <span class="pill pill-ghost" style="font-size:11px;">${esc(h.role_code)}</span>
+        <span class="pill pill-ghost" style="font-size:11px;">${esc(h.event_type)}</span>
+      </td>
       <td style="color:var(--text-2); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(h.notes)}">${esc(h.notes)}</td>
     </tr>
   `).join('')

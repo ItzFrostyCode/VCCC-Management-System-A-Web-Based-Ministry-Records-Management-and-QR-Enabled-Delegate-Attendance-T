@@ -19,12 +19,13 @@ const statusConfig = {
   pullout:     { label: 'Pullout',     class: 'pill-danger'   }
 }
 
-const typeLabel = {
-  regular:    'Regular',
-  pioneering: 'Pioneering',
-  training:   'Training',
-  swap:       'Swap',
-  interim:    'Interim'
+const roleLabel = {
+  'Lead Pastor': 'Lead Pastor',
+  'Assistant Pastor': 'Assistant Pastor',
+  'District Presbyter': 'District Presbyter',
+  'Interim Setup': 'Interim Setup',
+  'Worker': 'Worker',
+  'Regular': 'Regular'
 }
 
 // ── Init ──────────────────────────────────────────────────────
@@ -106,8 +107,8 @@ function renderAssignments() {
           <div class="cell-name-primary">${esc(a.pastor_name) || 'Unknown Pastor'}</div>
           <div style="font-size:11px; color:var(--text-3);">${esc(a.church_name) || 'Unknown Church'}</div>
         </div>
-        <div data-label="Type">
-          <span style="font-weight:500; color:var(--text-2); font-size:13px;">${typeLabel[a.assignment_type] || a.assignment_type}</span>
+        <div data-label="Role/Event">
+          <span style="font-weight:500; color:var(--text-2); font-size:13px;">${roleLabel[a.role_code] || a.role_code} (${a.event_type})</span>
         </div>
         <div data-label="Status">
           <span class="pill ${status.class}">${status.label}</span>
@@ -171,7 +172,8 @@ window.editRecord = function(id) {
   document.getElementById('f-id').value         = a.id
   if (selPastor) selPastor.setValue(a.pastor_id || '')
   if (selChurch) selChurch.setValue(a.church_id || '')
-  document.getElementById('f-type').value       = a.assignment_type || 'regular'
+  document.getElementById('f-type').value       = a.role_code || 'Lead Pastor'
+  document.getElementById('f-event').value      = a.event_type || 'Transfer'
   document.getElementById('f-status').value     = a.status_code || 'active'
   document.getElementById('f-start').value      = a.start_date  || ''
   document.getElementById('f-end').value        = a.end_date    || ''
@@ -198,7 +200,7 @@ function handleFilter() {
 
   filteredAssignments = allAssignments.filter(a => {
     const matchQ      = !q || (a.pastor_name || '').toLowerCase().includes(q) || (a.church_name || '').toLowerCase().includes(q)
-    const matchType   = !type   || a.assignment_type === type
+    const matchType   = !type   || a.role_code === type || a.event_type === type
     const matchStatus = !status || a.status_code    === status
     return matchQ && matchType && matchStatus
   })
@@ -214,7 +216,8 @@ async function handleFormSubmit(e) {
   const payload = {
     pastor_id:       selPastor ? selPastor.getValue() : '',
     church_id:       selChurch ? selChurch.getValue() : '',
-    assignment_type: document.getElementById('f-type').value,
+    role_code:       document.getElementById('f-type').value,
+    event_type:      document.getElementById('f-event')?.value || 'Transfer',
     status_code:     document.getElementById('f-status').value,
     start_date:      document.getElementById('f-start').value,
     end_date:        document.getElementById('f-end').value || null,

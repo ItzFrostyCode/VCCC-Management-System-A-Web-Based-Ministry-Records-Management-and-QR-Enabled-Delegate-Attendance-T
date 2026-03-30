@@ -344,3 +344,11 @@
 .panel-skel-line.w-50 { width: 50%; }
 .panel-skel-line.w-80 { width: 80%; }
 .panel-skel-line.w-100 { width: 100%; }
+
+/* Mobile Adjustments for Dashboard specifically */
+@media (max-width: 480px) {
+  .dash-list-row.activity-item { padding: 10px 14px; }
+  .activity-text { font-size: 12px; -webkit-text-size-adjust: 100%; line-height: 1.4; }
+  .activity-time { font-size: 10px; }
+  .activity-dot::after { height: 50px; } /* Support slightly taller text wrapping */
+}

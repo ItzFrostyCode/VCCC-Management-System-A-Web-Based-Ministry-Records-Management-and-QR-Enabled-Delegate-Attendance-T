@@ -1144,3 +1144,11 @@ async function clearLogs() {
     setStatus('Failed to clear logs', 'error')
   }
 }
+
+function esc(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}

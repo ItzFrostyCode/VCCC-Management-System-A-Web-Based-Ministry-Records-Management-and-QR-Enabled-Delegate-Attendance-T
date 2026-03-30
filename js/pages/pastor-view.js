@@ -1,4 +1,5 @@
 // pastor-view.js
+let globalPastorId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -11,6 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return
     }
 
+    globalPastorId = pastorId;
+
     await loadData(pastorId)
   } catch (err) {
     console.error('Pastor View init failed:', err)
@@ -22,13 +25,13 @@ async function loadData(id) {
   try {
     const [pastor, history, disciples] = await Promise.all([
       pastorService.fetchById(id),
-      assignmentService.fetchByPastor(id),
+      timelineService.fetchPastorTimeline(id),
       discipleService.fetchByPastor(id)
     ])
 
     renderProfile(pastor)
     renderStats(pastor, history, disciples)
-    renderHistory(history)
+    renderMasterTimeline(history)
     renderDisciples(disciples)
 
     document.getElementById('loading-state').style.display = 'none'
@@ -108,41 +111,267 @@ function renderStats(p, history, disciples) {
   // Disciples
   document.getElementById('stat-disciples').textContent = disciples.length
 
-  // Current Role
-  const active = history.find(h => h.status_code === 'active' && !h.end_date)
+  // Current Role from Timeline (First ASSIGNMENT_START that is active)
+  const active = history.find(h => h.type === 'ASSIGNMENT_START' && h.raw_data.status_code === 'active' && !h.raw_data.end_date)
   if (active) {
-    document.getElementById('stat-role').textContent = active.church_name
+    document.getElementById('stat-role').textContent = active.raw_data.churches?.church_name || 'Assigned'
   } else {
     document.getElementById('stat-role').textContent = 'Unassigned'
   }
 }
 
-function renderHistory(history) {
-  const container = document.getElementById('assignment-history')
-  if (!history.length) {
-    container.innerHTML = '<div class="empty-state">No assignment history found.</div>'
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.borderBottom = 'none';
+    b.style.color = 'var(--text-2)';
+  });
+  const activeBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`);
+  if(activeBtn) {
+    activeBtn.classList.add('active');
+    activeBtn.style.borderBottom = '2px solid var(--red)';
+    activeBtn.style.color = 'var(--red)';
+  }
+
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  const target = document.getElementById('tab-' + tabId);
+  if(target) target.style.display = 'block';
+}
+
+function renderMasterTimeline(timeline) {
+  const container = document.getElementById('master-timeline')
+  if (!timeline || !timeline.length) {
+    container.innerHTML = '<div class="empty-state">No ministry history recorded yet.</div>'
     return
   }
 
-  container.innerHTML = history.map((h, i) => {
-    const isActive = h.status_code === 'active' && !h.end_date
+  container.innerHTML = timeline.map(event => {
+    const isBlocker = event.type === 'TRAINING_FAILED';
+    const isActiveAss = event.type === 'ASSIGNMENT_START' && event.raw_data.status_code === 'active' && !event.raw_data.end_date;
+    
+    let dotColor = 'var(--surface)';
+    let dotBorder = 'var(--red)';
+    if (isActiveAss) dotColor = 'var(--red)';
+    if (isBlocker) dotBorder = 'var(--red-dark)';
+
+    let typePill = '';
+    if (event.type === 'ASSIGNMENT_START') typePill = `<span class="pill" style="font-size:11px; background:var(--red-light); color:var(--red); border:none;">Assignment</span>`;
+    else if (event.type === 'RANK_CHANGE') typePill = `<span class="pill" style="font-size:11px; background:#e3f2fd; color:#1565c0; border:none;">Promotion</span>`;
+    else if (event.type === 'TRAINING_LOG') typePill = `<span class="pill" style="font-size:11px; background:#e8f5e9; color:#2e7d32; border:none;">Training</span>`;
+    else if (event.type === 'TRAINING_FAILED') typePill = `<span class="pill" style="font-size:11px; background:#ffebee; color:#c62828; border:none;">Blocker</span>`;
+    else if (event.type === 'ASSIGNMENT_END') typePill = `<span class="pill" style="font-size:11px; background:#f5f5f5; color:#757575; border:none;">Conclusion</span>`;
+
     return `
-      <div class="timeline-item ${isActive ? 'active' : ''}">
-        <div class="timeline-dot"></div>
-        <div class="timeline-content">
+      <div class="timeline-item ${isActiveAss ? 'active' : ''}">
+        <div class="timeline-dot" style="background:${dotColor}; border-color:${dotBorder};"></div>
+        <div class="timeline-content" style="${isBlocker ? 'border-color:var(--red-dark);' : ''}">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-            <div style="font-weight:700; color:var(--text);">${esc(h.church_name)}</div>
-            <span class="pill pill-ghost" style="font-size:11px;">${formatTimelineDate(h.start_date)} — ${h.end_date ? formatTimelineDate(h.end_date) : 'Present'}</span>
+            <div style="font-weight:700; color:${isBlocker ? 'var(--red-dark)' : 'var(--text)'};">${esc(event.title)}</div>
+            <span class="pill pill-ghost" style="font-size:11px;">${timelineService.formatPrecisionDate(event.date, event.precision)}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
-            <span class="pill" style="font-size:11px; background:var(--red-light); color:var(--red); border:none;">${esc(h.assignment_type)}</span>
-            <span style="font-size:12px; color:var(--text-3); font-weight:500;">${esc(h.district_name)} District</span>
+            ${typePill}
+            <span style="font-size:12px; color:var(--text-3); font-weight:500;">${esc(event.subtitle)}</span>
           </div>
-          ${h.notes ? `<div style="margin-top:10px; font-size:12px; color:var(--text-2); border-top:1px solid var(--border); padding-top:8px;">${esc(h.notes)}</div>` : ''}
+          ${event.notes ? `<div style="margin-top:10px; font-size:12px; color:var(--text-2); border-top:1px solid var(--border); padding-top:8px;">${esc(event.notes)}</div>` : ''}
         </div>
       </div>
     `
   }).join('')
+}
+
+// --- Modal Handling & Actions ---
+
+function openModal(modalId) {
+  document.getElementById(modalId).classList.add('open');
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.classList.remove('open');
+    const form = modal.querySelector('form');
+    if (form) form.reset();
+  }
+}
+
+function handleModalClickOutside(e, modalId) {
+  if (e.target.id === modalId) closeModal(modalId);
+}
+
+// 1. Promote Rank
+function openPromoteModal() {
+  document.getElementById('promote-date').value = new Date().toISOString().split('T')[0];
+  openModal('modal-promote');
+}
+
+async function submitPromote(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit-promote');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+
+  try {
+    const data = {
+      pastor_id: globalPastorId,
+      rank_code: document.getElementById('promote-rank').value,
+      effective_date: document.getElementById('promote-date').value,
+      precision_flag: document.getElementById('promote-precision').value,
+      source: document.getElementById('promote-source').value
+    };
+    
+    await rankService.addRank(data);
+    closeModal('modal-promote');
+    loadData(globalPastorId); // Refresh timeline
+  } catch (err) {
+    console.error('Promotion failed:', err);
+    alert('Failed to save rank: ' + err.message);
+  } finally {
+    btn.textContent = 'Save Rank';
+    btn.disabled = false;
+  }
+}
+
+// 2. Log Training
+function openTrainingModal() {
+  document.getElementById('training-date').value = new Date().toISOString().split('T')[0];
+  openModal('modal-training');
+}
+
+function toggleBlockerFlag() {
+  const status = document.getElementById('training-status').value;
+  const blocker = document.getElementById('training-blocker');
+  if (status === 'Failed') {
+    blocker.disabled = false;
+    blocker.checked = true;
+  } else {
+    blocker.disabled = true;
+    blocker.checked = false;
+  }
+}
+
+async function submitTraining(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit-training');
+  btn.textContent = 'Logging...';
+  btn.disabled = true;
+
+  try {
+    const data = {
+      pastor_id: globalPastorId,
+      course_name: document.getElementById('training-course').value,
+      status_code: document.getElementById('training-status').value,
+      completion_date: document.getElementById('training-date').value,
+      precision_flag: document.getElementById('training-precision').value,
+      blocker_flag: document.getElementById('training-blocker').checked,
+      notes: document.getElementById('training-notes').value
+    };
+    
+    await trainingService.addTrainingLog(data);
+    closeModal('modal-training');
+    loadData(globalPastorId); // Refresh timeline
+  } catch (err) {
+    console.error('Training log failed:', err);
+    alert('Failed to log training: ' + err.message);
+  } finally {
+    btn.textContent = 'Log Training';
+    btn.disabled = false;
+  }
+}
+
+// 3. Transfer Pastor
+async function openTransferModal() {
+  try {
+    // Populate dropdown with active churches
+    const churches = await churchService.fetchAll();
+    const select = document.getElementById('transfer-church');
+    select.innerHTML = '<option value="" disabled selected>Select new assignment...</option>';
+    churches.forEach(c => {
+      select.innerHTML += `<option value="${c.id}">${c.church_name}</option>`;
+    });
+
+    document.getElementById('transfer-date').value = new Date().toISOString().split('T')[0];
+    openModal('modal-transfer');
+  } catch (e) {
+    alert("Could not load churches: " + e.message);
+  }
+}
+
+async function submitTransfer(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit-transfer');
+  btn.textContent = 'Transferring...';
+  btn.disabled = true;
+
+  try {
+    const isPrimary = document.getElementById('transfer-is-primary').checked;
+    // Confirm hard block warning
+    if (isPrimary) {
+      if (!confirm("This will close the current Primary assignment (if any) and open a new one. Proceed?")) {
+        btn.textContent = 'Confirm Transfer';
+        btn.disabled = false;
+        return;
+      }
+    }
+
+    const data = {
+      pastor_id: globalPastorId,
+      church_id: document.getElementById('transfer-church').value,
+      transfer_date: document.getElementById('transfer-date').value,
+      role_code: document.getElementById('transfer-role').value,
+      event_type: document.getElementById('transfer-event').value,
+      precision_flag: document.getElementById('transfer-precision').value,
+      is_primary: isPrimary,
+      notes: document.getElementById('transfer-notes').value
+    };
+    
+    await assignmentService.transferPastor(data);
+    closeModal('modal-transfer');
+    loadData(globalPastorId); // Refresh timeline
+  } catch (err) {
+    console.error('Transfer failed:', err);
+    alert('Failed to transfer pastor: ' + err.message);
+  } finally {
+    btn.textContent = 'Confirm Transfer';
+    btn.disabled = false;
+  }
+}
+
+// 4. Pullout Pastor
+function openPulloutModal() {
+  document.getElementById('pullout-date').value = new Date().toISOString().split('T')[0];
+  openModal('modal-pullout');
+}
+
+async function submitPullout(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit-pullout');
+  btn.textContent = 'Pulling out...';
+  btn.disabled = true;
+
+  try {
+    if (!confirm("This will close the active Primary assignment immediately and leave the pastor Undeployed. Proceed?")) {
+      btn.textContent = 'Confirm Pullout';
+      btn.disabled = false;
+      return;
+    }
+
+    const data = {
+      pastor_id: globalPastorId,
+      pullout_date: document.getElementById('pullout-date').value,
+      notes: document.getElementById('pullout-notes').value
+    };
+
+    await assignmentService.pulloutPastor(data);
+    closeModal('modal-pullout');
+    loadData(globalPastorId); // Refresh timeline
+  } catch (err) {
+    console.error('Pullout failed:', err);
+    alert('Failed to pull out pastor: ' + err.message);
+  } finally {
+    btn.textContent = 'Confirm Pullout';
+    btn.disabled = false;
+  }
 }
 
 function renderDisciples(disciples) {

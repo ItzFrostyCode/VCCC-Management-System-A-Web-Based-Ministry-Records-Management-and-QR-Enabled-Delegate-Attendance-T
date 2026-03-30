@@ -19,7 +19,7 @@ const pastorService = {
         created_at,
         updated_at,
         assignments!assignments_pastor_id_fkey (
-          id, church_id, assignment_type, status_code, start_date, end_date,
+          id, church_id, role_code, event_type, status_code, start_date, end_date,
           churches (
             id, church_name, church_address, district_id,
             districts ( id, district_name )
@@ -68,7 +68,7 @@ const pastorService = {
         id, full_name, wife_name, wife_birthdate, contact_number, birthdate,
         pastoring_start_date, pastor_image_url, wife_image_url, notes, current_status_code,
         assignments!assignments_pastor_id_fkey (
-          id, church_id, assignment_type, status_code, start_date, end_date,
+          id, church_id, role_code, event_type, status_code, start_date, end_date,
           churches ( id, church_name, district_id, districts ( id, district_name ) )
         )
       `)

@@ -65,12 +65,11 @@
         </div>
         <div class="filter-group">
           <select id="filter-type" class="btn btn-ghost" style="height:42px; width:150px; text-align:left;">
-            <option value="">All Types</option>
-            <option value="regular">Regular</option>
-            <option value="pioneering">Pioneering</option>
-            <option value="training">Training</option>
-            <option value="swap">Swap</option>
-            <option value="interim">Interim</option>
+            <option value="">All Roles</option>
+            <option value="Lead Pastor">Lead Pastor</option>
+            <option value="Assistant Pastor">Assistant Pastor</option>
+            <option value="District Presbyter">District Presbyter</option>
+            <option value="Interim Setup">Interim Setup</option>
           </select>
           <select id="filter-status" class="btn btn-ghost" style="height:42px; width:150px; text-align:left;">
             <option value="">All Status</option>
@@ -133,15 +132,26 @@
 
             <div class="form-row-2">
               <div class="form-field">
-                <label class="form-label">Assignment Type</label>
+                <label class="form-label">Role</label>
                 <select id="f-type" class="input">
-                  <option value="regular">Regular</option>
-                  <option value="pioneering">Pioneering</option>
-                  <option value="training">Training</option>
-                  <option value="swap">Swap</option>
-                  <option value="interim">Interim</option>
+                  <option value="Lead Pastor">Lead Pastor</option>
+                  <option value="Assistant Pastor">Assistant Pastor</option>
+                  <option value="District Presbyter">District Presbyter</option>
+                  <option value="Interim Setup">Interim Setup</option>
                 </select>
               </div>
+               <div class="form-field">
+                <label class="form-label">Event Type</label>
+                <select id="f-event" class="input">
+                  <option value="Transfer">Transfer</option>
+                  <option value="Pioneering">Pioneering</option>
+                  <option value="Takeover">Takeover</option>
+                  <option value="Legacy Assignment">Legacy Assignment</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
                <div class="form-field">
                 <label class="form-label">Status</label>
                 <select id="f-status" class="input">
@@ -204,5 +214,6 @@
 <script src="./js/services/pastor.service.js"></script>
 <script src="./js/services/assignment.service.js"></script>
 <script src="./js/pages/assignment.js"></script>
+<script src="./js/utils/guide.js"></script>
 </body>
 </html>

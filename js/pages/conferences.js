@@ -560,3 +560,20 @@ function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
+
+function esc(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function getAvatarHtml(imageUrl, name) {
+  if (imageUrl) {
+    return `<img src="${imageUrl}" style="width:100%; height:100%; object-fit:cover;" />`
+  }
+  const initials = String(name || '?').charAt(0).toUpperCase()
+  return `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:var(--red-light); color:var(--red); font-weight:800; font-size:1.5em;">${initials}</div>`
+}

@@ -193,9 +193,35 @@
           </div>
           <!-- Edit moved to list page for now -->
         </div>
+        
+        <!-- Timeline Navigation and Actions -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+          <div class="tabs" style="display:flex; gap:24px;">
+            <button class="tab-btn active" onclick="switchTab('timeline')" style="background:none; border:none; border-bottom:2px solid var(--red); color:var(--red); font-weight:700; padding:8px 0; font-size:16px; cursor:pointer;">Timeline</button>
+            <button class="tab-btn" onclick="switchTab('bio')" style="background:none; border:none; color:var(--text-2); font-weight:600; padding:8px 0; font-size:16px; cursor:pointer;">Bio & Stats</button>
+            <button class="tab-btn" onclick="switchTab('disciples')" style="background:none; border:none; color:var(--text-2); font-weight:600; padding:8px 0; font-size:16px; cursor:pointer;">Disciples</button>
+          </div>
+          <div class="actions" style="display:flex; gap:12px;">
+            <button class="btn" style="background:var(--surface); color:var(--text); border:1px solid var(--border);" onclick="openPromoteModal()">+ Rank</button>
+            <button class="btn" style="background:var(--surface); color:var(--text); border:1px solid var(--border);" onclick="openTrainingModal()">+ Training</button>
+            <button class="btn" style="background:var(--red-light); color:var(--red); border:1px solid var(--red-light);" onclick="openPulloutModal()">Pullout</button>
+            <button class="btn btn-primary" onclick="openTransferModal()">Transfer Pastor</button>
+          </div>
         </div>
 
-        <div class="stats-grid">
+        <!-- TIMELINE TAB -->
+        <div id="tab-timeline" class="tab-content" style="display:block;">
+          <div class="view-section">
+            <h3 class="section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Ministry Timeline</h3>
+            <div id="master-timeline" class="history-timeline">
+              <!-- Injected by timeline.service -->
+            </div>
+          </div>
+        </div>
+
+        <!-- BIO TAB -->
+        <div id="tab-bio" class="tab-content" style="display:none;">
+          <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">Years of Service</div>
             <div id="stat-years" class="stat-value">—</div>
@@ -214,23 +240,24 @@
           </div>
         </div>
 
-        <div class="view-section">
-          <h3 class="section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Assignment History</h3>
-          <div id="assignment-history" class="history-timeline">
-            <!-- Injected -->
+        </div>
+
+        <!-- DISCIPLES TAB -->
+        <div id="tab-disciples" class="tab-content" style="display:none;">
+          <div class="view-section">
+            <h3 class="section-title"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Disciples</h3>
+            <div id="disciple-list" class="disciple-list">
+              <!-- Injected -->
+            </div>
           </div>
         </div>
 
-        <div class="view-section">
-          <h3 class="section-title"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Disciples</h3>
-          <div id="disciple-list" class="disciple-list">
-            <!-- Injected -->
-          </div>
-        </div>
       </div>
     </main>
   </div>
 </div>
+
+<!-- Add Timeline Service Script before page logic -->
 
 <!-- Image Viewer Modal -->
 <div class="modal-overlay" id="modal-image-viewer" onclick="if(event.target===this)closeImageViewer()">
@@ -245,6 +272,205 @@
   </div>
 </div>
 
+<!-- Transfer Pastor Modal -->
+<div class="modal-overlay" id="modal-transfer" onclick="handleModalClickOutside(event, 'modal-transfer')">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-head">
+      <div class="modal-title">Transfer Pastor</div>
+      <button class="modal-close" type="button" onclick="closeModal('modal-transfer')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-transfer" onsubmit="submitTransfer(event)" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="form-field">
+          <label class="form-label">New Church</label>
+          <select id="transfer-church" class="select-input" required></select>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">Transfer Date</label>
+            <input type="date" id="transfer-date" class="input" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Date Precision</label>
+            <select id="transfer-precision" class="select-input" required>
+              <option value="exact">Exact Date</option>
+              <option value="month">Month & Year Only</option>
+              <option value="year">Year Only</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">Role</label>
+            <select id="transfer-role" class="select-input" required>
+              <option value="Lead Pastor">Lead Pastor</option>
+              <option value="Assistant Pastor">Assistant Pastor</option>
+              <option value="District Presbyter">District Presbyter</option>
+              <option value="Interim Setup">Interim Setup</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Event Type</label>
+            <select id="transfer-event" class="select-input" required>
+              <option value="Transfer">Transfer</option>
+              <option value="Pioneering">Pioneering</option>
+              <option value="Takeover">Takeover</option>
+              <option value="Legacy Assignment">Legacy Assignment</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field" style="display:flex; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; height:42px; font-size:14px; font-weight:500;">
+              <input type="checkbox" id="transfer-is-primary" checked style="width:16px; height:16px;" /> Is Primary Assignment
+            </label>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Notes / Source</label>
+          <textarea id="transfer-notes" class="input" style="height:auto; padding:10px 14px;" rows="2" placeholder="e.g. from 1990 ledger"></textarea>
+        </div>
+        <div class="modal-foot" style="margin-top:8px; padding:0; border:none;">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-transfer')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-transfer">Confirm Transfer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Pullout Pastor Modal -->
+<div class="modal-overlay" id="modal-pullout" onclick="handleModalClickOutside(event, 'modal-pullout')">
+  <div class="modal-box" style="max-width: 450px; border-top: 4px solid var(--red);">
+    <div class="modal-head">
+      <div class="modal-title" style="color:var(--red);">Pullout Pastor</div>
+      <button class="modal-close" type="button" onclick="closeModal('modal-pullout')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px; color:var(--text-2); margin-top:0; margin-bottom:16px;">
+        This will close the pastor's active assignment immediately, leaving them "Undeployed" in the system.
+      </p>
+      <form id="form-pullout" onsubmit="submitPullout(event)" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="form-field">
+          <label class="form-label">Effective Date</label>
+          <input type="date" id="pullout-date" class="input" required />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Reason / Notes</label>
+          <textarea id="pullout-notes" class="input" style="height:auto; padding:10px 14px;" rows="3" placeholder="Reason for pullout or reassignment waitlist in notes..." required></textarea>
+        </div>
+        <div class="modal-foot" style="margin-top:8px; padding:0; border:none;">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-pullout')">Cancel</button>
+          <button type="submit" class="btn" style="background:var(--red); color:#fff; border:none;" id="btn-submit-pullout">Confirm Pullout</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Promote Rank Modal -->
+<div class="modal-overlay" id="modal-promote" onclick="handleModalClickOutside(event, 'modal-promote')">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-head">
+      <div class="modal-title">Promote / Add Rank</div>
+      <button class="modal-close" type="button" onclick="closeModal('modal-promote')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-promote" onsubmit="submitPromote(event)" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="form-field">
+          <label class="form-label">Rank</label>
+          <select id="promote-rank" class="select-input" required>
+            <option value="Worker">Worker</option>
+            <option value="Licensed">Licensed</option>
+            <option value="Ordained">Ordained</option>
+            <option value="Senior Pastor">Senior Pastor</option>
+          </select>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">Effective Date</label>
+            <input type="date" id="promote-date" class="input" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Date Precision</label>
+            <select id="promote-precision" class="select-input" required>
+              <option value="exact">Exact Date</option>
+              <option value="month">Month & Year Only</option>
+              <option value="year">Year Only</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Source <span class="opt">(Optional)</span></label>
+          <input type="text" id="promote-source" class="input" placeholder="e.g. D.O. Certification" />
+        </div>
+        <div class="modal-foot" style="margin-top:8px; padding:0; border:none;">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-promote')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-promote">Save Rank</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Log Training Modal -->
+<div class="modal-overlay" id="modal-training" onclick="handleModalClickOutside(event, 'modal-training')">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-head">
+      <div class="modal-title">Log Training</div>
+      <button class="modal-close" type="button" onclick="closeModal('modal-training')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-training" onsubmit="submitTraining(event)" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="form-field">
+          <label class="form-label">Course / Program</label>
+          <input type="text" id="training-course" class="input" required placeholder="e.g. Pastoral Formation Phase 1" />
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">Status</label>
+            <select id="training-status" class="select-input" required onchange="toggleBlockerFlag()">
+              <option value="Completed">Completed</option>
+              <option value="In-Progress">In-Progress</option>
+              <option value="Failed">Failed / Discontinued</option>
+            </select>
+          </div>
+          <div class="form-field" style="display:flex; align-items:flex-end;">
+            <label id="lbl-training-blocker" style="display:flex; align-items:center; gap:8px; cursor:pointer; height:42px; font-size:13px; font-weight:500; color:var(--text-3);">
+              <input type="checkbox" id="training-blocker" disabled style="width:16px; height:16px;" /> Deployment Blocker
+            </label>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">Date</label>
+            <input type="date" id="training-date" class="input" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">Date Precision</label>
+            <select id="training-precision" class="select-input" required>
+              <option value="exact">Exact Date</option>
+              <option value="month">Month & Year Only</option>
+              <option value="year">Year Only</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Notes</label>
+          <textarea id="training-notes" class="input" style="height:auto; padding:10px 14px;" rows="2" placeholder="Additional details"></textarea>
+        </div>
+        <div class="modal-foot" style="margin-top:8px; padding:0; border:none;">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-training')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-training">Log Training</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Scripts -->
 <script src="./js/libs/supabase.min.js"></script>
 <script src="./js/services/auth.service.js"></script>
@@ -255,7 +481,11 @@
 <script src="./js/services/church.service.js"></script>
 <script src="./js/services/pastor.service.js"></script>
 <script src="./js/services/assignment.service.js"></script>
+<script src="./js/services/rank.service.js"></script>
+<script src="./js/services/training.service.js"></script>
+<script src="./js/services/timeline.service.js"></script>
 <script src="./js/services/disciple.service.js"></script>
 <script src="./js/pages/pastor-view.js"></script>
+<script src="./js/utils/guide.js"></script>
 </body>
 </html>

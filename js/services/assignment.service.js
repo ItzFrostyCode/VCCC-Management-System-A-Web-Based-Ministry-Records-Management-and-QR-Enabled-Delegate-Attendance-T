@@ -7,7 +7,8 @@ const assignmentService = {
         id,
         pastor_id,
         church_id,
-        assignment_type,
+        role_code,
+        event_type,
         status_code,
         start_date,
         end_date,
@@ -32,7 +33,8 @@ const assignmentService = {
       id: a.id,
       pastor_id: a.pastor_id,
       church_id: a.church_id,
-      assignment_type: a.assignment_type || 'regular',
+      role_code: a.role_code || 'Regular',
+      event_type: a.event_type || 'Legacy',
       status_code: a.status_code || 'active',
       start_date: a.start_date,
       end_date: a.end_date,
@@ -53,7 +55,7 @@ const assignmentService = {
     const { data, error } = await db
       .from('assignments')
       .select(`
-        id, pastor_id, church_id, assignment_type, status_code, start_date, end_date, notes,
+        id, pastor_id, church_id, role_code, event_type, status_code, start_date, end_date, notes,
         pastors!inner ( is_deleted ),
         churches ( id, church_name, district_id, districts ( id, district_name ) )
       `)
@@ -68,7 +70,8 @@ const assignmentService = {
       id: data.id,
       pastor_id: data.pastor_id,
       church_id: data.church_id,
-      assignment_type: data.assignment_type,
+      role_code: data.role_code,
+      event_type: data.event_type,
       status_code: data.status_code,
       start_date: data.start_date,
       end_date: data.end_date,
@@ -84,7 +87,7 @@ const assignmentService = {
     const { data, error } = await db
       .from('assignments')
       .select(`
-        id, pastor_id, church_id, assignment_type, status_code, start_date, end_date,
+        id, pastor_id, church_id, role_code, event_type, status_code, start_date, end_date,
         pastors!inner ( id, full_name, is_deleted )
       `)
       .eq('church_id', churchId)
@@ -99,7 +102,8 @@ const assignmentService = {
       pastor_id: data.pastor_id,
       pastor_name: data.pastors?.full_name || '',
       church_id: data.church_id,
-      assignment_type: data.assignment_type,
+      role_code: data.role_code,
+      event_type: data.event_type,
       status_code: data.status_code,
       start_date: data.start_date,
       end_date: data.end_date
@@ -108,7 +112,7 @@ const assignmentService = {
 
   async create(assignmentData) {
     const {
-      pastor_id, church_id, assignment_type,
+      pastor_id, church_id, role_code, event_type,
       status_code, start_date, end_date, notes
     } = assignmentData
 
@@ -117,14 +121,15 @@ const assignmentService = {
       .insert({
         pastor_id,
         church_id,
-        assignment_type: assignment_type || 'regular',
+        role_code: role_code || 'Regular',
+        event_type: event_type || 'Legacy',
         status_code: status_code || 'active',
         start_date,
         end_date: end_date || null,
         notes: (notes || '').trim() || null
       })
       .select(`
-        id, pastor_id, church_id, assignment_type, status_code, start_date, end_date, notes,
+        id, pastor_id, church_id, role_code, event_type, status_code, start_date, end_date, notes,
         pastors ( id, full_name ),
         churches ( id, church_name, district_id, districts ( id, district_name ) )
       `)
@@ -146,7 +151,8 @@ const assignmentService = {
       id: data.id,
       pastor_id: data.pastor_id,
       church_id: data.church_id,
-      assignment_type: data.assignment_type,
+      role_code: data.role_code,
+      event_type: data.event_type,
       status_code: data.status_code,
       start_date: data.start_date,
       end_date: data.end_date,
@@ -160,7 +166,7 @@ const assignmentService = {
 
   async update(id, assignmentData) {
     const {
-      pastor_id, church_id, assignment_type,
+      pastor_id, church_id, role_code, event_type,
       status_code, start_date, end_date, notes
     } = assignmentData
 
@@ -169,7 +175,8 @@ const assignmentService = {
       .update({
         pastor_id,
         church_id,
-        assignment_type: assignment_type || 'regular',
+        role_code: role_code || 'Regular',
+        event_type: event_type || 'Legacy',
         status_code: status_code || 'active',
         start_date,
         end_date: end_date || null,
@@ -178,7 +185,7 @@ const assignmentService = {
       })
       .eq('id', id)
       .select(`
-        id, pastor_id, church_id, assignment_type, status_code, start_date, end_date, notes,
+        id, pastor_id, church_id, role_code, event_type, status_code, start_date, end_date, notes,
         pastors ( id, full_name ),
         churches ( id, church_name, district_id, districts ( id, district_name ) )
       `)
@@ -200,7 +207,8 @@ const assignmentService = {
       id: data.id,
       pastor_id: data.pastor_id,
       church_id: data.church_id,
-      assignment_type: data.assignment_type,
+      role_code: data.role_code,
+      event_type: data.event_type,
       status_code: data.status_code,
       start_date: data.start_date,
       end_date: data.end_date,
@@ -209,6 +217,75 @@ const assignmentService = {
       church_name: data.churches?.church_name || '',
       district_id: data.churches?.district_id || '',
       district_name: data.churches?.districts?.district_name || ''
+    }
+  },
+
+  // Atomic Timeline Transfer (RPC wrapper)
+  async transferPastor(transferData) {
+    const {
+      pastor_id, church_id, transfer_date, role_code, event_type,
+      notes, is_primary, precision_flag
+    } = transferData;
+
+    try {
+      const { data, error } = await db.rpc('transfer_pastor', {
+        p_pastor_id: pastor_id,
+        p_new_church_id: church_id,
+        p_transfer_date: transfer_date,
+        p_role_code: role_code || 'Lead Pastor',
+        p_event_type: event_type || 'Transfer',
+        p_notes: (notes || '').trim() || null,
+        p_is_primary: is_primary !== undefined ? is_primary : true,
+        p_precision_flag: precision_flag || 'exact'
+      });
+      
+      if (error) throw error;
+      
+      const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
+      if (user) {
+        await authService.logAudit(
+          user.id,
+          'TRANSFER_PASTOR',
+          `Transferred Pastor ID ${pastor_id} to Church ID ${church_id}`
+        );
+      }
+      
+      return data; // Returns the new assignment ID
+    } catch (e) {
+      // Graceful fallback if RPC isn't available yet
+      console.warn("RPC transfer_pastor failed or not found.", e);
+      throw e;
+    }
+  },
+
+  // Atomic Pullout (RPC wrapper)
+  async pulloutPastor(pulloutData) {
+    const {
+      pastor_id, pullout_date, notes
+    } = pulloutData;
+
+    try {
+      const { data, error } = await db.rpc('pullout_pastor', {
+        p_pastor_id: pastor_id,
+        p_pullout_date: pullout_date,
+        p_notes: (notes || '').trim() || null
+      });
+
+      if (error) throw error;
+
+      const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
+      if (user) {
+        await authService.logAudit(
+          user.id,
+          'PULLOUT_PASTOR',
+          `Pulled out Pastor ID ${pastor_id} from active primary assignment`
+        );
+      }
+
+      return data;
+    } catch (e) {
+      console.error("RPC pullout_pastor failed", e);
+      throw e;
     }
   },
 
@@ -236,7 +313,8 @@ const assignmentService = {
         id,
         pastor_id,
         church_id,
-        assignment_type,
+        role_code,
+        event_type,
         status_code,
         start_date,
         end_date,
@@ -263,7 +341,8 @@ const assignmentService = {
         id,
         pastor_id,
         church_id,
-        assignment_type,
+        role_code,
+        event_type,
         status_code,
         start_date,
         end_date,
