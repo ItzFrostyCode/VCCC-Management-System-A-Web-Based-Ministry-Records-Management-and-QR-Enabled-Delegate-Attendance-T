@@ -17,41 +17,65 @@ let selLeader = null
 
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('District: DOMContentLoaded start')
+  // Global error handler for UI
+  window.onerror = function(msg, url, line) {
+    console.error('GLOBAL ERROR:', msg, 'at', url, ':', line)
+    const tree = document.getElementById('district-tree')
+    if (tree) tree.innerHTML = `<div style="padding:20px; color:var(--red); text-align:center;"><strong>Script Error:</strong><br>${msg}<br><small>Line: ${line}</small></div>`
+  }
+
   try {
+    console.log('District: auth check...')
     await requireAuth()
+    console.log('District: nav/guide init...')
     highlightNav()
     injectMobileNav()
     initGuide()
 
+    console.log('District: fetching data...')
     await initData()
+    console.log('District: init selects...')
     initLeaderSelect()
     initAssignPastorSelect()
+    console.log('District: binding events...')
     bindEvents()
+    console.log('District: rendering...')
     renderDistricts()
+    console.log('District: init complete')
   } catch (err) {
     console.error('District page init failed:', err)
     const tree = document.getElementById('district-tree')
-    if (tree) tree.innerHTML = `<div class="empty-state" style="color:var(--red)">Error: ${esc(err.message)}</div>`
+    if (tree) tree.innerHTML = `<div class="empty-state" style="color:var(--red)"><strong>Initialization Error:</strong><br>${esc(err.message)}</div>`
   }
 })
 
 async function initData() {
-  const [districts, churches, pastors, assignments] = await Promise.all([
-    districtService.fetchAll(),
-    churchService.fetchAll(),
-    pastorService.fetchAll(),
-    assignmentService.fetchAll()
-  ])
-  allDistricts = districts  || []
-  allChurches  = churches   || []
-  allPastors   = pastors    || []
+  try {
+    console.log('initData: Starting Promise.all...')
+    const [districts, churches, pastors, assignments] = await Promise.all([
+      districtService.fetchAll(),
+      churchService.fetchAll(),
+      pastorService.fetchAll(),
+      assignmentService.fetchAll()
+    ])
+    console.log('initData: Promise.all success', { d: !!districts, c: !!churches, p: !!pastors, a: !!assignments })
+    
+    allDistricts = districts  || []
+    allChurches  = churches   || []
+    allPastors   = pastors    || []
 
-  allActiveAssignments = {}
-  ;(assignments || []).forEach(a => {
-    if (a.status_code === 'active' && !a.end_date) {
-      allActiveAssignments[a.church_id] = { pastor_id: a.pastor_id, pastor_name: a.pastor_name, assignment_id: a.id }
-    }
-  })
+    allActiveAssignments = {}
+    ;(assignments || []).forEach(a => {
+      if (a.status_code === 'active' && !a.end_date) {
+        allActiveAssignments[a.church_id] = { pastor_id: a.pastor_id, pastor_name: a.pastor_name, assignment_id: a.id }
+      }
+    })
+  } catch (e) {
+    console.error('initData failed:', e)
+    const tree = document.getElementById('district-tree')
+    if (tree) tree.innerHTML = `<div style="padding:20px; color:var(--red); text-align:center;"><strong>Database Error:</strong><br>${esc(e.message)}</div>`
+  }
 }
 
 function initLeaderSelect() {

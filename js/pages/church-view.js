@@ -3,9 +3,12 @@ import { districtService } from '../services/district.service.js';
 import { churchService } from '../services/church.service.js';
 import { pastorService } from '../services/pastor.service.js';
 import { assignmentService } from '../services/assignment.service.js';
+import { timelineService } from '../services/timeline.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
 import { esc, formatDate } from '../utils/helper.js';
+
+let currentChurchId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -15,9 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initGuide()
 
     const urlParams = new URLSearchParams(window.location.search)
-    const churchId = urlParams.get('id')
+    currentChurchId = urlParams.get('id')
 
-    if (!churchId) {
+    if (!currentChurchId) {
       window.location.href = 'church.html'
       return
     }
@@ -27,7 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnBack.addEventListener('click', () => history.back())
     }
 
-    await loadData(churchId)
+    await loadData(currentChurchId)
+    setupModals()
   } catch (err) {
     console.error('Church View init failed:', err)
     alert('Failed to initialize page: ' + err.message)
@@ -36,9 +40,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadData(id) {
   try {
-    const [church, history] = await Promise.all([
+    const [church, history, timeline] = await Promise.all([
       churchService.fetchById(id),
-      assignmentService.fetchByChurch(id)
+      assignmentService.fetchByChurch(id),
+      timelineService.fetchChurchTimeline(id)
     ])
 
     // Fetch district info for leader name
@@ -50,7 +55,7 @@ async function loadData(id) {
     renderChurchInfo(church, district)
     renderCurrentPastor(history)
     renderStats(church, history)
-    renderHistory(history)
+    renderTimeline(timeline)
     renderDistrictContext(district)
 
     document.getElementById('loading-state').style.display = 'none'
@@ -152,24 +157,117 @@ function renderDistrictContext(d) {
   document.getElementById('d-notes').textContent = d.notes || ''
 }
 
-function renderHistory(history) {
-  const tbody = document.getElementById('pastor-history')
-  if (!history.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-3); padding:32px;">No pastoral history recorded.</td></tr>'
+function renderTimeline(timeline) {
+  const container = document.getElementById('master-timeline')
+  if (!timeline || timeline.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-3); font-size:14px; padding:16px;">No historical events recorded.</div>'
     return
   }
 
-  tbody.innerHTML = history.map(h => `
-    <tr>
-      <td><a href="pastor-view.html?id=${h.pastor_id}" style="color:var(--red); font-weight:600; text-decoration:none;">${esc(h.pastor_name)}</a></td>
-      <td>
-        <div style="font-weight:500;">${formatDate(h.start_date)} — ${h.end_date ? formatDate(h.end_date) : 'Present'}</div>
-      </td>
-      <td>
-        <span class="pill pill-ghost" style="font-size:11px;">${esc(h.role_code)}</span>
-        <span class="pill pill-ghost" style="font-size:11px;">${esc(h.event_type)}</span>
-      </td>
-      <td style="color:var(--text-2); max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(h.notes)}">${esc(h.notes)}</td>
-    </tr>
-  `).join('')
+  container.innerHTML = timeline.map((item, index) => {
+    let icon = ''
+    let dateStr = timelineService.formatPrecisionDate(item.date, item.precision)
+    
+    if (item.type === 'PASTOR_ASSIGNED') {
+      icon = '<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>'
+    } else if (item.type === 'PASTOR_LEFT') {
+      icon = '<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>'
+    } else if (item.type === 'RANK_ACHIEVED') {
+      icon = '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+    } else {
+      icon = '<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
+    }
+
+    const isActive = index === 0;
+
+    return `
+      <div class="timeline-item ${isActive ? 'active' : ''}">
+        <div class="timeline-dot" style="display:flex;align-items:center;justify-content:center;color:var(--red);">
+           <!-- Small dot, icon usually too big here but we can leave empty or tiny dot -->
+        </div>
+        <div class="timeline-content">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <div style="font-weight:700; color:var(--text); font-size:14px; display:flex; align-items:center; gap:8px;">
+               <div style="width:24px; height:24px; background:var(--red-light); color:var(--red); border-radius:4px; display:flex; align-items:center; justify-content:center;">
+                  ${icon}
+               </div>
+               ${esc(item.title)}
+            </div>
+            <div style="font-size:12px; color:var(--text-3); font-weight:600;">${dateStr}</div>
+          </div>
+          <div style="font-size:13px; color:var(--text-2); margin-bottom:4px;">${esc(item.subtitle)}</div>
+          ${item.notes ? `<div style="font-size:13px; color:var(--text); background:var(--bg-body); padding:8px 12px; border-radius:8px; margin-top:8px; border:1px solid var(--border);">${esc(item.notes)}</div>` : ''}
+          ${item.pastor_id ? `<div style="margin-top:8px;"><a href="pastor-view.html?id=${item.pastor_id}" style="font-size:12px; color:var(--red); text-decoration:none; font-weight:600;">View Profile &rarr;</a></div>` : ''}
+        </div>
+      </div>
+    `
+  }).join('')
+}
+
+function setupModals() {
+  window.openHistoricalModal = async () => {
+    const modal = document.getElementById('modal-historical')
+    modal.classList.add('open')
+    
+    // Load pastors into select
+    try {
+      const pastors = await pastorService.fetchAll()
+      const select = document.getElementById('hist-pastor')
+      select.innerHTML = '<option value="">-- Select Pastor --</option>' + 
+        pastors.map(p => `<option value="${p.id}">${esc(p.last_name)}, ${esc(p.first_name)}</option>`).join('')
+    } catch(err) {
+      console.error(err)
+    }
+  }
+
+  window.closeModal = (id) => {
+    document.getElementById(id).classList.remove('open')
+  }
+
+  const histForm = document.getElementById('form-historical')
+  if (histForm) {
+    histForm.onsubmit = submitHistorical
+  }
+}
+
+async function submitHistorical(e) {
+  e.preventDefault()
+  const btn = document.getElementById('btn-submit-historical')
+  const originalText = btn.textContent
+
+  try {
+    btn.textContent = 'Saving...'
+    btn.disabled = true
+
+    const data = {
+      church_id: currentChurchId,
+      pastor_id: document.getElementById('hist-pastor').value,
+      role_code: document.getElementById('hist-role').value,
+      event_type: document.getElementById('hist-event').value,
+      start_date: document.getElementById('hist-start').value,
+      end_date: document.getElementById('hist-end').value,
+      notes: document.getElementById('hist-notes').value || null,
+      status_code: 'pulled_out', // Historical means it's finished
+      is_primary: false,
+      precision_flag: 'exact'
+    }
+
+    if (!data.pastor_id) throw new Error("Please select a pastor.");
+    if (new Date(data.start_date) > new Date(data.end_date)) {
+      throw new Error("Start date cannot be after End date.");
+    }
+
+    await assignmentService.create(data)
+
+    window.closeModal('modal-historical')
+    await loadData(currentChurchId)
+    document.getElementById('form-historical').reset()
+
+  } catch (err) {
+    console.error(err)
+    alert('Failed to save record: ' + err.message)
+  } finally {
+    btn.textContent = originalText
+    btn.disabled = false
+  }
 }

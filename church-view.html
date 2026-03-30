@@ -187,23 +187,74 @@
         </div>
 
         <div class="view-section">
-          <h3 class="section-title"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Pastor History</h3>
-          <table class="history-table">
-            <thead>
-              <tr>
-                <th>Pastor</th>
-                <th>Period</th>
-                <th>Type</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody id="pastor-history">
-              <!-- Injected -->
-            </tbody>
-          </table>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+            <h3 class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Ministry Timeline</h3>
+            <button class="btn btn-primary btn-sm" onclick="openHistoricalModal()">+ Historical Record</button>
+          </div>
+          <div id="master-timeline" class="history-timeline">
+            <!-- Injected by timeline.service -->
+          </div>
         </div>
       </div>
     </main>
+  </div>
+</div>
+
+<!-- Add Historical Record Modal -->
+<div class="modal-overlay" id="modal-historical" onclick="if(event.target===this)closeModal('modal-historical')">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-head">
+      <div class="modal-title">Add Historical Assignment</div>
+      <button class="modal-close" type="button" onclick="closeModal('modal-historical')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-historical" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="form-field">
+          <label class="form-label">Pastor</label>
+          <select id="hist-pastor" class="select-input" required>
+            <!-- Injected pastors list -->
+          </select>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">Start Date</label>
+            <input type="date" id="hist-start" class="input" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">End Date</label>
+            <input type="date" id="hist-end" class="input" required />
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">Role</label>
+            <select id="hist-role" class="select-input" required>
+              <option value="Lead Pastor">Lead Pastor</option>
+              <option value="Assistant Pastor">Assistant Pastor</option>
+              <option value="District Presbyter">District Presbyter</option>
+              <option value="Interim Setup">Interim Setup</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Event Type</label>
+            <select id="hist-event" class="select-input" required>
+              <option value="Legacy Assignment" selected>Legacy Assignment</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Pioneering">Pioneering</option>
+              <option value="Takeover">Takeover</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Notes / Source</label>
+          <textarea id="hist-notes" class="input" style="height:auto; padding:10px 14px;" rows="2" placeholder="e.g. Added from physical ledger"></textarea>
+        </div>
+        <div class="modal-foot" style="margin-top:8px; padding:0; border:none;">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-historical')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-historical">Save Record</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 

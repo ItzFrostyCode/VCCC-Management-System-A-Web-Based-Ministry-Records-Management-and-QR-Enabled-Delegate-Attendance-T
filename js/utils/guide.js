@@ -110,8 +110,31 @@ function getGuideContent() {
         This is the raw, master list of every single assignment movement in the system.</p>
         <p><strong>What to click:</strong><br>
         You can search or filter through thousands of assignment rows to generate specific reports (e.g., "Find all Active Pioneering pastors").</p>
-        <p><strong>⚠️ What should not be edited manually:</strong><br>
-        It is highly recommended that you DO NOT add or edit assignments directly from this table. You should perform Transfers and Pullouts directly on the <strong>Pastor Profile</strong> page to ensure the Timeline Engine rules are followed perfectly.</p>
+        
+        <div style="background:var(--bg-card); padding:12px; border-radius:8px; border:1px solid var(--border); margin:12px 0;">
+          <p style="margin-top:0;"><strong>Definitions:</strong></p>
+          <ul style="padding-left:16px; font-size:13px;">
+            <li><strong>Roles</strong>: Defines position (<em>Lead Pastor, Assistant Pastor, District Presbyter, Interim Setup, Worker, Regular</em>).</li>
+            <li><strong>Event Types</strong>:
+              <ul style="padding-left:12px;">
+                <li><strong>Transfer</strong>: Moving to a new church.</li>
+                <li><strong>Pullout</strong>: Removing from a church.</li>
+                <li><strong>Initial</strong>: First recorded assignment.</li>
+              </ul>
+            </li>
+            <li><strong>Statuses</strong>:
+              <ul style="padding-left:12px;">
+                <li><span class="pill pill-disciple" style="padding:0 4px;">Active</span>: Currently assigned here.</li>
+                <li><span class="pill pill-ghost" style="padding:0 4px;">Ended</span>: History record (Closed).</li>
+                <li><span class="pill pill-wife" style="padding:0 4px;">Transferred</span>: Record closed due to move.</li>
+                <li><span class="pill pill-danger" style="padding:0 4px;">Pullout</span>: Record closed due to pullout.</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <p><strong>⚠️ Warning:</strong><br>
+        It is highly recommended that you DO NOT add or edit assignments manually here. Use the <strong>Pastor Profile</strong> page to ensure the Timeline Engine auto-closes old records correctly.</p>
       `
     },
     'disciples.html': {

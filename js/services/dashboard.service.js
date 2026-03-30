@@ -1,6 +1,6 @@
 // js/services/dashboard.service.js
 // Dashboard aggregation service
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 
 export const dashboardService = {
   // 1. KPI Bar
@@ -184,7 +184,7 @@ export const dashboardService = {
   async getScanFeed() {
     const { data, error } = await db
       .from('scan_logs')
-      .select('*')
+      .select('timestamp, status')
       .order('timestamp', { ascending: false })
       .limit(20);
     if (error) throw error;
@@ -198,7 +198,7 @@ export const dashboardService = {
     // Scan errors today
     const { data: scanErrors } = await db
       .from('scan_logs')
-      .select('delegate_name, status, timestamp')
+      .select('status, timestamp')
       .neq('status', 'SUCCESS')
       .gte('timestamp', new Date().toISOString().split('T')[0] + 'T00:00:00Z')
       .order('timestamp', { ascending: false })
@@ -208,7 +208,7 @@ export const dashboardService = {
       scanErrors.forEach(e => {
         alerts.push({
           type: 'scan_error',
-          message: `Scan failed for ${e.delegate_name || 'Unknown'}: ${e.status}`,
+          message: `Scan failed: ${e.status}`,
           time: e.timestamp
         });
       });
@@ -261,14 +261,14 @@ export const dashboardService = {
       .from('audit_logs')
       .select(`
         action, details, timestamp,
-        users ( full_name )
+        profiles!audit_logs_user_id_fkey ( full_name )
       `)
       .order('timestamp', { ascending: false })
       .limit(15);
     
     if (error) throw error;
     return data.map(d => ({
-      actor: d.users?.full_name || 'System',
+      actor: d.profiles?.full_name || 'System',
       action: d.action,
       details: d.details,
       time: d.timestamp

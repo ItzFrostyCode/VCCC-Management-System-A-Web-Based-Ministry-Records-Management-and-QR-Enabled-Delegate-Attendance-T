@@ -1,116 +1,26 @@
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 import { authService } from './auth.service.js';
 
 export const assignmentService = {
   // Fetch all assignments, joining pastor, church, and district names
   async fetchAll() {
-    const { data, error } = await db
-      .from('assignments')
-      .select(`
-        id,
-        pastor_id,
-        church_id,
-        role_code,
-        event_type,
-        status_code,
-        start_date,
-        end_date,
-        notes,
-        created_at,
-        updated_at,
-        pastors!inner ( id, full_name, wife_name, contact_number, is_deleted ),
-        churches (
-          id,
-          church_name,
-          church_address,
-          church_scope,
-          district_id,
-          districts ( id, district_name )
-        )
-      `)
-      .eq('pastors.is_deleted', false)
-      .order('created_at', { ascending: false })
+    const { data, error } = await db.rpc('get_assignments_v3')
     if (error) throw error
-
-    return data.map(a => ({
-      id: a.id,
-      pastor_id: a.pastor_id,
-      church_id: a.church_id,
-      role_code: a.role_code || 'Regular',
-      event_type: a.event_type || 'Legacy',
-      status_code: a.status_code || 'active',
-      start_date: a.start_date,
-      end_date: a.end_date,
-      notes: a.notes || '',
-      created_at: a.created_at,
-      // Joined fields
-      pastor_name: a.pastors?.full_name || '',
-      wife_name: a.pastors?.wife_name || '',
-      church_name: a.churches?.church_name || '',
-      church_address: a.churches?.church_address || '',
-      district_id: a.churches?.district_id || '',
-      district_name: a.churches?.districts?.district_name || ''
-    }))
+    return data || []
   },
 
   // Fetch only active (open-ended) assignment for a given pastor
   async fetchActiveByPastor(pastorId) {
-    const { data, error } = await db
-      .from('assignments')
-      .select(`
-        id, pastor_id, church_id, role_code, event_type, status_code, start_date, end_date, notes,
-        pastors!inner ( is_deleted ),
-        churches ( id, church_name, district_id, districts ( id, district_name ) )
-      `)
-      .eq('pastor_id', pastorId)
-      .eq('status_code', 'active')
-      .is('end_date', null)
-      .eq('pastors.is_deleted', false)
-      .maybeSingle()
+    const { data, error } = await db.rpc('get_assignments_v3')
     if (error) throw error
-    if (!data) return null
-    return {
-      id: data.id,
-      pastor_id: data.pastor_id,
-      church_id: data.church_id,
-      role_code: data.role_code,
-      event_type: data.event_type,
-      status_code: data.status_code,
-      start_date: data.start_date,
-      end_date: data.end_date,
-      notes: data.notes || '',
-      church_name: data.churches?.church_name || '',
-      district_id: data.churches?.district_id || '',
-      district_name: data.churches?.districts?.district_name || ''
-    }
+    return (data || []).find(a => a.pastor_id === pastorId && a.status_code === 'active' && !a.end_date) || null
   },
 
   // Fetch active assignment for a given church
   async fetchActiveByChurch(churchId) {
-    const { data, error } = await db
-      .from('assignments')
-      .select(`
-        id, pastor_id, church_id, role_code, event_type, status_code, start_date, end_date,
-        pastors!inner ( id, full_name, is_deleted )
-      `)
-      .eq('church_id', churchId)
-      .eq('status_code', 'active')
-      .is('end_date', null)
-      .eq('pastors.is_deleted', false)
-      .maybeSingle()
+    const { data, error } = await db.rpc('get_assignments_v3')
     if (error) throw error
-    if (!data) return null
-    return {
-      id: data.id,
-      pastor_id: data.pastor_id,
-      pastor_name: data.pastors?.full_name || '',
-      church_id: data.church_id,
-      role_code: data.role_code,
-      event_type: data.event_type,
-      status_code: data.status_code,
-      start_date: data.start_date,
-      end_date: data.end_date
-    }
+    return (data || []).find(a => a.church_id === churchId && a.status_code === 'active' && !a.end_date) || null
   },
 
   async create(assignmentData) {
@@ -310,56 +220,15 @@ export const assignmentService = {
 
   // Fetch all assignments for a specific pastor (history)
   async fetchByPastor(pastorId) {
-    const { data, error } = await db
-      .from('assignments')
-      .select(`
-        id,
-        pastor_id,
-        church_id,
-        role_code,
-        event_type,
-        status_code,
-        start_date,
-        end_date,
-        notes,
-        created_at,
-        churches ( id, church_name, district_id, districts ( id, district_name ) )
-      `)
-      .eq('pastor_id', pastorId)
-      .order('start_date', { ascending: false })
-
+    const { data, error } = await db.rpc('get_assignments_v3')
     if (error) throw error
-    return data.map(a => ({
-      ...a,
-      church_name: a.churches?.church_name || '',
-      district_name: a.churches?.districts?.district_name || ''
-    }))
+    return (data || []).filter(a => a.pastor_id === pastorId)
   },
 
   // Fetch all assignments for a specific church (history)
   async fetchByChurch(churchId) {
-    const { data, error } = await db
-      .from('assignments')
-      .select(`
-        id,
-        pastor_id,
-        church_id,
-        role_code,
-        event_type,
-        status_code,
-        start_date,
-        end_date,
-        notes,
-        created_at,
-        pastors ( id, full_name )
-      `)
-      .eq('church_id', churchId)
-      .order('start_date', { ascending: false })
-
+    const { data, error } = await db.rpc('get_assignments_v3')
     if (error) throw error
-    return data.map(a => ({
-      ...a,
-      pastor_name: a.pastors?.full_name || ''
-    }))
-  }
+    return (data || []).filter(a => a.church_id === churchId)
+  },
 }

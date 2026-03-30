@@ -1,4 +1,5 @@
-import { db, requireAuth } from '../supabase.js';
+import { db } from '../db.js';
+import { requireAuth } from '../supabase.js';
 import { authService } from '../services/auth.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
@@ -93,34 +94,29 @@ async function handleCreateUser(e) {
 
 async function loadLogs() {
   const body = document.getElementById('table-body')
-  body.innerHTML = '<div class="empty-state">Fetching logs...</div>'
+  if (body) body.innerHTML = '<div class="empty-state">Fetching logs...</div>'
 
   try {
-    const { data, error } = await db
-      .from('audit_logs')
-      .select(`
-        *,
-        users ( full_name, role )
-      `)
-      .order('timestamp', { ascending: false })
-      .limit(200)
+    const { data, error } = await db.rpc('get_audit_logs_v3');
 
     if (error) throw error
     allLogs = data || []
     renderTable()
   } catch (err) {
     console.error(err)
-    body.innerHTML = `<div class="empty-state" style="color:var(--red)">Failed to load logs: ${err.message}</div>`
+    if (body) body.innerHTML = `<div class="empty-state" style="color:var(--red)">Failed to load logs: ${err.message}</div>`
   }
 }
 
 function renderTable() {
   const body = document.getElementById('table-body')
-  document.getElementById('count-label').textContent = `${allLogs.length} logs`
+  const countLabel = document.getElementById('count-label');
+  if (countLabel) countLabel.textContent = `${allLogs.length} logs`
 
   if (!allLogs.length) {
-    body.innerHTML = '<div class="empty-state">No activity logs found.</div>'
-    document.getElementById('pagination').style.display = 'none'
+    if (body) body.innerHTML = '<div class="empty-state">No activity logs found.</div>'
+    const pagination = document.getElementById('pagination');
+    if (pagination) pagination.style.display = 'none'
     return
   }
 
@@ -131,40 +127,46 @@ function renderTable() {
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedItems = allLogs.slice(startIndex, endIndex)
 
-  body.innerHTML = paginatedItems.map(log => {
-    const action = (log.action || '').toLowerCase();
-    const actionClass = action.includes('login') ? 'pill-login' : action.includes('logout') ? 'pill-logout' : 'pill-gray';
+  if (body) {
+      body.innerHTML = paginatedItems.map(log => {
+        const action = (log.action || '').toLowerCase();
+        const actionClass = action.includes('login') ? 'pill-login' : action.includes('logout') ? 'pill-logout' : 'pill-gray';
+        
+        // Clean up details if it's just the User Agent string
+        let details = log.details || '—';
+        if (details.includes('Mozilla/') && details.includes('AppleWebKit')) {
+          details = 'Browser session';
+        }
     
-    // Clean up details if it's just the User Agent string
-    let details = log.details || '—';
-    if (details.includes('Mozilla/') && details.includes('AppleWebKit')) {
-      details = 'Browser session';
-    }
+        return `
+          <div class="data-table-row cols-logs">
+            <div class="log-time" data-label="Time">
+              ${new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+              <span style="display:block; opacity:0.6; font-size:10px;">${new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <div class="log-user" data-label="User">
+              <span class="log-user-name">${esc(log.full_name || 'System')}</span>
+              <span class="log-user-role">${log.role || ''}</span>
+            </div>
+            <div class="log-action" data-label="Action">
+              <span class="pill ${actionClass}">${log.action}</span>
+            </div>
+            <div class="log-details" data-label="Details" title="${esc(log.details)}">${esc(details)}</div>
+            <div class="log-device" data-label="Device" title="${esc(log.device_info)}">${esc(log.device_info || 'Unknown')}</div>
+          </div>
+        `;
+      }).join('');
+  }
 
-    return `
-      <div class="data-table-row cols-logs">
-        <div class="log-time" data-label="Time">
-          ${new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-          <span style="display:block; opacity:0.6; font-size:10px;">${new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-        </div>
-        <div class="log-user" data-label="User">
-          <span class="log-user-name">${esc(log.users?.full_name || 'System')}</span>
-          <span class="log-user-role">${log.users?.role || ''}</span>
-        </div>
-        <div class="log-action" data-label="Action">
-          <span class="pill ${actionClass}">${log.action}</span>
-        </div>
-        <div class="log-details" data-label="Details" title="${esc(log.details)}">${esc(details)}</div>
-        <div class="log-device" data-label="Device" title="${esc(log.device_info)}">${esc(log.device_info || 'Unknown')}</div>
-      </div>
-    `;
-  }).join('');
-
-  document.getElementById('pagination').style.display = 'flex'
-  document.getElementById('page-info').textContent = `Showing ${startIndex + 1}-${Math.min(endIndex, allLogs.length)} of ${allLogs.length}`
+  const pagination = document.getElementById('pagination');
+  if (pagination) pagination.style.display = 'flex'
+  const pageInfo = document.getElementById('page-info');
+  if (pageInfo) pageInfo.textContent = `Showing ${startIndex + 1}-${Math.min(endIndex, allLogs.length)} of ${allLogs.length}`
   
-  document.getElementById('btn-prev').disabled = (currentPage === 1)
-  document.getElementById('btn-next').disabled = (currentPage === totalPages)
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  if (btnPrev) btnPrev.disabled = (currentPage === 1)
+  if (btnNext) btnNext.disabled = (currentPage === totalPages)
 }
 
 function prevPage() { if (currentPage > 1) { currentPage--; renderTable() } }

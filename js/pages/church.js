@@ -1,4 +1,5 @@
-import { db, requireAuth } from '../supabase.js';
+import { db } from '../db.js';
+import { requireAuth } from '../supabase.js';
 import { authService } from '../services/auth.service.js';
 import { churchService } from '../services/church.service.js';
 import { districtService } from '../services/district.service.js';
@@ -22,42 +23,75 @@ let selModalDistrict = null
 let selFilterDistrict = null
 let selFilterScope    = null
 
+// Re-render when orientation/size crosses the mobile breakpoint
+let _lastIsMobile = window.innerWidth <= 1024
+window.addEventListener('resize', () => {
+  const nowMobile = window.innerWidth <= 1024
+  if (nowMobile !== _lastIsMobile) {
+    _lastIsMobile = nowMobile
+    renderChurches()
+  }
+})
+
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('Church: DOMContentLoaded start')
+  // Global error handler for UI
+  window.onerror = function(msg, url, line) {
+    console.error('GLOBAL ERROR:', msg, 'at', url, ':', line)
+    const list = document.getElementById('church-list')
+    if (list) list.innerHTML = `<div style="padding:20px; color:var(--red); text-align:center;"><strong>Script Error:</strong><br>${msg}<br><small>Line: ${line}</small></div>`
+  }
+
   try {
+    console.log('Church: auth check...')
     await requireAuth()
+    console.log('Church: nav/guide init...')
     highlightNav()
     injectMobileNav()
     initGuide()
 
+    console.log('Church: fetching data...')
     await initData()
+    console.log('Church: init search/selects...')
     initSearchSelect()
+    console.log('Church: binding events...')
     bindEvents()
+    console.log('Church: rendering...')
     renderChurches()
+    console.log('Church: init complete')
   } catch (err) {
     console.error('Church page init failed:', err)
     const list = document.getElementById('church-list')
-    if (list) list.innerHTML = `<div class="empty-state" style="color:var(--red)">Error: ${esc(err.message)}</div>`
+    if (list) list.innerHTML = `<div class="empty-state" style="color:var(--red)"><strong>Initialization Error:</strong><br>${esc(err.message)}</div>`
   }
 })
 
 async function initData() {
-  const [churches, districts, assignments] = await Promise.all([
-    churchService.fetchAll(),
-    districtService.fetchAll(),
-    assignmentService.fetchAll()
-  ])
+  try {
+    console.log('initData: Starting Promise.all...')
+    const [churches, districts, assignments] = await Promise.all([
+      churchService.fetchAll(),
+      districtService.fetchAll(),
+      assignmentService.fetchAll()
+    ])
+    console.log('initData: Promise.all success', { c: !!churches, d: !!districts, a: !!assignments })
 
-  allChurches  = churches  || []
-  allDistricts = districts || []
+    allChurches  = churches  || []
+    allDistricts = districts || []
 
-  // Build active pastor lookup keyed by church_id
-  allPastorAssignments = {}
-  ;(assignments || []).forEach(a => {
-    if (a.status_code === 'active' && !a.end_date) {
-      allPastorAssignments[a.church_id] = a.pastor_name
-    }
-  })
+    // Build active pastor lookup keyed by church_id
+    allPastorAssignments = {}
+    ;(assignments || []).forEach(a => {
+      if (a.status_code === 'active' && !a.end_date) {
+        allPastorAssignments[a.church_id] = a.pastor_name
+      }
+    })
+  } catch (e) {
+    console.error('initData failed:', e)
+    const list = document.getElementById('church-list')
+    if (list) list.innerHTML = `<div style="padding:20px; color:var(--red); text-align:center;"><strong>Database Error:</strong><br>${esc(e.message)}</div>`
+  }
 }
 
 // ── Search-select for district ─────────────────────────────────
@@ -134,9 +168,12 @@ function renderChurches() {
 
   const user    = authService.getCurrentUser()
   const isStaff = user && user.role === 'Staff'
+  const isMobile = window.innerWidth <= 1024
 
   list.innerHTML = ''
   
+  const cardTemplate = document.getElementById('church-card-template');
+
   if (!paginated.length) {
     list.innerHTML = `
       <div class="empty-state">
@@ -155,63 +192,110 @@ function renderChurches() {
 
   paginated.forEach(c => {
     const currentPastor = allPastorAssignments[c.id]
-    const row = document.createElement('div')
-    row.className = 'data-table-row cols-church'
-    row.dataset.id = c.id
     
-    let actionsHtml = `
-      <button class="btn-icon btn-view" title="View Profile" style="background:hsla(150, 100%, 97%, 1); color:hsl(150, 80%, 35%); border-color:hsla(150, 100%, 90%, 1);">
-        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      </button>
-      <button class="btn-icon btn-quick-add" title="Add Disciple" style="background:var(--blue-bg); color:var(--blue); border-color:var(--blue-bg);">
-        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-      </button>
-      <button class="btn-icon btn-edit" title="Edit">
-        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-      </button>
-    `
-    if (!isStaff) {
-      actionsHtml += `
-        <button class="btn-icon btn-delete" title="Delete">
-          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+    if (isMobile) {
+      const clone = cardTemplate.content.cloneNode(true);
+      const nameEl = clone.querySelector('.pcm-name');
+      const pastorText = clone.querySelector('.pastor-text');
+      const districtVal = clone.querySelector('.district-val');
+      const addressVal = clone.querySelector('.address-val');
+      const statusWrap = clone.querySelector('.pcm-status-wrap');
+      
+      nameEl.textContent = c.church_name;
+      pastorText.textContent = currentPastor ? `Pastor: ${currentPastor}` : 'Vacant';
+      districtVal.textContent = c.district_name || 'Unassigned';
+      addressVal.textContent = c.church_address || '—';
+      
+      const scope = (c.church_scope || 'local').toLowerCase();
+      const statusClass = scope === 'international' ? 'status-warning' : 'status-active';
+      statusWrap.innerHTML = `<span class="status-badge ${statusClass}">${scope}</span>`;
+
+      const actions = clone.querySelector('.pcm-actions');
+      actions.innerHTML = `
+        <button class="pcm-action-btn pcm-view" title="View Profile">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          View
+        </button>
+        <button class="pcm-action-btn" id="pcm-quick-add-${c.id}" title="Quick Add" style="color:var(--blue);">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          Add
+        </button>
+        <button class="pcm-action-btn pcm-edit" title="Edit">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        ${!isStaff ? `<button class="pcm-action-btn pcm-delete" title="Remove">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Del
+        </button>` : ''}
+      `;
+      
+      actions.querySelector('.pcm-view').onclick = () => window.location.href = `church-view.html?id=${c.id}`;
+      actions.querySelector(`#pcm-quick-add-${c.id}`).onclick = () => openQuickAdd(c.id, c.church_name);
+      actions.querySelector('.pcm-edit').onclick = () => openModal(c);
+      if (!isStaff) actions.querySelector('.pcm-delete').onclick = () => deleteChurch(c.id);
+      
+      list.appendChild(clone);
+
+    } else {
+      const row = document.createElement('div')
+      row.className = 'data-table-row cols-church'
+      row.dataset.id = c.id
+      
+      let actionsHtml = `
+        <button class="btn-icon btn-view" title="View Profile">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <button class="btn-icon btn-quick-add" title="Add Disciple">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        </button>
+        <button class="btn-icon btn-edit" title="Edit">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
         </button>
       `
+      if (!isStaff) {
+        actionsHtml += `
+          <button class="btn-icon btn-delete" title="Delete">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        `
+      }
+
+      row.innerHTML = `
+        <div data-label="Church Name">
+          <div class="cell-name-primary">${esc(c.church_name)}</div>
+        </div>
+        <div data-label="Address">
+          <div class="cell-name-sub">${esc(c.church_address) || '—'}</div>
+        </div>
+        <div data-label="District">
+          <span class="pill pill-disciple" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-2); font-size:11px;">
+            ${esc(c.district_name) || 'Unassigned'}
+          </span>
+        </div>
+        <div data-label="Type">
+          <span class="pill" style="text-transform: capitalize; background:var(--bg-card); border:1px solid var(--border); color:var(--text-2); font-size:11px; padding: 2px 8px; border-radius: 4px;">
+            ${esc(c.church_scope) || 'local'}
+          </span>
+        </div>
+        <div data-label="Current Pastor">
+          ${currentPastor
+            ? `<div class="cell-name-primary" style="font-size:13px;">${esc(currentPastor)}</div>`
+            : `<span class="vacant-badge">Vacant</span>`
+          }
+        </div>
+        <div class="row-actions">${actionsHtml}</div>
+      `
+
+      // Bind events
+      row.querySelector('.btn-view').onclick = () => window.location.href = `church-view.html?id=${c.id}`
+      row.querySelector('.btn-quick-add').onclick = () => openQuickAdd(c.id, c.church_name)
+      row.querySelector('.btn-edit').onclick = () => openModal(c)
+      const delBtn = row.querySelector('.btn-delete')
+      if (delBtn) delBtn.onclick = () => deleteChurch(c.id)
+
+      list.appendChild(row)
     }
-
-    row.innerHTML = `
-      <div data-label="Church Name">
-        <div class="cell-name-primary">${esc(c.church_name)}</div>
-      </div>
-      <div data-label="Address">
-        <div class="cell-name-sub">${esc(c.church_address) || '—'}</div>
-      </div>
-      <div data-label="District">
-        <span class="pill pill-disciple" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-2); font-size:11px;">
-          ${esc(c.district_name) || 'Unassigned'}
-        </span>
-      </div>
-      <div data-label="Type">
-        <span class="pill" style="text-transform: capitalize; background:var(--bg-card); border:1px solid var(--border); color:var(--text-2); font-size:11px; padding: 2px 8px; border-radius: 4px;">
-          ${esc(c.church_scope) || 'local'}
-        </span>
-      </div>
-      <div data-label="Current Pastor">
-        ${currentPastor
-          ? `<div class="cell-name-primary" style="font-size:13px;">${esc(currentPastor)}</div>`
-          : `<span class="vacant-badge">Vacant</span>`
-        }
-      </div>
-      <div class="row-actions">${actionsHtml}</div>
-    `
-
-    // Bind events
-    row.querySelector('.btn-view').onclick = () => window.location.href = `church-view.html?id=${c.id}`
-    row.querySelector('.btn-quick-add').onclick = () => openQuickAdd(c.id, c.church_name)
-    row.querySelector('.btn-edit').onclick = () => openModal(c)
-    const delBtn = row.querySelector('.btn-delete')
-    if (delBtn) delBtn.onclick = () => deleteChurch(c.id)
-
-    list.appendChild(row)
   })
 }
 

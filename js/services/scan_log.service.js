@@ -1,6 +1,6 @@
 // Scan Logs Service → scan_logs table
 
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 
 export const scanLogService = {
   async insert(conferenceId, dayId, slotId, delegateId, delegateName, delegateRole, delegateDistrict, delegateChurch, status) {

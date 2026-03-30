@@ -1,26 +1,31 @@
 // Attendance → attendance table
 
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 
 export const attendanceService = {
 
-  async checkDuplicate(conferenceId, dayId, slotId, delegateId) {
-    const { data, error } = await db
+  async checkDuplicate(conferenceId, dayId, slotId, delegateId, delegateType = null) {
+    const query = db
       .from('attendance')
       .select('id, scanned_at')
       .eq('conference_id', conferenceId)
       .eq('day_id', dayId)
       .eq('slot_id', slotId)
       .eq('delegate_id', delegateId)
-      .maybeSingle()
+
+    if (delegateType) {
+      query.eq('delegate_type', delegateType)
+    }
+
+    const { data, error } = await query.maybeSingle()
 
     if (error) throw error
     return data
   },
 
   async insert(conferenceId, dayId, slotId, delegateId, delegateType = null) {
-    // 1. Manually check for duplicates
-    const existing = await this.checkDuplicate(conferenceId, dayId, slotId, delegateId)
+    // 1. Manually check for duplicates (Account for Type so Pastor/Wife both work)
+    const existing = await this.checkDuplicate(conferenceId, dayId, slotId, delegateId, delegateType)
     if (existing) {
       const err = new Error('ALREADY_SCANNED')
       err.code = 'ALREADY_SCANNED'

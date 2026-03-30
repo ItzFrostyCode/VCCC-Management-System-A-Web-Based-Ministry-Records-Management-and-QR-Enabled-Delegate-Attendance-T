@@ -1,5 +1,6 @@
 // Conference service — conferences, conference_days, and time_slots tables
-import { db } from '../supabase.js';
+import { db } from '../db.js';
+import { authService } from './auth.service.js';
 
 export const conferenceService = {
   getDaysBetween(start, end) {

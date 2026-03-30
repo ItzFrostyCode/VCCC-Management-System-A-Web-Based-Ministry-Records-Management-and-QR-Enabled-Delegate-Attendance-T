@@ -1,4 +1,4 @@
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 
 class AuthService {
   constructor() {

@@ -1,4 +1,5 @@
-import { db, requireAuth } from '../supabase.js';
+import { db } from '../db.js';
+import { requireAuth } from '../supabase.js';
 import { authService } from '../services/auth.service.js';
 import { districtService } from '../services/district.service.js';
 import { churchService } from '../services/church.service.js';
@@ -6,7 +7,7 @@ import { pastorService } from '../services/pastor.service.js';
 import { discipleService } from '../services/disciple.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, createSearchSelect, downloadCSV } from '../utils/helper.js';
+import { esc, createSearchSelect, downloadCSV, hexToRgba } from '../utils/helper.js';
 
 let allChurches = []
 let allDistricts = []
@@ -22,16 +23,40 @@ let selFilterPastor = null
 let allPastors = []
 let filteredCount = 0
 
+// Re-render when orientation/size crosses the mobile breakpoint
+let _lastIsMobile = window.innerWidth <= 1024
+window.addEventListener('resize', () => {
+  const nowMobile = window.innerWidth <= 1024
+  if (nowMobile !== _lastIsMobile) {
+    _lastIsMobile = nowMobile
+    renderTable()
+  }
+})
+
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Disciples: DOMContentLoaded start')
+    // Global error handler for UI that overwrites skeletons
+    window.onerror = function(msg, url, line) {
+        console.error('GLOBAL ERROR:', msg, 'at', url, ':', line)
+        const body = document.getElementById('table-body')
+        if (body) body.innerHTML = `<div style="padding:20px; color:var(--red); text-align:center;"><strong>Script Error:</strong><br>${msg}<br><small>Line: ${line}</small></div>`
+    }
+
     try {
+        console.log('Disciples: auth check...')
         await requireAuth()
+        console.log('Disciples: nav/guide init...')
         highlightNav()
         injectMobileNav()
         initGuide()
 
+        console.log('Disciples: init UI...')
         initUI()
+        console.log('Disciples: fetching data...')
         await initData()
+        console.log('Disciples: binding events...')
         bindEvents()
+        console.log('Disciples: init complete')
     } catch (err) {
         console.error('Page init failed:', err)
         const body = document.getElementById('table-body')
@@ -45,36 +70,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 })
 
 function initUI() {
-    selModalChurch = createSearchSelect(
-        document.getElementById('modal-church-sel'),
-        [],
-        'Select Church'
-    )
+    const modalChurchEl = document.getElementById('modal-church-sel')
+    const modalDistFilterEl = document.getElementById('modal-district-filter')
+    const filterDistEl = document.getElementById('filter-district')
+    const filterPastorEl = document.getElementById('filter-pastor')
 
-    selModalDistrictFilter = createSearchSelect(
-        document.getElementById('modal-district-filter'),
-        [],
-        'All Districts'
-    )
-
-    // When district filter changes, update church options
-    selModalDistrictFilter.onChange = (distId) => {
-        updateModalChurchOptions(distId)
+    if (modalChurchEl) {
+        selModalChurch = createSearchSelect(modalChurchEl, [], 'Select Church')
     }
-
-    selFilterDistrict = createSearchSelect(
-        document.getElementById('filter-district'),
-        [],
-        'All Districts'
-    )
-    selFilterDistrict.onChange = () => { currentPage = 1; renderTable(); }
-
-    selFilterPastor = createSearchSelect(
-        document.getElementById('filter-pastor'),
-        [],
-        'All Pastors'
-    )
-    selFilterPastor.onChange = () => { currentPage = 1; renderTable(); }
+    if (modalDistFilterEl) {
+        selModalDistrictFilter = createSearchSelect(modalDistFilterEl, [], 'All Districts')
+        selModalDistrictFilter.onChange = (distId) => updateModalChurchOptions(distId)
+    }
+    if (filterDistEl) {
+        selFilterDistrict = createSearchSelect(filterDistEl, [], 'All Districts')
+        selFilterDistrict.onChange = () => { currentPage = 1; renderTable(); }
+    }
+    if (filterPastorEl) {
+        selFilterPastor = createSearchSelect(filterPastorEl, [], 'All Pastors')
+        selFilterPastor.onChange = () => { currentPage = 1; renderTable(); }
+    }
 }
 
 function updateModalChurchOptions(districtId) {
@@ -87,12 +102,14 @@ function updateModalChurchOptions(districtId) {
 
 async function initData() {
     try {
+        console.log('initData: Starting Promise.all...')
         const [ch, dists, d, p] = await Promise.all([
             churchService.fetchAll(),
             districtService.fetchAll(),
             discipleService.fetchAll(),
             pastorService.fetchAll()
         ])
+        console.log('initData: Promise.all success', { ch: !!ch, dists: !!dists, d: !!d, p: !!p })
 
         allChurches = (ch || []).sort((a,b) => a.church_name.localeCompare(b.church_name))
         allDistricts = (dists || []).sort((a,b) => a.district_name.localeCompare(b.district_name))
@@ -117,9 +134,11 @@ async function initData() {
         updateModalChurchOptions('')
         renderTable()
     } catch(e) {
-        console.error(e)
-        const msg = e.message || 'Error loading data'
-        alert(msg)
+        console.error('initData failed:', e)
+        const body = document.getElementById('table-body')
+        if (body) {
+            body.innerHTML = `<div style="padding:20px; color:var(--red); text-align:center;"><strong>Data Load Error:</strong><br>${esc(e.message)}</div>`
+        }
     }
 }
 
@@ -156,43 +175,90 @@ function renderTable() {
     const paginated = filtered.slice(start, start + ITEMS_PER_PAGE)
 
     if (!paginated.length) {
-        body.innerHTML = '<div class="empty-state">No disciples found.</div>'
-        document.getElementById('pagination').style.display = 'none'
+        if (body) body.innerHTML = '<div class="empty-state">No disciples found.</div>'
+        const pagination = document.getElementById('pagination')
+        if (pagination) pagination.style.display = 'none'
         return
     }
 
-    const user = authService.getCurrentUser();
-    const isStaff = user && user.role === 'Staff';
+    const user = authService.getCurrentUser()
+    const isStaff = user && user.role === 'Staff'
+    const isMobile = window.innerWidth <= 1024
 
-    body.innerHTML = paginated.map(d => {
+    // Clear previous rows
+    body.innerHTML = '';
+    
+    const gridTemplate = document.getElementById('disciple-grid-template');
+    const cardTemplate = document.getElementById('disciple-card-template');
+
+    paginated.forEach(d => {
         const safeName = esc(d.full_name).replace(/'/g, '&#39;')
-        return `
-        <div class="data-table-row cols-disciples" data-id="${d.id}" data-name="${safeName}">
-            <div class="cell-name-primary" data-label="Disciple" style="display:flex;align-items:center;gap:10px;">
-                ${getAvatarHtml(d.disciple_image_url, d.full_name)}${esc(d.full_name)}
-            </div>
-            <div style="font-size:13px; color:var(--text); font-weight:500;" data-label="Church">${esc(d.church_name) || '—'}</div>
-            <div style="font-size:12px; color:var(--text-2); opacity:0.8;" data-label="District">${esc(d.district_name)}</div>
-            <div class="row-actions">
-                <button class="btn-icon btn-edit-action" title="Edit">
+        const dDistrict = allDistricts.find(x => String(x.id) === String(d.district_id))
+        const themeColor = dDistrict ? dDistrict.theme_color : null
+        
+        if (isMobile) {
+            const clone = cardTemplate.content.cloneNode(true);
+            const nameEl = clone.querySelector('.pcm-name');
+            const churchSub = clone.querySelector('.d-church-sub');
+            const distVal = clone.querySelector('.d-district-val');
+            const churchVal = clone.querySelector('.d-church-val');
+            const avaWrap = clone.querySelector('.pcm-avatar-pastor');
+            
+            nameEl.textContent = d.full_name;
+            churchSub.textContent = d.church_name || '—';
+            distVal.textContent = d.district_name || '—';
+            churchVal.textContent = d.church_name || '—';
+            
+            avaWrap.innerHTML = getAvatarHtml(d.disciple_image_url, d.full_name, themeColor);
+
+            const actions = clone.querySelector('.pcm-actions');
+            actions.innerHTML = `
+                <button class="pcm-action-btn pcm-edit" title="Edit">
                   <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Edit
+                </button>
+                ${!isStaff ? `<button class="pcm-action-btn pcm-delete" title="Remove">
+                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                  Delete
+                </button>` : ''}
+            `;
+            
+            actions.querySelector('.pcm-edit').onclick = () => openEdit(d.id);
+            if (!isStaff) actions.querySelector('.pcm-delete').onclick = () => openDelete(d.id, safeName);
+            
+            body.appendChild(clone);
+
+        } else {
+            const clone = gridTemplate.content.cloneNode(true);
+            const nameEl = clone.querySelector('.d-name');
+            const churchEl = clone.querySelector('.d-church');
+            const distEl = clone.querySelector('.d-district');
+            const avaContainer = clone.querySelector('.avatar-container');
+            
+            nameEl.textContent = d.full_name;
+            churchEl.textContent = d.church_name || '—';
+            distEl.textContent = d.district_name || '—';
+            avaContainer.innerHTML = getAvatarHtml(d.disciple_image_url, d.full_name, themeColor);
+
+            const actions = clone.querySelector('.row-actions');
+            actions.innerHTML = `
+                <button class="btn-icon btn-edit btn-edit-action" title="Edit">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                 </button>
                 ${!isStaff ? `
-                <button class="btn-icon btn-delete-action" title="Remove">
+                <button class="btn-icon btn-delete btn-delete-action" title="Remove">
                   <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                 </button>
                 ` : ''}
-            </div>
-        </div>
-`}).join('')
-
-    body.querySelectorAll('.data-table-row').forEach(row => {
-        const id = row.dataset.id
-        const name = row.dataset.name
-        row.querySelector('.btn-edit-action').onclick = () => openEdit(id)
-        const delBtn = row.querySelector('.btn-delete-action')
-        if (delBtn) delBtn.onclick = () => openDelete(id, name)
-    })
+            `;
+            
+            actions.querySelector('.btn-edit-action').onclick = () => openEdit(d.id);
+            const delBtn = actions.querySelector('.btn-delete-action');
+            if (delBtn) delBtn.onclick = () => openDelete(d.id, safeName);
+            
+            body.appendChild(clone);
+        }
+    });
 
     document.getElementById('pagination').style.display = 'flex'
     document.getElementById('page-info').textContent = `Showing ${start + 1}-${Math.min(start + ITEMS_PER_PAGE, filteredCount)} of ${filteredCount}`
@@ -386,13 +452,19 @@ function bindEvents() {
     document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open') }))
 }
 
-function getAvatarHtml(imageUrl, name) {
+function getAvatarHtml(imageUrl, name, themeColor) {
     if (imageUrl) {
         return `<img src="${imageUrl}" class="avatar-img" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" />`
     }
     const initials = String(name || '?').charAt(0).toUpperCase()
+    if (themeColor && themeColor.startsWith('#')) {
+        // hexToRgba function is already imported at the top
+        const bg = hexToRgba(themeColor, 0.15)
+        return `<div class="avatar-initials" style="background-color: ${bg}; color: ${themeColor}; border: 1px solid ${themeColor}; width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">${initials}</div>`
+    }
+    
+    // Fallback if no theme color exists
     const charCode = initials.charCodeAt(0)
     const bgIndex = (charCode % 5) + 1
-    // Reusing the same class system if exists, else inline style
     return `<div class="avatar-initials bg-avatar-${bgIndex}" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;">${initials}</div>`
 }

@@ -1,70 +1,22 @@
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 
 export const discipleService = {
   async fetchAll() {
-    const { data, error } = await db
-      .from('disciples')
-      .select(`
-        id,
-        full_name,
-        church_id,
-        disciple_image_url,
-        is_deleted,
-        created_at,
-        churches (
-          id,
-          church_name,
-          district_id,
-          districts ( id, district_name )
-        )
-      `)
-      .eq('is_deleted', false)
-      .order('full_name')
+    const { data, error } = await db.rpc('get_disciples_v3')
     if (error) throw error
-
-    return data.map(d => ({
-      id: d.id,
-      full_name: d.full_name,
-      church_id: d.church_id,
-      disciple_image_url: d.disciple_image_url || null,
-      church_name: d.churches?.church_name || '—',
-      district_id: d.churches?.district_id || '',
-      district_name: d.churches?.districts?.district_name || '—'
-    }))
+    return data || []
   },
 
   async fetchByChurch(churchId) {
-    const { data, error } = await db
-      .from('disciples')
-      .select('id, full_name, church_id')
-      .eq('church_id', churchId)
-      .eq('is_deleted', false)
-      .order('full_name')
+    const { data, error } = await db.rpc('get_disciples_v3')
     if (error) throw error
-    return data
+    return (data || []).filter(d => d.church_id === churchId)
   },
 
   async fetchById(id) {
-    const { data, error } = await db
-      .from('disciples')
-      .select(`
-        id, full_name, church_id, disciple_image_url,
-        churches ( id, church_name, district_id, districts ( id, district_name ) )
-      `)
-      .eq('id', id)
-      .eq('is_deleted', false)
-      .single()
+    const { data, error } = await db.rpc('get_disciples_v3')
     if (error) throw error
-    
-    return {
-      id: data.id,
-      full_name: data.full_name,
-      church_id: data.church_id,
-      disciple_image_url: data.disciple_image_url || null,
-      church_name: data.churches?.church_name || '—',
-      district_id: data.churches?.district_id || '',
-      district_name: data.churches?.districts?.district_name || '—'
-    }
+    return (data || []).find(d => d.id === id) || null
   },
 
   async create(data) {

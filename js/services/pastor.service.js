@@ -1,88 +1,19 @@
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 import { authService } from './auth.service.js';
 
 export const pastorService = {
-  // Shared view model mapper to ensure identical shapes
-  _mapPastorResponse(p) {
-    const activeAssignment = (p.assignments || []).find(
-      a => a.status_code === 'active' && !a.end_date
-    )
-    return {
-      id: p.id,
-      full_name: p.full_name,
-      wife_name: p.wife_name || '',
-      wife_birthdate: p.wife_birthdate || '',
-      contact_number: p.contact_number || '',
-      birthdate: p.birthdate || '',
-      pastoring_start_date: p.pastoring_start_date || '',
-      pastor_image_url: p.pastor_image_url || '',
-      wife_image_url: p.wife_image_url || '',
-      notes: p.notes || '',
-      current_status_code: p.current_status_code || 'undeployed',
-      created_at: p.created_at || null,
-      updated_at: p.updated_at || null,
-      assignment_id: activeAssignment?.id || null,
-      church_id: activeAssignment?.church_id || null,
-      church_name: activeAssignment?.churches?.church_name || '',
-      church_address: activeAssignment?.churches?.church_address || '',
-      district_id: activeAssignment?.churches?.district_id || null,
-      district_name: activeAssignment?.churches?.districts?.district_name || ''
-    }
-  },
+
   // Returns pastors with their active assignment's church/district info
   async fetchAll() {
-    const { data, error } = await db
-      .from('pastors')
-      .select(`
-        id,
-        full_name,
-        wife_name,
-        wife_birthdate,
-        contact_number,
-        birthdate,
-        pastoring_start_date,
-        pastor_image_url,
-        wife_image_url,
-        notes,
-        current_status_code,
-        is_deleted,
-        created_at,
-        updated_at,
-        assignments!assignments_pastor_id_fkey (
-          id, church_id, role_code, event_type, status_code, start_date, end_date,
-          churches (
-            id, church_name, church_address, district_id,
-            districts ( id, district_name )
-          )
-        )
-      `)
-      .eq('is_deleted', false)
-      .order('full_name')
-
+    const { data, error } = await db.rpc('get_pastors_v3')
     if (error) throw error
-
-    return data.map(p => pastorService._mapPastorResponse(p))
+    return data || []
   },
 
   async fetchById(id) {
-    const { data, error } = await db
-      .from('pastors')
-      .select(`
-        id, full_name, wife_name, wife_birthdate, contact_number, birthdate,
-        pastoring_start_date, pastor_image_url, wife_image_url, notes, current_status_code,
-        created_at, updated_at,
-        assignments!assignments_pastor_id_fkey (
-          id, church_id, role_code, event_type, status_code, start_date, end_date,
-          churches ( id, church_name, church_address, district_id, districts ( id, district_name ) )
-        )
-      `)
-      .eq('id', id)
-      .eq('is_deleted', false)
-      .single()
-
+    const { data, error } = await db.rpc('get_pastors_v3')
     if (error) throw error
-
-    return pastorService._mapPastorResponse(data)
+    return (data || []).find(p => p.id === id) || null
   },
 
   async create(data) {
@@ -123,18 +54,7 @@ export const pastorService = {
       }
     }
 
-    return {
-      id: result.id,
-      full_name: result.full_name,
-      wife_name: result.wife_name || '',
-      contact_number: result.contact_number || '',
-      current_status_code: result.current_status_code,
-      assignment_id: null,
-      church_id: null,
-      church_name: '',
-      district_id: null,
-      district_name: ''
-    }
+    return result
   },
 
   async update(id, data) {
@@ -191,22 +111,14 @@ export const pastorService = {
       }
     }
 
-    return {
-      id: result.id,
-      full_name: result.full_name,
-      wife_name: result.wife_name || '',
-      contact_number: result.contact_number || '',
-      current_status_code: result.current_status_code
-    }
+    return result
   },
 
   async remove(id) {
     // 1. Fetch pastor name securely before deleting using RPC
-    const { data: p, error: fetchErr } = await db
-      .from('pastors')
-      .select('full_name')
-      .eq('id', id)
-      .single()
+    const { data: pastors, error: fetchErr } = await db.rpc('get_pastors_v3')
+    if (fetchErr) throw fetchErr
+    const p = (pastors || []).find(x => x.id === id)
 
     if (fetchErr) throw fetchErr
 

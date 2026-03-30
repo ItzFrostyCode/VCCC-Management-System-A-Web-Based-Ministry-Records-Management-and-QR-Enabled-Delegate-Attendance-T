@@ -64,22 +64,8 @@
           <input type="text" id="assign-search" placeholder="Search pastor or church..." />
         </div>
         <div class="filter-group">
-          <select id="filter-type" class="btn btn-ghost" style="height:42px; width:150px; text-align:left;">
-            <option value="">All Roles</option>
-            <option value="Lead Pastor">Lead Pastor</option>
-            <option value="Assistant Pastor">Assistant Pastor</option>
-            <option value="District Presbyter">District Presbyter</option>
-            <option value="Interim Setup">Interim Setup</option>
-          </select>
-          <select id="filter-status" class="btn btn-ghost" style="height:42px; width:150px; text-align:left;">
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="ended">Ended</option>
-            <option value="transferred">Transferred</option>
-            <option value="redirection">Redirection</option>
-            <option value="pullout">Pullout</option>
-            <option value="undeployed">Undeployed</option>
-          </select>
+          <div id="filter-type"></div>
+          <div id="filter-status"></div>
         </div>
       </div>
 
@@ -107,6 +93,31 @@
         </div>
       </div>
     </main>
+    
+    <!-- TEMPLATES FOR SAFE DOM RENDERING -->
+    <template id="assignment-card-template">
+      <div class="pastor-card-mobile pcm-wrap">
+        <div class="pcm-header">
+          <div class="pcm-avatars">
+            <div class="pcm-avatar-wrap pcm-avatar-pastor"></div>
+          </div>
+          <div class="pcm-title-area">
+            <div class="pcm-name"></div>
+            <div class="pcm-wife-name"></div>
+          </div>
+          <div class="pcm-status-wrap"></div>
+        </div>
+        <div class="pcm-info-grid">
+          <div class="pcm-info-item"><span class="pcm-info-label">Role</span><span class="pcm-info-val role-text"></span></div>
+          <div class="pcm-info-item"><span class="pcm-info-label">Event</span><span class="pcm-info-val event-text"></span></div>
+          <div class="pcm-info-item"><span class="pcm-info-label">Start Date</span><span class="pcm-info-val start-val"></span></div>
+          <div class="pcm-info-item"><span class="pcm-info-label">End Date</span><span class="pcm-info-val end-val"></span></div>
+        </div>
+        <div class="pcm-actions">
+          <!-- Actions added via JS -->
+        </div>
+      </div>
+    </template>
 
     <!-- Modal -->
     <div class="modal-overlay" id="assign-modal-overlay">

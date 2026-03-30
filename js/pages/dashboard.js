@@ -1,5 +1,6 @@
 // js/pages/dashboard.js
-import { db, requireAuth } from '../supabase.js';
+import { db } from '../db.js';
+import { requireAuth } from '../supabase.js';
 import { dashboardService } from '../services/dashboard.service.js';
 import { authService } from '../services/auth.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';

@@ -5,7 +5,16 @@ import { pastorService } from '../services/pastor.service.js';
 import { assignmentService } from '../services/assignment.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, createSearchSelect } from '../utils/helper.js';
+import { esc, createSearchSelect, hexToRgba } from '../utils/helper.js';
+
+let _lastIsMobile = window.innerWidth <= 1024
+window.addEventListener('resize', () => {
+  const nowMobile = window.innerWidth <= 1024
+  if (nowMobile !== _lastIsMobile) {
+    _lastIsMobile = nowMobile
+    renderAssignments()
+  }
+})
 
 let allAssignments = []
 let filteredAssignments = []
@@ -15,7 +24,7 @@ let editingId      = null
 let currentPage    = 1
 const ITEMS_PER_PAGE = 10
 
-let selPastor, selChurch
+let selPastor, selChurch, selType, selStatus
 
 // ── Status / Type Config ───────────────────────────────────────
 const statusConfig = {
@@ -69,6 +78,8 @@ async function initData() {
 function initSearchSelects() {
   const pWrap = document.getElementById('f-pastor-sel')
   const cWrap = document.getElementById('f-church-sel')
+  const filterTypeWrap = document.getElementById('filter-type')
+  const filterStatusWrap = document.getElementById('filter-status')
   
   const pOpts = [{ value: '', label: '-- Select Pastor --' }, ...allPastors.map(p => ({ value: p.id, label: p.full_name }))]
   const cOpts = [{ value: '', label: '-- Select Church --' }, ...allChurches.map(c => ({ value: c.id, label: c.church_name }))]
@@ -83,6 +94,29 @@ function initSearchSelects() {
     selChurch.setOptions(cOpts)
   } else if (cWrap) {
     selChurch = createSearchSelect(cWrap, cOpts, '-- Select Church --')
+  }
+
+  // Filter Bar Selects
+  if (!selType && filterTypeWrap) {
+    selType = createSearchSelect(filterTypeWrap, [
+      { value: '', label: 'All Roles' },
+      { value: 'Lead Pastor', label: 'Lead Pastor' },
+      { value: 'Assistant Pastor', label: 'Assistant Pastor' },
+      { value: 'District Presbyter', label: 'District Presbyter' },
+      { value: 'Interim Setup', label: 'Interim Setup' }
+    ], 'All Roles', () => handleFilter())
+  }
+  
+  if (!selStatus && filterStatusWrap) {
+    selStatus = createSearchSelect(filterStatusWrap, [
+      { value: '', label: 'All Status' },
+      { value: 'active', label: 'Active' },
+      { value: 'ended', label: 'Ended' },
+      { value: 'transferred', label: 'Transferred' },
+      { value: 'redirection', label: 'Redirection' },
+      { value: 'pullout', label: 'Pullout' },
+      { value: 'undeployed', label: 'Undeployed' }
+    ], 'All Status', () => handleFilter())
   }
 }
 
@@ -110,10 +144,59 @@ function renderAssignments() {
   const end = start + ITEMS_PER_PAGE
   const paginated = filteredAssignments.slice(start, end)
 
-  list.innerHTML = paginated.map(a => {
+  const isMobile = window.innerWidth <= 1024
+  
+  // Clear previous rows
+  list.innerHTML = '';
+  
+  const cardTemplate = document.getElementById('assignment-card-template');
+
+  paginated.forEach(a => {
     const status = statusConfig[a.status_code] || { label: a.status_code, class: 'pill-ghost' }
-    return `
-      <div class="data-table-row cols-assign" data-id="${a.id}">
+    
+    if (isMobile) {
+      const clone = cardTemplate.content.cloneNode(true);
+      
+      // Get pastor details for avatar
+      const pastor = allPastors.find(p => String(p.id) === String(a.pastor_id));
+      const themeColor = a.district_theme_color || (pastor ? pastor.theme_color : null);
+      
+      const nameEl = clone.querySelector('.pcm-name');
+      const churchEl = clone.querySelector('.pcm-wife-name'); // Borrowing class for church
+      const statusWrap = clone.querySelector('.pcm-status-wrap');
+      const roleVal = clone.querySelector('.role-text');
+      const eventVal = clone.querySelector('.event-text');
+      const startVal = clone.querySelector('.start-val');
+      const endVal = clone.querySelector('.end-val');
+      const avaWrap = clone.querySelector('.pcm-avatar-pastor');
+      
+      nameEl.textContent = a.pastor_name || 'Unknown Pastor';
+      churchEl.textContent = a.church_name || '—';
+      statusWrap.innerHTML = `<span class="status-badge ${status.class.replace('pill-', 'status-')}">${status.label}</span>`;
+      
+      roleVal.textContent = roleLabel[a.role_code] || a.role_code;
+      eventVal.textContent = a.event_type || '—';
+      startVal.textContent = a.start_date || '—';
+      endVal.textContent = a.end_date || 'Present';
+      
+      avaWrap.innerHTML = getAvatarHtml(pastor ? pastor.pastor_image_url : null, a.pastor_name, themeColor);
+      
+      const actions = clone.querySelector('.pcm-actions');
+      actions.innerHTML = `
+        <button class="pcm-action-btn pcm-edit btn-edit-action" title="Edit">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+      `;
+      
+      actions.querySelector('.btn-edit-action').onclick = () => editRecord(a.id);
+      
+      list.appendChild(clone);
+    } else {
+      const row = document.createElement('div');
+      row.className = 'data-table-row cols-assign';
+      row.dataset.id = a.id;
+      row.innerHTML = `
         <div class="cell-double">
           <div class="cell-name-primary">${esc(a.pastor_name) || 'Unknown Pastor'}</div>
           <div style="font-size:11px; color:var(--text-3);">${esc(a.church_name) || 'Unknown Church'}</div>
@@ -130,16 +213,13 @@ function renderAssignments() {
           </div>
         </div>
         <div class="row-actions">
-          <button class="btn-icon btn-edit-action" title="Edit">
+          <button class="btn-icon btn-edit btn-edit-action" title="Edit">
             <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
           </button>
-        </div>
-      </div>`
-  }).join('')
-
-  list.querySelectorAll('.data-table-row').forEach(row => {
-    const id = row.dataset.id
-    row.querySelector('.btn-edit-action').onclick = () => editRecord(id)
+        </div>`;
+      row.querySelector('.btn-edit-action').onclick = () => editRecord(a.id);
+      list.appendChild(row);
+    }
   })
 
   if (count) count.textContent = `${filteredAssignments.length} total records`
@@ -211,8 +291,8 @@ function closeModal() {
 // ── Filter ─────────────────────────────────────────────────────
 function handleFilter() {
   const q      = (document.getElementById('assign-search')?.value  || '').toLowerCase().trim()
-  const type   = document.getElementById('filter-type')?.value   || ''
-  const status = document.getElementById('filter-status')?.value || ''
+  const type   = selType ? selType.getValue() : ''
+  const status = selStatus ? selStatus.getValue() : ''
 
   filteredAssignments = allAssignments.filter(a => {
     const matchQ      = !q || (a.pastor_name || '').toLowerCase().includes(q) || (a.church_name || '').toLowerCase().includes(q)
@@ -315,11 +395,21 @@ function bindEvents() {
   const form = document.getElementById('assign-form')
   if (form) form.onsubmit = handleFormSubmit
 
-  ;['assign-search', 'filter-type', 'filter-status'].forEach(id => {
-    const el = document.getElementById(id)
-    if (el) el.oninput = handleFilter
-  })
+  const sInput = document.getElementById('assign-search')
+  if (sInput) sInput.oninput = handleFilter
 
   const overlay = document.getElementById('assign-modal-overlay')
   if (overlay) overlay.addEventListener('click', e => { if (e.target === overlay) closeModal() })
+}
+
+function getAvatarHtml(imageUrl, name, themeColor) {
+  if (imageUrl) {
+    return `<img src="${imageUrl}" class="avatar-img" />`
+  }
+  const initials = String(name || '?').charAt(0).toUpperCase()
+  if (themeColor && themeColor.startsWith('#')) {
+    const bg = hexToRgba(themeColor, 0.15)
+    return `<div class="avatar-initials" style="background-color: ${bg}; color: ${themeColor}; border: 1px solid ${themeColor};">${initials}</div>`
+  }
+  return `<div class="avatar-initials" style="background-color: #f0f0f0; color: #222; border: 1px solid #888;">${initials}</div>`
 }

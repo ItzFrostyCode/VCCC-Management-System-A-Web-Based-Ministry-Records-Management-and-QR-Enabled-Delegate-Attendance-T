@@ -1,38 +1,18 @@
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 import { authService } from './auth.service.js';
 
 export const districtService = {
   async fetchAll() {
-    const { data, error } = await db
-      .from('districts')
-      .select(`
-        id, district_name, theme_color, leader_pastor_id, notes, created_at,
-        pastors ( id, full_name )
-      `)
-      .eq('is_deleted', false)
-      .order('district_name')
+    const { data, error } = await db.rpc('get_districts_v3')
     if (error) throw error
-    return data.map(d => ({
-      ...d,
-      leader_name: d.pastors?.full_name || ''
-    }))
+    return data || []
   },
 
   async fetchById(id) {
-    const { data, error } = await db
-      .from('districts')
-      .select(`
-        id, district_name, theme_color, leader_pastor_id, notes, created_at,
-        pastors ( id, full_name )
-      `)
-      .eq('id', id)
-      .eq('is_deleted', false)
-      .single()
+    const { data, error } = await db.rpc('get_districts_v3')
     if (error) throw error
-    return {
-      ...data,
-      leader_name: data.pastors?.full_name || ''
-    }
+    const match = (data || []).find(d => d.id === id)
+    return match || null
   },
 
   async create(districtData) {

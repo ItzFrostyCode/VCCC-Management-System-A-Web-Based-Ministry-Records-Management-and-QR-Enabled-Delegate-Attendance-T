@@ -44,6 +44,17 @@ export function calculateAge(birthdate) {
   return age
 }
 
+export function hexToRgba(hex, alpha = 0.15) {
+  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) return `rgba(150, 150, 150, ${alpha})`;
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  if (hex.length !== 6) return `rgba(150, 150, 150, ${alpha})`;
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // ── QR Payload ────────────────────────────────────────────
 // Format: {"t":"PASTOR","id":"uuid"}
 // t = delegate type, id = uuid (for WIFE, id = pastor's uuid)

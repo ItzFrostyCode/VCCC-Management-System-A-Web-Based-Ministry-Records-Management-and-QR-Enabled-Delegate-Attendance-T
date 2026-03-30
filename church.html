@@ -97,6 +97,24 @@
   </div>
 </div>
 
+<!-- TEMPLATES FOR SAFE DOM RENDERING -->
+<template id="church-card-template">
+  <div class="pastor-card-mobile pcm-wrap">
+    <div class="pcm-header">
+      <div class="pcm-status-wrap" style="margin-right:10px;"></div>
+      <div class="pcm-title-area">
+        <div class="pcm-name"></div>
+        <div class="pcm-wife-name pastor-text"></div>
+      </div>
+    </div>
+    <div class="pcm-info-grid">
+      <div class="pcm-info-item"><span class="pcm-info-label">District</span><span class="pcm-info-val district-val pcm-info-value"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Address</span><span class="pcm-info-val address-val pcm-info-value"></span></div>
+    </div>
+    <div class="pcm-actions"></div>
+  </div>
+</template>
+
 <!-- Church Modal -->
 <div class="modal-overlay" id="church-modal-overlay">
   <div class="modal-box">
@@ -179,7 +197,7 @@
 <style>
   /* Page specific grid columns */
   .cols-church { 
-    grid-template-columns: 1.2fr 1.2fr 1fr 0.8fr 1.2fr 100px; 
+    grid-template-columns: 1.2fr 1.2fr 1fr 0.8fr 1.2fr 160px; 
     gap: 12px;
   }
   

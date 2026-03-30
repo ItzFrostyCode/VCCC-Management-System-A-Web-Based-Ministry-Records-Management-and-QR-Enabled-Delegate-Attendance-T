@@ -1,6 +1,6 @@
 // Meal service for new schema: meals table connects day_id and slot_id
 
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 
 export const mealService = {
 

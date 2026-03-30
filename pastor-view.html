@@ -103,37 +103,6 @@
     }
     .section-title svg { width: 20px; height: 20px; color: var(--red); }
 
-    .history-timeline {
-      position: relative;
-      padding-left: 24px;
-    }
-    .history-timeline::before {
-      content: '';
-      position: absolute;
-      left: 7px; top: 0; bottom: 0;
-      width: 2px;
-      background: var(--border);
-    }
-    .timeline-item {
-      position: relative;
-      margin-bottom: 24px;
-    }
-    .timeline-dot {
-      position: absolute;
-      left: -24px; top: 6px;
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: var(--surface);
-      border: 2px solid var(--red);
-      z-index: 1;
-    }
-    .timeline-item.active .timeline-dot { background: var(--red); }
-    .timeline-content {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 16px;
-      border-radius: 12px;
-    }
 
     .disciple-list {
       display: grid;
@@ -233,6 +202,14 @@
           <div class="stat-card">
             <div class="stat-label">Total Disciples</div>
             <div id="stat-disciples" class="stat-value">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Current Rank</div>
+            <div id="stat-rank" class="stat-value" style="font-size:16px;">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Training Logged</div>
+            <div id="stat-training" class="stat-value">—</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Current Role</div>

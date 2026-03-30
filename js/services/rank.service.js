@@ -1,4 +1,4 @@
-import { db } from '../supabase.js';
+import { db } from '../db.js';
 import { authService } from './auth.service.js';
 
 export const rankService = {
@@ -32,5 +32,17 @@ export const rankService = {
     }
 
     return newRank;
+  },
+
+  // Fetch rank history for a specific pastor
+  async fetchByPastor(pastorId) {
+    const { data, error } = await db
+      .from('rank_history')
+      .select('*')
+      .eq('pastor_id', pastorId)
+      .order('effective_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 };

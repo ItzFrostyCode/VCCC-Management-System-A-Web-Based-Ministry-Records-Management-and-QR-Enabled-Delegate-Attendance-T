@@ -59,7 +59,7 @@
           <span>Disciple</span>
           <span>Church</span>
           <span>District</span>
-          <span></span>
+          <span style="text-align:right">Actions</span>
         </div>
         <div id="table-body">
           <div class="skel-row skeleton"></div>
@@ -77,6 +77,39 @@
     </main>
   </div>
 </div>
+
+<!-- TEMPLATES FOR SAFE DOM RENDERING -->
+<template id="disciple-grid-template">
+  <div class="data-table-row cols-disciples">
+    <div class="cell-name-primary" data-label="Disciple" style="display:flex; align-items:center; gap:10px;">
+      <div class="avatar-container"></div>
+      <span class="d-name"></span>
+    </div>
+    <div class="d-church" style="font-size:13px; color:var(--text); font-weight:500;" data-label="Church"></div>
+    <div class="d-district" style="font-size:12px; color:var(--text-2); opacity:0.8;" data-label="District"></div>
+    <div class="row-actions"></div>
+  </div>
+</template>
+
+<template id="disciple-card-template">
+  <div class="pastor-card-mobile pcm-wrap">
+    <div class="pcm-header">
+      <div class="pcm-avatars">
+        <div class="pcm-avatar-wrap pcm-avatar-pastor"></div>
+      </div>
+      <div class="pcm-title-area">
+        <div class="pcm-name"></div>
+        <div class="pcm-wife-name d-church-sub"></div>
+      </div>
+    </div>
+    <div class="pcm-info-grid">
+      <div class="pcm-info-item"><span class="pcm-info-label">District</span><span class="pcm-info-val d-district-val pcm-info-value"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Church</span><span class="pcm-info-val d-church-val pcm-info-value"></span></div>
+    </div>
+    <div class="pcm-actions"></div>
+  </div>
+</template>
+
 <!-- Add/Edit Modal -->
 <div class="modal-overlay" id="modal-form">
   <div class="modal-box">

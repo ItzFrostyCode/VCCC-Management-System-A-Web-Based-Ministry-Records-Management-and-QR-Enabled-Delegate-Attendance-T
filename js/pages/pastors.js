@@ -5,7 +5,7 @@ import { churchService } from '../services/church.service.js';
 import { pastorService } from '../services/pastor.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, calculateAge, getAvatarHtml } from '../utils/helper.js';
+import { esc, calculateAge, createSearchSelect, downloadCSV, hexToRgba } from '../utils/helper.js';
 
 let allPastors = []
 let filteredPastors = []
@@ -42,9 +42,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 })
 
 // Re-render when orientation/size crosses the mobile breakpoint
-let _lastIsMobile = window.innerWidth <= 768
+let _lastIsMobile = window.innerWidth <= 1024
 window.addEventListener('resize', () => {
-  const nowMobile = window.innerWidth <= 768
+  const nowMobile = window.innerWidth <= 1024
   if (nowMobile !== _lastIsMobile) {
     _lastIsMobile = nowMobile
     renderTable()
@@ -184,7 +184,7 @@ function renderTable() {
 
   const user = authService.getCurrentUser()
   const isStaff = user && user.role === 'Staff'
-  const isMobile = window.innerWidth <= 768
+  const isMobile = window.innerWidth <= 1024
 
   // Clear previous rows
   body.innerHTML = '';
@@ -205,40 +205,43 @@ function renderTable() {
     const pAge = p.birthdate ? calculateAge(p.birthdate) : '—'
     const wAge = p.wife_birthdate ? calculateAge(p.wife_birthdate) : '—'
     const ageDisplay = p.wife_name ? `${pAge} / ${wAge}` : pAge
+    
+    const pDistrict = districtsData.find(d => String(d.id) === String(p.district_id))
+    const themeColor = pDistrict ? pDistrict.theme_color : null
 
     if (isMobile) {
       // ── SAFE DOM RENDER FOR MOBILE CARD ──
       const clone = cardTemplate.content.cloneNode(true);
-      const pastName = clone.querySelector('.past-name');
-      const wifeName = clone.querySelector('.wife-name');
+      const pastName = clone.querySelector('.pcm-name');
+      const wifeName = clone.querySelector('.pcm-wife-name');
       const churchText = clone.querySelector('.church-text');
-      const badgeStatus = clone.querySelector('.badge-status');
+      const statusWrap = clone.querySelector('.pcm-status-wrap');
       const contactVal = clone.querySelector('.contact-val');
       const ageVal = clone.querySelector('.age-val');
       const sinceVal = clone.querySelector('.since-val');
-      const pastAva = clone.querySelector('.past-ava');
-      const wifeAva = clone.querySelector('.wife-ava');
+      const pastAvaWrap = clone.querySelector('.pcm-avatar-pastor');
+      const wifeAvaWrap = clone.querySelector('.pcm-avatar-wife');
       
       pastName.textContent = p.full_name;
       if (p.wife_name) wifeName.textContent = `w/ ${p.wife_name}`;
       churchText.textContent = p.church_name || '—';
       
-      badgeStatus.innerHTML = `<span class="status-badge ${statusClass}">${statusFormatted}</span>`;
+      statusWrap.innerHTML = `<span class="status-badge ${statusClass}">${statusFormatted}</span>`;
       contactVal.textContent = p.contact_number || '—';
       ageVal.textContent = ageDisplay;
       sinceVal.textContent = p.pastoring_start_date || '—';
       
-      pastAva.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name);
-      pastAva.addEventListener('click', () => openImageViewer(p.pastor_image_url || '', p.full_name));
+      pastAvaWrap.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name, themeColor);
+      pastAvaWrap.addEventListener('click', () => openImageViewer(p.pastor_image_url || '', p.full_name));
       
       if (p.wife_name) {
-        wifeAva.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name);
-        wifeAva.addEventListener('click', () => openImageViewer(p.wife_image_url || '', p.wife_name));
+        wifeAvaWrap.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name, themeColor);
+        wifeAvaWrap.addEventListener('click', () => openImageViewer(p.wife_image_url || '', p.wife_name));
       } else {
-        wifeAva.style.display = 'none';
+        wifeAvaWrap.style.display = 'none';
       }
 
-      const actions = clone.querySelector('.card-actions');
+      const actions = clone.querySelector('.pcm-actions');
       actions.innerHTML = `
         <button class="pcm-action-btn pcm-view" title="View Profile">
           <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -254,9 +257,9 @@ function renderTable() {
         </button>` : ''}
       `;
       
-      clone.querySelector('.pcm-view').addEventListener('click', () => window.location.href = `pastor-view.html?id=${p.id}`);
-      clone.querySelector('.pcm-edit').addEventListener('click', () => openModal(p.id));
-      if (!isStaff) clone.querySelector('.pcm-delete').addEventListener('click', () => confirmDelete(p.id));
+      actions.querySelector('.pcm-view').addEventListener('click', () => window.location.href = `pastor-view.html?id=${p.id}`);
+      actions.querySelector('.pcm-edit').addEventListener('click', () => openModal(p.id));
+      if (!isStaff) actions.querySelector('.pcm-delete').addEventListener('click', () => confirmDelete(p.id));
 
       body.appendChild(clone);
 
@@ -269,12 +272,12 @@ function renderTable() {
       clone.querySelector('.col-wife .name').textContent = p.wife_name || '—';
       
       const pastAva = clone.querySelector('.col-pastor .avatar-container');
-      pastAva.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name);
+      pastAva.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name, themeColor);
       pastAva.addEventListener('click', () => openImageViewer(p.pastor_image_url || '', p.full_name));
 
       const wifeAva = clone.querySelector('.col-wife .avatar-container');
       if (p.wife_name) {
-        wifeAva.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name);
+        wifeAva.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name, themeColor);
         wifeAva.addEventListener('click', () => openImageViewer(p.wife_image_url || '', p.wife_name));
       } else {
         wifeAva.style.display = 'none';
@@ -288,7 +291,7 @@ function renderTable() {
 
       const actions = clone.querySelector('.col-actions');
       actions.innerHTML = `
-        <button class="btn-icon" title="View Profile" style="background:hsla(150, 100%, 97%, 1); color:hsl(150, 80%, 35%); border-color:hsla(150, 100%, 90%, 1);">
+        <button class="btn-icon btn-view" title="View Profile">
           <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
         <button class="btn-icon btn-edit" title="Edit">
@@ -536,14 +539,16 @@ function exportCSV() {
   })))
 }
 
-function getAvatarHtml(imageUrl, name) {
+function getAvatarHtml(imageUrl, name, themeColor) {
   if (imageUrl) {
     return `<img src="${imageUrl}" class="avatar-img" />`
   }
   const initials = String(name || '?').charAt(0).toUpperCase()
-  const charCode = initials.charCodeAt(0)
-  const bgIndex = (charCode % 5) + 1
-  return `<div class="avatar-initials bg-avatar-${bgIndex}">${initials}</div>`
+  if (themeColor && themeColor.startsWith('#')) {
+    const bg = hexToRgba(themeColor, 0.15)
+    return `<div class="avatar-initials" style="background-color: ${bg}; color: ${themeColor}; border: 1px solid ${themeColor};">${initials}</div>`
+  }
+  return `<div class="avatar-initials" style="background-color: #f0f0f0; color: #222; border: 1px solid #888;">${initials}</div>`
 }
 
 /* Image Viewer Functions */
@@ -573,9 +578,12 @@ async function openViewModal(id) {
 
   const modal = document.getElementById('modal-view-details')
   
+  const pDistrict = districtsData.find(d => String(d.id) === String(p.district_id))
+  const themeColor = pDistrict ? pDistrict.theme_color : null
+
   // Header
   const avatarContainer = document.getElementById('view-avatar-container')
-  avatarContainer.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name)
+  avatarContainer.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name, themeColor)
   avatarContainer.onclick = () => openImageViewer(p.pastor_image_url, 'Pastor ' + p.full_name)
   
   document.getElementById('view-pastor-name').textContent = p.full_name

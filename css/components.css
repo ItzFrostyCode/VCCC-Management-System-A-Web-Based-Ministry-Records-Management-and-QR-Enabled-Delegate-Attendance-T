@@ -75,6 +75,28 @@
   border-color: hsla(0, 75%, 50%, 0.3);
 }
 
+.btn-view {
+  background: hsla(150, 100%, 97%, 1);
+  color: hsl(150, 80%, 35%);
+  border-color: hsla(150, 100%, 90%, 1);
+}
+.btn-view:hover:not(:disabled) {
+  background: hsl(150, 100%, 94%);
+  color: hsl(150, 80%, 30%);
+  border-color: hsla(150, 80%, 35%, 0.3);
+}
+
+.btn-quick-add {
+  background: var(--blue-bg);
+  color: var(--blue);
+  border-color: var(--blue-bg);
+}
+.btn-quick-add:hover:not(:disabled) {
+  background: #E0E7FF;
+  color: #3730A3;
+  border-color: #C7D2FE;
+}
+
 .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
 .sidebar-logo-img {
   width: 32px;
@@ -120,21 +142,78 @@
 }
 .search-wrap input::placeholder { color: var(--text-3); font-weight: 400; }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .filter-bar, .filter-row {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 10px;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 0;
+    margin-bottom: 20px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    align-items: start;
   }
+  
   .filter-bar .search-wrap, 
-  .filter-row .search-wrap, 
-  .ss-main, .ss-trigger {
+  .filter-row .search-wrap {
+    grid-column: 1 / -1;
+    height: 46px !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    border: 1.5px solid var(--border) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .filter-bar .search-wrap:focus-within, 
+  .filter-row .search-wrap:focus-within {
+    border-color: var(--primary) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+  }
+  
+  /* Filter Dropdowns container logic */
+  .filter-bar > div:not(.search-wrap):not(.filter-group),
+  .filter-row > div:not(.search-wrap):not(.filter-group) {
+    grid-column: span 1;
+    min-width: 0 !important;
+  }
+  
+  /* If a dropdown is the ONLY sibling to search-wrap (meaning it's the 2nd child and last child), it spans full width */
+  .filter-bar > div:not(.search-wrap):not(.filter-group):nth-child(2):last-child,
+  .filter-row > div:not(.search-wrap):not(.filter-group):nth-child(2):last-child {
+    grid-column: 1 / -1;
+  }
+  
+  /* Filter groups containing selects (like Assignment module) */
+  .filter-bar .filter-group,
+  .filter-row .filter-group {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 100% !important;
+  }
+  
+  .filter-bar .filter-group > * {
     width: 100% !important;
     min-width: 0 !important;
-    flex: none !important;
     height: 42px !important;
     border-radius: 10px !important;
+    border: 1.5px solid var(--border) !important;
+    background: var(--bg-input) !important;
+    box-shadow: none !important;
+  }
+
+  .ss-main, .ss-trigger {
+    width: 100% !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    background: var(--bg-input) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
   }
 }
 
@@ -363,7 +442,7 @@ input[type="file"]:hover::file-selector-button {
 
 /* Grid columns for specific entities */
 .cols-disciples { grid-template-columns: 1.5fr 1.2fr 1fr 100px; }
-.cols-pastors   { grid-template-columns: 1.2fr 1.1fr 1fr 0.8fr 0.9fr 0.9fr 0.8fr 75px; gap: 8px; }
+.cols-pastors   { grid-template-columns: 1.2fr 1.1fr 1fr 0.8fr 0.9fr 0.9fr 0.8fr 120px; gap: 8px; }
 .cols-pastors > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .cols-pastors .cell-name-primary { font-size: 13px; }
 .cols-pastors .row-actions { overflow: visible; }
@@ -373,18 +452,18 @@ input[type="file"]:hover::file-selector-button {
 }
 .data-table-row:hover .row-actions { opacity: 1; }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .data-table-head { display: none; }
   
   /* ─── Generic mobile rows (Disciples, etc.) ─── */
-  .data-table-row:not(.cols-pastors) {
+  .data-table-row:not(.cols-pastors, .cols-church, .cols-disciples) {
     grid-template-columns: 1fr !important;
     gap: 10px;
     padding: 20px;
   }
-  .data-table-row:not(.cols-pastors):hover { transform: none; padding-left: 17px; }
+  .data-table-row:not(.cols-pastors, .cols-church, .cols-disciples):hover { transform: none; padding-left: 17px; }
   
-  .data-table-row:not(.cols-pastors) > div:not(.row-actions) {
+  .data-table-row:not(.cols-pastors, .cols-church, .cols-disciples) > div:not(.row-actions) {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -392,7 +471,7 @@ input[type="file"]:hover::file-selector-button {
     font-size: 14px !important;
   }
   
-  .data-table-row:not(.cols-pastors) > div[data-label]::before {
+  .data-table-row:not(.cols-pastors, .cols-church, .cols-disciples) > div[data-label]::before {
     content: attr(data-label);
     font-size: 11px;
     font-weight: 700;
@@ -404,7 +483,7 @@ input[type="file"]:hover::file-selector-button {
     flex-shrink: 0;
   }
   
-  .data-table-row:not(.cols-pastors) .row-actions {
+  .data-table-row:not(.cols-pastors, .cols-church, .cols-disciples) .row-actions {
     opacity: 1;
     justify-content: flex-start;
     padding-top: 12px;
@@ -412,72 +491,7 @@ input[type="file"]:hover::file-selector-button {
     border-top: 1px dashed var(--border);
   }
 
-  /* ─── PASTOR CARD — Mobile ─── */
-  .data-table-row.cols-pastors {
-    display: flex !important;
-    flex-direction: column;
-    padding: 0;
-    gap: 0;
-    border-radius: 0;
-    transition: background 0.15s;
-    background: var(--bg-card);
-    border-left: 3px solid transparent;
-  }
-  .data-table-row.cols-pastors:hover {
-    transform: none;
-    border-left-color: var(--red);
-    background: #fdfdfd;
-    padding-left: 0;
-  }
-  /* Hide all child divs by default so we can selectively show */
-  .data-table-row.cols-pastors > div {
-    display: none !important;
-    white-space: normal !important;
-  }
-  /* Show the Pastor header row */
-  .data-table-row.cols-pastors > div[data-label="Pastor"] {
-    display: flex !important;
-    align-items: center;
-    padding: 14px 16px 10px;
-    gap: 12px;
-    border-bottom: 1px solid var(--border);
-    white-space: normal !important;
-    overflow: visible !important;
-  }
-  /* Pastor name — bold, larger */
-  .data-table-row.cols-pastors > div[data-label="Pastor"] {
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    color: var(--text) !important;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap !important;
-  }
-  /* Info section: contact + since + age as 2-col compact grid */
-  .data-table-row.cols-pastors > div[data-label="Contact"],
-  .data-table-row.cols-pastors > div[data-label="Wife"],
-  .data-table-row.cols-pastors > div[data-label="Status"],
-  .data-table-row.cols-pastors > div[data-label="Age"],
-  .data-table-row.cols-pastors > div[data-label="Since"] {
-    display: flex !important;
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 2px;
-    padding: 0;
-  }
-  /* Action row */
-  .data-table-row.cols-pastors .row-actions {
-    display: flex !important;
-    opacity: 1;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 10px 16px;
-    margin-top: 0;
-    border-top: 1px solid var(--border);
-    background: var(--bg-input);
-    border-radius: 0;
-  }
+  /* ─── PASTOR CARD — Mobile (Legacy removed as we now use pcm-wrap) ─── */
 
   /* The pastor card inner layout via a pseudo-wrapper */
   .pastor-mobile-card {
@@ -563,6 +577,22 @@ input[type="file"]:hover::file-selector-button {
 .progress-bar  { height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
 .progress-fill { height: 100%; background: var(--red); border-radius: 3px; transition: width .2s; }
 .progress-label { font-size: 12px; color: var(--text-2); }
+
+/* ── Status Badges ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.status-active { background: #EAF3DE; color: #3B6D11; }
+.status-warning { background: #FFF4E5; color: #B35A00; }
+.status-critical { background: #FEE9E7; color: #cc3018; }
+.status-neutral { background: #F1F5F9; color: #64748B; }
 
 /* ── Loading skeletons ── */
 .skel-row { height: 52px; margin: 4px 16px; border-radius: 6px; }
@@ -786,9 +816,8 @@ input[type="file"]:hover::file-selector-button {
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 /* ── Action Row: full-width labeled buttons ── */
@@ -828,3 +857,21 @@ input[type="file"]:hover::file-selector-button {
 .pcm-view  { color: hsl(150, 70%, 32%);  }
 .pcm-edit  { color: hsl(215, 65%, 44%);  }
 .pcm-delete{ color: hsl(0, 65%, 50%);    }
+/* ── History Timeline ── */
+.history-timeline { position: relative; padding-left: 24px; }
+.history-timeline::before {
+  content: ''; position: absolute; left: 7px; top: 0; bottom: 0;
+  width: 2px; background: var(--border);
+}
+.timeline-item { position: relative; margin-bottom: 24px; }
+.timeline-dot {
+  position: absolute; left: -24px; top: 6px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--red);
+  z-index: 1;
+}
+.timeline-item.active .timeline-dot { background: var(--red); }
+.timeline-content {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 16px; border-radius: 12px;
+}

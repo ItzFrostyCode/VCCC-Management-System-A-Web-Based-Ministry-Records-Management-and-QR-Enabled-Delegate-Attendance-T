@@ -41,22 +41,34 @@ function getConfig(){ try{ let s=JSON.parse(localStorage.getItem(CONFIG_KEY))||{
 function saveConfig(){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)) }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Badges: DOMContentLoaded start')
+    // Global error handler for UI
+    window.onerror = function(msg, url, line) {
+        console.error('GLOBAL ERROR:', msg, 'at', url, ':', line)
+        const status = document.getElementById('delegate-count-status')
+        if (status) status.innerHTML = `<span style="color:var(--red);"><strong>Script Error:</strong> ${msg}</span>`
+    }
+
     try {
+        console.log('Badges: auth check...')
         await requireAuth()
+        console.log('Badges: nav/guide init...')
         highlightNav()
         injectMobileNav()
         initGuide()
 
+        console.log('Badges: fetching data...')
         const [dRes, cRes, pastors, disciples] = await Promise.all([ 
             districtService.fetchAll(), 
             churchService.fetchAll(), 
             pastorService.fetchAll(), 
             discipleService.fetchAll() 
         ])
-        districts = dRes; churches = cRes
+        console.log('Badges: fetch success', { d: !!dRes, c: !!cRes, p: !!pastors, ds: !!disciples })
+        districts = dRes || []; churches = cRes || []
         
         districts.forEach(d => {
-            if (d.theme_color) DISTRICT_COLORS[d.district_name.trim().toUpperCase()] = d.theme_color
+            if (d.theme_color) DISTRICT_COLORS[d.district_name?.trim().toUpperCase()] = d.theme_color
         })
 
         const distMap = {}, churchMap = {}
@@ -64,17 +76,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         churches.forEach(c => churchMap[c.id] = { name: c.church_name, distId: c.district_id })
 
         allDelegates = []
-        pastors.forEach(p => {
-            const dn = p.district_name || distMap[p.district_id] || ''
-            const cn = p.church_name || churchMap[p.church_id]?.name || ''
-            allDelegates.push({ id:p.id, fullName:p.full_name, role:'PASTOR', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, imageUrl: p.pastor_image_url })
-            if(p.wife_name) {
-                allDelegates.push({ id:p.id, fullName:p.wife_name, role:'WIFE', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, pastorName:p.full_name, imageUrl: p.wife_image_url })
-            }
-        })
-        disciples.forEach(d => {
-            allDelegates.push({ id: d.id, fullName: d.full_name, role: 'DISCIPLE', districtId: d.district_id, districtName: d.district_name || '', churchId: d.church_id, churchName: d.church_name || '', imageUrl: d.disciple_image_url || null })
-        })
+        if (pastors) {
+          pastors.forEach(p => {
+             try {
+                // V3 RPC (get_pastors_v3) already provides denormalized names
+                const dn = p.district_name || 'No District'
+                const cn = p.church_name || 'No Church'
+                
+                allDelegates.push({ 
+                    id: p.id, 
+                    fullName: p.full_name, 
+                    role: 'PASTOR', 
+                    districtId: p.district_id, 
+                    districtName: dn, 
+                    churchId: p.church_id, 
+                    churchName: cn, 
+                    imageUrl: p.pastor_image_url 
+                })
+                
+                if (p.wife_name) {
+                    allDelegates.push({ 
+                        id: p.id, 
+                        fullName: p.wife_name, 
+                        role: 'WIFE', 
+                        districtId: p.district_id, 
+                        districtName: dn, 
+                        churchId: p.church_id, 
+                        churchName: cn, 
+                        pastorName: p.full_name, 
+                        imageUrl: p.wife_image_url 
+                    })
+                }
+             } catch (e) { console.error('Error mapping pastor for badge:', p.id, e) }
+          })
+        }
+        
+        if (disciples) {
+          disciples.forEach(d => {
+             try {
+                // V3 RPC (get_disciples_v3) already provides denormalized names
+                allDelegates.push({ 
+                    id: d.id, 
+                    fullName: d.full_name, 
+                    role: 'DISCIPLE', 
+                    districtId: d.district_id, 
+                    districtName: d.district_name || 'No District', 
+                    churchId: d.church_id, 
+                    churchName: d.church_name || 'No Church', 
+                    imageUrl: d.disciple_image_url || null 
+                })
+             } catch (e) { console.error('Error mapping disciple for badge:', d.id, e) }
+          })
+        }
 
         const distEl = document.getElementById('filter-district-badge'), churchEl = document.getElementById('filter-church-badge')
         if (distEl) selFilterDist = createSearchSelect(distEl, districts.map(d => ({ value:d.id, label:d.district_name })), 'District', (v) => { 
@@ -95,7 +148,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderTools();
         bindEvents();
         if (window.innerWidth <= 640) switchTab('delegates')
-    } catch (err) { console.error('Init failed:', err) }
+    } catch (err) { 
+        console.error('Init failed:', err)
+        const status = document.getElementById('delegate-count-status')
+        if (status) status.innerHTML = `<span style="color:var(--red);"><strong>Initialization Error:</strong> ${esc(err.message)}</span>`
+        const wrap = document.getElementById('badge-preview-wrap')
+        if (wrap) wrap.innerHTML = `<div class="no-selection"><p style="color:red; max-width:400px; text-align:center;">Init Error: ${esc(err.stack || err.message)}</p></div>`
+    }
 })
 
 // ── UI Events ──────────────────────────────────────────────
@@ -535,6 +594,11 @@ function selectDelegate(id, role, scroll = true) {
   }
   document.getElementById('canvas-actions').style.display = 'flex'
   renderBadge()
+  
+  // Auto-switch to preview tab on mobile if user explicitly clicked a card
+  if (scroll && window.innerWidth <= 640) {
+    switchTab('preview')
+  }
 }
 
 function getDistColor(n) { 
@@ -646,9 +710,83 @@ function renderMobileTools() {
         {value:'name',label:'Name'}, {value:'role',label:'Role'}, {value:'district',label:'Dist'}, {value:'church',label:'Chur'}, {value:'qr',label:'QR'}, {value:'profile',label:'Photo'}, {value:'templates',label:'Bkgd'}
     ]
     const chipBar = FIELDS.map(f => `<button class="qe-chip ${activeFieldKey === f.value ? 'active' : ''}" data-key="${f.value}">${f.label}</button>`).join('')
-    mob.innerHTML = `<div class="quick-editor-wrap"><div class="qe-chip-bar">${chipBar}</div></div>`
+    
+    let bodyHtml = ''
+    if (activeFieldKey === 'templates') {
+       bodyHtml = `
+         <div class="qe-body">
+           <div class="qe-templates-note">
+             <button class="btn btn-ghost" id="btn-tpl-upload-trigger-mob" style="width:100%; height:36px; border:1px dashed var(--border); font-size:12px;">
+               <svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+               Upload Background Template
+             </button>
+           </div>
+           <div class="tpl-grid" style="margin-top:0;">
+             <div class="tpl-card ${cfg.templateUrl === DEFAULT_CONFIG.templateUrl ? 'active' : ''}" data-url="${DEFAULT_CONFIG.templateUrl}">
+                <div class="tpl-thumb" style="background-image:url('${DEFAULT_CONFIG.templateUrl}')"></div>
+                <div class="tpl-footer"><span class="tpl-tag">Default</span></div>
+             </div>
+           </div>
+         </div>
+       `
+    } else {
+       const f = cfg[activeFieldKey]
+       bodyHtml = `
+         <div class="qe-body">
+           <div class="qe-toggle-row">
+             <span class="qe-toggle-label">Visible</span>
+             <label class="switch-mini"><input type="checkbox" id="field-enabled-mob" ${f.enabled!==false?'checked':''} /><span class="slider-mini"></span></label>
+           </div>
+           <div class="qe-grid">
+             <div class="qe-cell"><span class="qe-label">X Pos</span><input type="number" class="qe-input" id="field-x-mob" value="${f.x}" /></div>
+             <div class="qe-cell"><span class="qe-label">Y Pos</span><input type="number" class="qe-input" id="field-y-mob" value="${f.y}" /></div>
+             ${ (activeFieldKey !== 'qr' && activeFieldKey !== 'profile') ? `
+               <div class="qe-cell"><span class="qe-label">Font Size</span><input type="number" class="qe-input" id="field-fsize-mob" value="${f.fontSize}" /></div>
+               <div class="qe-cell"><span class="qe-label">Color</span><input type="color" class="qe-input" style="padding:4px;height:38px;border-radius:8px;cursor:pointer;" id="field-color-mob" value="${f.color}" /></div>
+               <div class="qe-cell" style="grid-column: 1 / -1;"><span class="qe-label">Align</span>
+                 <div class="qe-seg-grp">
+                   <button class="qe-seg ${f.textAlign==='left'?'active':''}" data-val="left">Left</button>
+                   <button class="qe-seg ${f.textAlign==='center'?'active':''}" data-val="center">Center</button>
+                   <button class="qe-seg ${f.textAlign==='right'?'active':''}" data-val="right">Right</button>
+                 </div>
+               </div>
+             ` : `<div class="qe-cell" style="grid-column: 1 / -1;"><span class="qe-label">Scale Size</span><input type="number" class="qe-input" id="field-size-mob" value="${f.size}" /></div>` }
+           </div>
+         </div>
+       `
+    }
+
+    mob.innerHTML = `<div class="quick-editor-wrap"><div class="qe-chip-bar">${chipBar}</div>${bodyHtml}</div>`
+    
     mob.querySelectorAll('.qe-chip').forEach(btn => {
         btn.onclick = () => { activeFieldKey = btn.dataset.key; renderTools(); }
+    })
+    
+    bindMobileToolEvents()
+}
+
+function bindMobileToolEvents() {
+    const f = cfg[activeFieldKey]
+    if (!f && activeFieldKey !== 'templates') return
+
+    const elEnabled = document.getElementById('field-enabled-mob'); if (elEnabled) elEnabled.onchange = (e) => { f.enabled = e.target.checked; saveConfig(); renderBadge(); }
+    const elX = document.getElementById('field-x-mob'); if (elX) elX.oninput = (e) => { f.x = +e.target.value; updateCoordsLabel(f.x, f.y); saveConfig(); renderBadge(); }
+    const elY = document.getElementById('field-y-mob'); if (elY) elY.oninput = (e) => { f.y = +e.target.value; updateCoordsLabel(f.x, f.y); saveConfig(); renderBadge(); }
+    
+    const elFsize = document.getElementById('field-fsize-mob'); if (elFsize) elFsize.oninput = (e) => { f.fontSize = +e.target.value; saveConfig(); renderBadge(); }
+    const elColor = document.getElementById('field-color-mob'); if (elColor) elColor.oninput = (e) => { f.color = e.target.value; saveConfig(); renderBadge(); }
+    
+    const elSize = document.getElementById('field-size-mob'); if (elSize) elSize.oninput = (e) => { f.size = +e.target.value; saveConfig(); renderBadge(); }
+    
+    document.querySelectorAll('.qe-seg').forEach(btn => {
+       btn.onclick = () => { f.textAlign = btn.dataset.val; saveConfig(); renderBadge(); renderTools(); }
+    })
+    
+    const tplTrigger = document.getElementById('btn-tpl-upload-trigger-mob')
+    if (tplTrigger) tplTrigger.onclick = () => document.getElementById('tpl-upload').click()
+    
+    document.querySelectorAll('#mobile-mini-editor .tpl-card').forEach(card => {
+        card.onclick = () => { cfg.templateUrl = card.dataset.url; saveConfig(); renderBadge(); renderTools(); }
     })
 }
 

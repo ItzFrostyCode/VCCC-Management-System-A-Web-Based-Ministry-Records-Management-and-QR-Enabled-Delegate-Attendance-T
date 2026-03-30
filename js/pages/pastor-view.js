@@ -33,14 +33,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadData(id) {
   try {
-    const [pastor, history, disciples] = await Promise.all([
+    const [pastor, history, disciples, ranks, trainings] = await Promise.all([
       pastorService.fetchById(id),
       timelineService.fetchPastorTimeline(id),
-      discipleService.fetchByPastor(id)
+      discipleService.fetchByPastor(id),
+      rankService.fetchByPastor(id),
+      trainingService.fetchByPastor(id)
     ])
 
     renderProfile(pastor)
-    renderStats(pastor, history, disciples)
+    renderStats(pastor, history, disciples, ranks, trainings)
     renderMasterTimeline(history)
     renderDisciples(disciples)
 
@@ -105,7 +107,7 @@ function renderProfile(p) {
   document.getElementById('p-notes').innerHTML = notesHtml
 }
 
-function renderStats(p, history, disciples) {
+function renderStats(p, history, disciples, ranks, trainings) {
   // Years of Service
   if (p.pastoring_start_date) {
     const start = new Date(p.pastoring_start_date)
@@ -115,11 +117,21 @@ function renderStats(p, history, disciples) {
   }
 
   // Churches served
-  const churchCount = new Set(history.map(h => h.church_id)).size
+  const churchCount = new Set(history.filter(h => h.church_id).map(h => h.church_id)).size
   document.getElementById('stat-churches').textContent = churchCount
 
   // Disciples
   document.getElementById('stat-disciples').textContent = disciples.length
+
+  // Current Rank
+  if (ranks && ranks.length > 0) {
+      document.getElementById('stat-rank').textContent = ranks[0].rank_code;
+  } else {
+      document.getElementById('stat-rank').textContent = 'Worker';
+  }
+
+  // Training
+  document.getElementById('stat-training').textContent = (trainings ? trainings.length : 0) + ' Courses';
 
   // Current Role from Timeline (First ASSIGNMENT_START that is active)
   const active = history.find(h => h.type === 'ASSIGNMENT_START' && h.raw_data.status_code === 'active' && !h.raw_data.end_date)
@@ -432,3 +444,20 @@ function getAvatarHtml(imageUrl, name) {
   const initials = String(name || '?').charAt(0).toUpperCase()
   return `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:var(--red-light); color:var(--red); font-weight:800; font-size:1.5em;">${initials}</div>`
 }
+
+// Global exposure for HTML onclick handlers
+window.switchTab = switchTab;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.handleModalClickOutside = handleModalClickOutside;
+window.openPromoteModal = openPromoteModal;
+window.submitPromote = submitPromote;
+window.openTrainingModal = openTrainingModal;
+window.toggleBlockerFlag = toggleBlockerFlag;
+window.submitTraining = submitTraining;
+window.openTransferModal = openTransferModal;
+window.submitTransfer = submitTransfer;
+window.openPulloutModal = openPulloutModal;
+window.submitPullout = submitPullout;
+window.openImageViewer = openImageViewer;
+window.closeImageViewer = closeImageViewer;

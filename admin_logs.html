@@ -67,7 +67,7 @@
 
       <div class="card">
         <div class="card-body">
-          <div class="data-table">
+          <div class="data-table" style="margin-bottom: 0;">
             <div class="data-table-head cols-logs">
               <div>Timestamp</div>
               <div>User</div>
@@ -79,13 +79,14 @@
               <div class="empty-state">Loading logs...</div>
             </div>
           </div>
+          
+          <!-- Pagination inside card-body -->
+          <div class="pagination" id="pagination" style="display: none; border-top: 1px solid var(--border);">
+            <button class="btn btn-secondary btn-sm" id="btn-prev">Previous</button>
+            <span id="page-info" style="font-size: 13px; color: var(--text-3);"></span>
+            <button class="btn btn-secondary btn-sm" id="btn-next">Next</button>
+          </div>
         </div>
-      </div>
-      
-      <div class="pagination" id="pagination" style="display: none;">
-        <button class="btn btn-secondary btn-sm" id="btn-prev">Previous</button>
-        <span id="page-info" style="font-size: 13px; color: var(--text-3);"></span>
-        <button class="btn btn-secondary btn-sm" id="btn-next">Next</button>
       </div>
 
       <!-- Create User Modal -->

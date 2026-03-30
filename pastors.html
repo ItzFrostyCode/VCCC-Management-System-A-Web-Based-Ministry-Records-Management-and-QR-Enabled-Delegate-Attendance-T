@@ -5,7 +5,7 @@
   <title>Pastors — VCCC DAVAO MS</title>
   <link rel="stylesheet" href="./css/app.css" />
   <link rel="stylesheet" href="./css/layout.css" />
-  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/components.css?v=2" />
    <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
 </head>
 <body>
@@ -63,7 +63,7 @@
           <span>Birthdate</span>
           <span>Age</span>
           <span>Since</span>
-          <span></span>
+          <span style="text-align:right">Actions</span>
         </div>
         <div id="table-body">
           <div class="skel-row skeleton"></div>
@@ -85,49 +85,47 @@
 
 <!-- TEMPLATES FOR SAFE DOM RENDERING -->
 <template id="pastor-grid-template">
-  <div class="data-row cols-pastors">
-    <div class="col-pastor">
+  <div class="data-table-row cols-pastors">
+    <div class="col-pastor" style="display:flex; align-items:center;">
       <div class="avatar-container"></div>
-      <div>
-        <div class="name"></div>
-        <div class="church"></div>
+      <div style="min-width:0; flex:1;">
+        <div class="name cell-name-primary"></div>
+        <div class="church cell-name-sub"></div>
       </div>
     </div>
-    <div class="col-wife">
+    <div class="col-wife" style="display:flex; align-items:center;">
       <div class="avatar-container"></div>
-      <div class="name"></div>
+      <div class="name" style="min-width:0; flex:1;"></div>
     </div>
     <div class="col-contact"></div>
     <div class="col-status"><div class="badge"></div></div>
     <div class="col-bdate"></div>
     <div class="col-age"></div>
     <div class="col-since"></div>
-    <div class="col-actions"></div>
+    <div class="col-actions row-actions"></div>
   </div>
 </template>
 
 <template id="pastor-card-template">
-  <div class="pastor-card">
-    <div class="card-header">
-      <div class="avatar-group">
-        <div class="avatar-container past-ava"></div>
-        <div class="avatar-container wife-ava"></div>
+  <div class="pastor-card-mobile pcm-wrap">
+    <div class="pcm-header">
+      <div class="pcm-avatars">
+        <div class="pcm-avatar-wrap pcm-avatar-pastor"></div>
+        <div class="pcm-avatar-wrap pcm-avatar-wife"></div>
       </div>
-      <div class="badge-status"></div>
-    </div>
-    <div class="card-body">
-      <div class="past-name"></div>
-      <div class="church-text"></div>
-      <div class="wife-name"></div>
-    </div>
-    <div class="card-footer">
-      <div class="card-details">
-        <div><span>Contact</span><span class="contact-val"></span></div>
-        <div><span>Age</span><span class="age-val"></span></div>
-        <div><span>Since</span><span class="since-val"></span></div>
+      <div class="pcm-title-area">
+        <div class="pcm-name"></div>
+        <div class="pcm-wife-name"></div>
       </div>
-      <div class="card-actions"></div>
+      <div class="pcm-status-wrap"></div>
     </div>
+    <div class="pcm-info-grid">
+      <div class="pcm-info-item"><span class="pcm-info-label">Church</span><span class="pcm-info-val church-text"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Contact</span><span class="pcm-info-val contact-val"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Age (P/W)</span><span class="pcm-info-val age-val"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Since</span><span class="pcm-info-val since-val"></span></div>
+    </div>
+    <div class="pcm-actions"></div>
   </div>
 </template>
 
