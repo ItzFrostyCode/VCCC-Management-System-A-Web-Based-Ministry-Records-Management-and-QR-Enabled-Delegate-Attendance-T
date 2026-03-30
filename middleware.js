@@ -8,16 +8,24 @@ export const config = {
 export default function middleware(request) {
   const url = new URL(request.url);
   
-  // Get the tokens from cookies (set by auth.service.js)
-  // Vercel Edge Middleware provides a standard Request object enhanced with .cookies
-  const accessToken = request.cookies.get('sb-access-token');
+  // 1. Manually parse the Cookie header (Since request.cookies is undefined in standalone Vercel Edge Functions)
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookies = Object.fromEntries(
+    cookieHeader.split(';').map(c => {
+      const [key, ...v] = c.trim().split('=');
+      return [key, v.join('=')];
+    })
+  );
 
+  const accessToken = cookies['sb-access-token'];
+
+  // 2. Security Redirect
   // If there's no access token, immediately redirect to login (Zero FOUC)
   if (!accessToken) {
     url.pathname = '/login.html';
     return Response.redirect(url, 302);
   }
 
-  // If token exists, allow the file to load via the next() helper
+  // 3. Allow request to continue via the next() helper
   return next();
 }
