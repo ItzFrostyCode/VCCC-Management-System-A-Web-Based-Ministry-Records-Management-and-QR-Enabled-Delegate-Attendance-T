@@ -1,5 +1,7 @@
 // Conference service — conferences, conference_days, and time_slots tables
-const conferenceService = {
+import { db } from '../supabase.js';
+
+export const conferenceService = {
   getDaysBetween(start, end) {
     const dates = []
     const current = new Date(start)

@@ -1,3 +1,9 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "routes": [
+    {
+      "src": "/(.*\\.html|/)",
+      "middlewarePath": "middleware.js"
+    }
+  ]
 }

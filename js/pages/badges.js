@@ -1,77 +1,153 @@
-// ── Global Functions (Hoisted & Attached to window) ──────────
-window.openDownloadModal      = openDownloadModal
-window.closeDownloadModal     = closeDownloadModal
-window.switchModalTab         = switchModalTab
-window.startExportFromModal   = startExportFromModal
-window.toggleModalPick        = toggleModalPick
-window.searchInModal          = searchInModal
-window.resetConfig            = resetConfig
-window.downloadSingle         = downloadSingle
-window.printBadge             = printBadge
-window.toggleRole             = toggleRole
-window.applyFilters           = applyFilters
-window.selectDelegate         = selectDelegate
-window.switchTab              = switchTab
-window.switchMobileView       = switchMobileView
-window.startExport            = startExport
+import { requireAuth } from '../supabase.js';
+import { authService } from '../services/auth.service.js';
+import { districtService } from '../services/district.service.js';
+import { churchService } from '../services/church.service.js';
+import { pastorService } from '../services/pastor.service.js';
+import { discipleService } from '../services/disciple.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc, createSearchSelect, encodeQR } from '../utils/helper.js';
 
-// ── State Variables ──────────────────────────────────────────
+// State Variables
 let allDelegates = [], filteredDelegates = [], selectedDelegate = null
 let filterDistVal = null, filterChurchVal = null
 let activeRoles = new Set(['PASTOR','WIFE','DISCIPLE'])
 let activeFieldKey = 'name', selFieldEditor = null, selFilterDist, selFilterChurch
 let badgeCanvas = null
+let districts = [], churches = []
+let DISTRICT_COLORS = {}
 
-// Modal State (NUCLEAR STABILITY VERSION)
-let modalActiveTab = 'quick'
+// Modal State
 let modalPickedIds = new Set() 
 let modalDistrictsMulti = [], modalChurchesMulti = []
 let modalSearchQuery = ''
-let modalSSDist = null, modalSSChur = null
+
+// Config
+const CONFIG_KEY = 'momentum_badge_config_v1'
+const DEFAULT_CONFIG = {
+  canvasWidth: 1050,
+  canvasHeight: 750,
+  templateUrl: 'assets/2026%20Conf%20ID%20front.png',
+  name:     { x: 20, y: 350, fontSize: 45, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 850, enabled: true },
+  role:     { x: 20, y: 410, fontSize: 75, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 850, enabled: true },
+  district: { x: 20, y: 500, fontSize: 34, fontWeight: 'bold', fontStyle: 'normal', color: '#333333', textAlign: 'left', maxWidth: 850, enabled: true },
+  church:   { x: 570, y: 665, fontSize: 52, fontWeight: 'bold', fontStyle: 'italic', color: '#ffffff', textAlign: 'left', maxWidth: 460, enabled: true },
+  qr:       { x: 735, y: 300, size: 293, enabled: true },
+  profile:  { x: 50, y: 50, size: 250, enabled: false }
+}
+
+let cfg = getConfig(); 
+function getConfig(){ try{ let s=JSON.parse(localStorage.getItem(CONFIG_KEY))||{}, m={...DEFAULT_CONFIG}; Object.keys(DEFAULT_CONFIG).forEach(k=>{ if(s[k]) m[k]=typeof s[k]==='object'?{...DEFAULT_CONFIG[k],...s[k]}:s[k] }); return m }catch{ return {...DEFAULT_CONFIG} } }
+function saveConfig(){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)) }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await requireAuth()
+        highlightNav()
+        injectMobileNav()
+        initGuide()
+
+        const [dRes, cRes, pastors, disciples] = await Promise.all([ 
+            districtService.fetchAll(), 
+            churchService.fetchAll(), 
+            pastorService.fetchAll(), 
+            discipleService.fetchAll() 
+        ])
+        districts = dRes; churches = cRes
+        
+        districts.forEach(d => {
+            if (d.theme_color) DISTRICT_COLORS[d.district_name.trim().toUpperCase()] = d.theme_color
+        })
+
+        const distMap = {}, churchMap = {}
+        districts.forEach(d => distMap[d.id] = d.district_name)
+        churches.forEach(c => churchMap[c.id] = { name: c.church_name, distId: c.district_id })
+
+        allDelegates = []
+        pastors.forEach(p => {
+            const dn = p.district_name || distMap[p.district_id] || ''
+            const cn = p.church_name || churchMap[p.church_id]?.name || ''
+            allDelegates.push({ id:p.id, fullName:p.full_name, role:'PASTOR', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, imageUrl: p.pastor_image_url })
+            if(p.wife_name) {
+                allDelegates.push({ id:p.id, fullName:p.wife_name, role:'WIFE', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, pastorName:p.full_name, imageUrl: p.wife_image_url })
+            }
+        })
+        disciples.forEach(d => {
+            allDelegates.push({ id: d.id, fullName: d.full_name, role: 'DISCIPLE', districtId: d.district_id, districtName: d.district_name || '', churchId: d.church_id, churchName: d.church_name || '', imageUrl: d.disciple_image_url || null })
+        })
+
+        const distEl = document.getElementById('filter-district-badge'), churchEl = document.getElementById('filter-church-badge')
+        if (distEl) selFilterDist = createSearchSelect(distEl, districts.map(d => ({ value:d.id, label:d.district_name })), 'District', (v) => { 
+            filterDistVal = v||null; filterChurchVal = null; 
+            const fc = churches.filter(c => !filterDistVal || c.district_id === filterDistVal); 
+            if(selFilterChurch){ 
+                selFilterChurch.setOptions([{value:'',label:'All churches'}, ...fc.map(c=>({value:c.id,label:c.church_name}))]); 
+                selFilterChurch.reset() 
+            } 
+            applyFilters() 
+        })
+        if (churchEl) selFilterChurch = createSearchSelect(churchEl, [{ value:'', label:'All churches' }, ...churches.map(c => ({ value:c.id, label:c.church_name }))], 'All churches', (v) => { 
+            filterChurchVal = v||null; 
+            applyFilters() 
+        })
+
+        applyFilters(); 
+        renderTools();
+        bindEvents();
+        if (window.innerWidth <= 640) switchTab('delegates')
+    } catch (err) { console.error('Init failed:', err) }
+})
+
+// ── UI Events ──────────────────────────────────────────────
+function bindEvents() {
+    const btnLogout = document.getElementById('btn-logout')
+    if (btnLogout) {
+        btnLogout.onclick = async () => {
+            await authService.signOut()
+            window.location.href = '/login.html'
+        }
+    }
+
+    document.getElementById('search-delegate').oninput = applyFilters
+    
+    document.getElementById('chip-pastor').onclick = (e) => toggleRole(e.currentTarget)
+    document.getElementById('chip-wife').onclick = (e) => toggleRole(e.currentTarget)
+    document.getElementById('chip-disciple').onclick = (e) => toggleRole(e.currentTarget)
+
+    document.getElementById('btn-export-all').onclick = openDownloadModal
+    document.getElementById('btn-close-download-modal').onclick = closeDownloadModal
+    document.getElementById('btn-close-backdrop').onclick = closeDownloadModal
+    document.getElementById('btn-cancel-download').onclick = closeDownloadModal
+    document.getElementById('btn-modal-generate').onclick = startExportFromModal
+
+    document.getElementById('btn-download-jpg').onclick = downloadSingle
+    document.getElementById('btn-print-badge').onclick = printBadge
+
+    document.getElementById('btn-tab-delegates').onclick = () => switchTab('delegates')
+    document.getElementById('btn-tab-preview').onclick = () => switchTab('preview')
+    
+    document.getElementById('export-modal-cancel').onclick = cancelExport
+}
 
 // ── Modal UI Logic ───────────────────────────────────────────
 function openDownloadModal(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
-  console.log('MDL: Nuclear Open...');
-  try {
-    const modal = document.getElementById('modal-download')
-    if (!modal) { console.error('MDL: Element not found'); return }
-    
-    // Reset state
-    modalActiveTab = 'quick'
-    modalPickedIds.clear()
-    modalSearchQuery = ''
-    modalDistrictsMulti = []
-    modalChurchesMulti = []
-    
-    modal.style.display = 'flex' // Using flex wrapper
-    renderModalContent()
-  } catch (err) {
-    console.error('MDL: Init error:', err)
-  }
+  const modal = document.getElementById('modal-download')
+  if (!modal) return
+  
+  modalPickedIds.clear()
+  modalSearchQuery = ''
+  modalDistrictsMulti = []
+  modalChurchesMulti = []
+  
+  modal.style.display = 'flex'
+  renderModalContent()
 }
 
 function closeDownloadModal(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
-  console.log('MDL: Nuclear Close...');
   const modal = document.getElementById('modal-download')
-  if (modal) {
-    modal.style.display = 'none'
-    cleanupModalSS()
-  }
-}
-
-function cleanupModalSS() {
-  try {
-    if (modalSSDist) { modalSSDist.destroy(); modalSSDist = null }
-    if (modalSSChur) { modalSSChur.destroy(); modalSSChur = null }
-  } catch(e) {}
-}
-
-function switchModalTab(tab) {
-  if (modalActiveTab === tab) return
-  modalActiveTab = tab
-  renderModalContent()
+  if (modal) modal.style.display = 'none'
 }
 
 function renderModalContent() {
@@ -86,18 +162,15 @@ function renderModalContent() {
   const churList = churches.filter(c => !cQuery || (c.church_name||'').toLowerCase().includes(cQuery))
   const indList = allDelegates.filter(d => !iQuery || (d.fullName||'').toLowerCase().includes(iQuery)).slice(0, 30)
 
-
   let html = `
     <div class="modal-unified-wrap">
-      
-      <!-- Part 1: Quick Actions -->
       <div class="modal-section" style="margin-top:0;">
         <div class="modal-section-title">Quick Export</div>
         <div class="modal-grid-btns">
-          <div class="modal-action-card mini" onclick="startExport('all')">
+          <div class="modal-action-card mini" id="btn-export-quick-all">
             <div class="modal-action-title">All Badges (${allDelegates.length})</div>
           </div>
-          <div class="modal-action-card mini" onclick="startExport('filtered')">
+          <div class="modal-action-card mini" id="btn-export-quick-filtered">
             <div class="modal-action-title">Current Filters (${filteredDelegates.length})</div>
           </div>
         </div>
@@ -107,52 +180,47 @@ function renderModalContent() {
         <span style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:#fff; padding:0 12px; font-size:11px; color:var(--text-4); font-weight:800;">OR FILTER SPECIFICALLY</span>
       </div>
 
-      <!-- Part 2: Districts -->
       <div class="modal-section">
         <div class="modal-section-title">Select Districts (${modalDistrictsMulti.length} picked)</div>
         <div class="modal-search-box">
-          <input type="text" placeholder="Search districts..." value="${esc(window.modalDistQuery)}" oninput="window.modalDistQuery=this.value;renderModalContent()" />
+          <input type="text" id="modal-search-dist" placeholder="Search districts..." value="${esc(window.modalDistQuery||'')}" />
         </div>
-        <div class="modal-picker-list" style="max-height:120px;">
+        <div class="modal-picker-list" id="modal-dist-list" style="max-height:120px;">
           ${distList.map(d => {
             const isSel = modalDistrictsMulti.includes(d.id)
-            return `<div class="modal-picker-item" onclick="toggleAdvancedPick('dist','${d.id}')">
+            return `<div class="modal-picker-item" data-type="dist" data-id="${d.id}">
               <input type="checkbox" class="modal-picker-cb" ${isSel?'checked':''} />
               <div class="modal-picker-name">${esc(d.district_name)}</div>
             </div>`
           }).join('')}
         </div>
-
       </div>
 
-      <!-- Part 3: Churches -->
       <div class="modal-section">
         <div class="modal-section-title">Select Churches (${modalChurchesMulti.length} picked)</div>
         <div class="modal-search-box">
-          <input type="text" placeholder="Search churches..." value="${esc(window.modalChurQuery)}" oninput="window.modalChurQuery=this.value;renderModalContent()" />
+          <input type="text" id="modal-search-chur" placeholder="Search churches..." value="${esc(window.modalChurQuery||'')}" />
         </div>
-        <div class="modal-picker-list" style="max-height:160px;">
+        <div class="modal-picker-list" id="modal-chur-list" style="max-height:160px;">
           ${churList.map(c => {
             const isSel = modalChurchesMulti.includes(c.id)
-            return `<div class="modal-picker-item" onclick="toggleAdvancedPick('chur','${c.id}')">
+            return `<div class="modal-picker-item" data-type="chur" data-id="${c.id}">
               <input type="checkbox" class="modal-picker-cb" ${isSel?'checked':''} />
               <div class="modal-picker-name">${esc(c.church_name)}</div>
             </div>`
           }).join('')}
         </div>
-
       </div>
 
-      <!-- Part 4: Individual Pick -->
       <div class="modal-section" style="margin-bottom:0;">
         <div class="modal-section-title">Pick Individuals (${modalPickedIds.size} picked)</div>
         <div class="modal-search-box">
-          <input type="text" placeholder="Search by name..." value="${esc(modalSearchQuery)}" oninput="searchInModal(this.value)" />
+          <input type="text" id="modal-search-ind" placeholder="Search by name..." value="${esc(modalSearchQuery)}" />
         </div>
-        <div class="modal-picker-list" style="max-height:160px;">
+        <div class="modal-picker-list" id="modal-ind-list" style="max-height:160px;">
           ${indList.map(d => {
             const pk = `${d.role}_${d.id}`, isPicked = modalPickedIds.has(pk)
-            return `<div class="modal-picker-item" onclick="toggleModalPick('${d.id}','${d.role}')">
+            return `<div class="modal-picker-item" data-id="${d.id}" data-role="${d.role}">
               <input type="checkbox" class="modal-picker-cb" ${isPicked?'checked':''} />
               <div class="modal-picker-info">
                 <div class="modal-picker-name" style="font-size:13px;">${esc(d.fullName)}</div>
@@ -162,13 +230,34 @@ function renderModalContent() {
           }).join('')}
         </div>
       </div>
-
     </div>
   `
   container.innerHTML = html
+
+  document.getElementById('btn-export-quick-all').onclick = () => startExport('all')
+  document.getElementById('btn-export-quick-filtered').onclick = () => startExport('filtered')
+  
+  const distInp = document.getElementById('modal-search-dist')
+  distInp.oninput = () => { window.modalDistQuery = distInp.value; renderModalContent() }
+  
+  const churInp = document.getElementById('modal-search-chur')
+  churInp.oninput = () => { window.modalChurQuery = churInp.value; renderModalContent() }
+
+  const indInp = document.getElementById('modal-search-ind')
+  indInp.oninput = () => { modalSearchQuery = indInp.value; renderModalContent() }
+
+  document.querySelectorAll('#modal-dist-list .modal-picker-item').forEach(item => {
+      item.onclick = () => toggleAdvancedPick('dist', item.dataset.id)
+  })
+  document.querySelectorAll('#modal-chur-list .modal-picker-item').forEach(item => {
+      item.onclick = () => toggleAdvancedPick('chur', item.dataset.id)
+  })
+  document.querySelectorAll('#modal-ind-list .modal-picker-item').forEach(item => {
+      item.onclick = () => toggleModalPick(item.dataset.id, item.dataset.role)
+  })
 }
 
-window.toggleAdvancedPick = (type, id) => {
+function toggleAdvancedPick(type, id) {
   if (type === 'dist') {
     if (modalDistrictsMulti.includes(id)) modalDistrictsMulti = modalDistrictsMulti.filter(x => x !== id)
     else modalDistrictsMulti.push(id)
@@ -178,12 +267,7 @@ window.toggleAdvancedPick = (type, id) => {
   }
   renderModalContent()
 }
-window.modalDistQuery = ''
-window.modalChurQuery = ''
 
-let districts = [], churches = [] 
-
-function searchInModal(q) { modalSearchQuery = q; renderModalContent() }
 function toggleModalPick(id, role) {
   const k = `${role}_${id}`; if (modalPickedIds.has(k)) modalPickedIds.delete(k); else modalPickedIds.add(k)
   renderModalContent()
@@ -215,16 +299,10 @@ async function startExport(type) {
 
 // ── Export Engine (Cancellable) ─────────────────────────────
 let _exportCancelled = false;
-
-function cancelExport() {
-  _exportCancelled = true;
-  const lab = document.getElementById('export-modal-label');
-  if (lab) lab.textContent = 'Cancelling...';
-}
+function cancelExport() { _exportCancelled = true; const lab = document.getElementById('export-modal-label'); if (lab) lab.textContent = 'Cancelling...'; }
 
 async function executeBatchDownload(targets, zipName) {
   _exportCancelled = false;
-
   const modal    = document.getElementById('modal-export-progress');
   const fill     = document.getElementById('export-modal-fill');
   const lab      = document.getElementById('export-modal-label');
@@ -241,20 +319,17 @@ async function executeBatchDownload(targets, zipName) {
     if (fill) fill.style.width = '0%';
     if (per) per.textContent = '0%';
     if (lab) lab.textContent = 'Initializing...';
-    // Reset spinner
     if (spinner) spinner.style.animation = 'spin 2s linear infinite';
     if (titleEl) titleEl.textContent = 'Generating Badges';
   }
 
-  const zip = new JSZip(), safe = s => (s||'').replace(/[/\\?%*:|"<>]/g, '_').trim()
+  const zip = new window.JSZip();
+  const safe = s => (s||'').replace(/[/\\?%*:|"<>]/g, '_').trim();
   
   try {
-    const templateImg = await loadImg(cfg.templateUrl)
-    
+    const templateImg = await loadImg(cfg.templateUrl);
     for (let i = 0; i < targets.length; i++) {
-      // ── Cancellation check ──
       if (_exportCancelled) {
-        // Stop spinner immediately so user knows nothing is running
         if (spinner) spinner.style.animation = 'none';
         if (titleEl) titleEl.textContent = 'Export Cancelled';
         if (lab) lab.textContent = 'No files were downloaded.';
@@ -263,40 +338,132 @@ async function executeBatchDownload(targets, zipName) {
         if (footer) footer.style.display = 'flex';
         return;
       }
-
-      const d = targets[i], canvas = document.createElement('canvas')
-      canvas.width = cfg.canvasWidth; canvas.height = cfg.canvasHeight
-      await drawBadge(canvas, d, templateImg)
-      
-      const path = `${safe(d.districtName)}/${safe(d.churchName)}/${d.role==='DISCIPLE'?'Disciples/':''}${d.role}_${safe(d.fullName)}.jpg`
-      zip.file(path, canvas.toDataURL('image/jpeg', 0.92).split(',')[1], {base64:true})
-      
+      const d = targets[i];
+      const canvas = document.createElement('canvas');
+      canvas.width = cfg.canvasWidth;
+      canvas.height = cfg.canvasHeight;
+      await drawBadge(canvas, d, templateImg);
+      const path = `${safe(d.districtName)}/${safe(d.churchName)}/${d.role==='DISCIPLE'?'Disciples/':''}${d.role}_${safe(d.fullName)}.jpg`;
+      zip.file(path, canvas.toDataURL('image/jpeg', 0.92).split(',')[1], {base64:true});
       const pct = Math.round(((i+1)/targets.length) * 100);
       if (fill) fill.style.width = pct + '%';
       if (per) per.textContent = pct + '%';
       if (lab) lab.textContent = `Rendering ${i+1}/${targets.length}: ${d.fullName}`;
-      
-      if (i % 8 === 0) await new Promise(r => setTimeout(r, 0))
+      if (i % 8 === 0) await new Promise(r => setTimeout(r, 0));
     }
-    
     if (cancelBtn) cancelBtn.style.display = 'none';
     if (lab) lab.textContent = 'Finalizing ZIP...';
-    const blob = await zip.generateAsync({type:'blob'}), a = document.createElement('a')
-    a.href = URL.createObjectURL(blob); a.download = zipName; a.click()
-    
-    // Stop spinner, update title to show it's done
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = zipName;
+    a.click();
     if (spinner) spinner.style.animation = 'none';
     if (titleEl) titleEl.textContent = 'Export Complete ✓';
     if (lab) lab.textContent = 'Your ZIP file has been downloaded.';
     if (per) per.textContent = '100%';
     if (footer) footer.style.display = 'flex';
   } catch (err) { 
-    console.error('Export Error', err); 
+    console.error('Export Error', err);
     alert('Export Failed: ' + err.message);
     if (modal) modal.style.display = 'none';
   }
 }
 
+// ── Rendering & Drawing ──────────────────────────────────────
+async function renderBadge() {
+  if (!selectedDelegate) return
+  const wrap = document.getElementById('badge-preview-wrap'); 
+  wrap.innerHTML = '<div style="font-size:13px;color:var(--text-3);">Rendering...</div>'
+  try {
+    if (document.fonts) await document.fonts.ready;
+    const isMobile = window.innerWidth <= 640;
+    const isTablet = window.innerWidth > 640 && window.innerWidth <= 1100;
+    let maxH = '380px';
+    if (isMobile) maxH = '500px';
+    else if (isTablet) maxH = '320px';
+
+    const canvas = document.createElement('canvas'); 
+    canvas.width = cfg.canvasWidth; canvas.height = cfg.canvasHeight; 
+    canvas.style.maxWidth = '100%'; canvas.style.maxHeight = maxH; 
+    canvas.style.height='auto'; canvas.style.display='block'; canvas.style.margin='0 auto'
+    await drawBadge(canvas, selectedDelegate); 
+    wrap.innerHTML = ''; wrap.appendChild(canvas); 
+    badgeCanvas = canvas
+  } catch(e) { wrap.innerHTML=`<div style="color:red;font-size:13px;">Error: ${e.message}</div>` }
+}
+
+async function drawBadge(canvas, d, preLoadedTemplate = null) {
+  const ctx = canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height)
+  try { 
+    const img = preLoadedTemplate || await loadImg(cfg.templateUrl); 
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  } catch(e){}
+
+  if (cfg.profile && cfg.profile.enabled && d.imageUrl) {
+    try {
+      const pImg = await loadImg(d.imageUrl);
+      ctx.drawImage(pImg, cfg.profile.x, cfg.profile.y, cfg.profile.size, cfg.profile.size);
+    } catch(err) { console.error('Profile image load failed', err); }
+  }
+
+  if (cfg.name.enabled !== false) drawText(ctx, d.fullName, cfg.name); 
+  if (cfg.role.enabled !== false) drawText(ctx, d.role, cfg.role); 
+  if (cfg.district.enabled !== false) drawText(ctx, d.districtName, cfg.district); 
+  if (cfg.church.enabled !== false) drawText(ctx, d.churchName, cfg.church)
+  
+  if (cfg.qr.enabled !== false) {
+    const qrc = document.createElement('canvas')
+    const lib = window.QRCode || window.qrcode
+
+    if (!lib) throw new Error('QR Code library not loaded')
+
+    await lib.toCanvas(qrc, encodeQR(d.role, d.id), {
+      width: cfg.qr.size,
+      margin: 1
+    })
+
+    ctx.drawImage(qrc, cfg.qr.x, cfg.qr.y, cfg.qr.size, cfg.qr.size)
+  }
+}
+
+function drawText(ctx, t='', f) { 
+  if (!t) return
+  ctx.save(); 
+  const weight = f.fontWeight==='bold'?700:400, style=f.fontStyle==='italic'?'italic ':''; 
+  let fSize = f.fontSize;
+  const maxWidth = f.maxWidth || 850;
+  const align = f.textAlign || 'left';
+  let effectiveMaxWidth = maxWidth;
+  if (align === 'left' && (f.x + effectiveMaxWidth > 1030)) effectiveMaxWidth = 1030 - f.x;
+
+  ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
+  while (ctx.measureText(t).width > effectiveMaxWidth && fSize > 8) {
+    fSize--;
+    ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
+  }
+
+  const tw = ctx.measureText(t).width;
+  let drawX = f.x;
+  if (align === 'center') { if (drawX - tw/2 < 10) drawX = tw/2 + 10; } 
+  else if (align === 'right') { if (drawX - tw < 10) drawX = tw + 10; } 
+  else if (align === 'left') { if (drawX < 10) drawX = 10; }
+
+  ctx.fillStyle = f.color; ctx.textAlign = align; ctx.textBaseline = 'top'; 
+  ctx.fillText(t, drawX, f.y); ctx.restore() 
+}
+
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    if (!src) return rej(new Error('No image source'))
+
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => res(img)
+    img.onerror = rej
+    img.src = src
+  })
+}
 
 // ── Filtering Logic ──────────────────────────────────────────
 function toggleRole(btn) {
@@ -309,7 +476,6 @@ function toggleRole(btn) {
 function applyFilters() {
   const qStr = document.getElementById('search-delegate')?.value.toLowerCase().trim() || ''
   const qTerms = qStr.split(/\s+/).filter(t => t.length > 0)
-
   filteredDelegates = allDelegates.filter(d => {
     if (!activeRoles.has(d.role)) return false
     if (filterDistVal && d.districtId !== filterDistVal) return false
@@ -321,7 +487,6 @@ function applyFilters() {
     return true
   })
   renderDelegateList()
-
   if (filteredDelegates.length > 0) {
     const first = filteredDelegates[0]; selectDelegate(first.id, first.role, false) 
   } else {
@@ -331,216 +496,15 @@ function applyFilters() {
   }
 }
 
-function selectDelegate(id, role, shouldJump = true) {
-  selectedDelegate = filteredDelegates.find(d => d.id === id && d.role === role)
-  document.querySelectorAll('.del-card').forEach(c => c.classList.toggle('sel', c.dataset.id===id && c.dataset.role===role))
-  if (document.getElementById('canvas-actions')) document.getElementById('canvas-actions').style.display = 'flex'
-  if (document.getElementById('no-selection-msg')) document.getElementById('no-selection-msg').style.display = 'none'
-  renderBadge()
-  // On mobile/tablet, auto-jump to Preview tab when a delegate is selected
-  if (shouldJump) { 
-    const tb = document.querySelector('.mobile-tabbar'); 
-    if (tb && getComputedStyle(tb).display !== 'none' && window.innerWidth <= 640) {
-      switchTab('preview') 
-    } else if (window.innerWidth <= 1100) {
-      // On tablet there's no tab bar, but we still want the mini editor populated
-      renderTools()
-    }
-  }
-}
-
-function switchTab(view) {
-  document.querySelector('.slides-panel')?.classList.remove('active')
-  document.querySelector('.canvas-workspace')?.classList.remove('active')
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view))
-  
-  if (view === 'delegates') {
-    document.querySelector('.slides-panel')?.classList.add('active')
-  } else if (view === 'preview') {
-    document.querySelector('.canvas-workspace')?.classList.add('active')
-    renderTools() // Always populate mini editor below the badge
-  }
-}
-function switchMobileView(v){ switchTab(v==='delegates'?'delegates':'editor') }
-
-// ── Config ───────────────────────────────────────────────────
-const CONFIG_KEY = 'momentum_badge_config_v1'
-const TEMPLATES_KEY = 'momentum_badge_templates_v1'
-const DEFAULT_CONFIG = {
-  canvasWidth: 1050,
-  canvasHeight: 750,
-  templateUrl: 'assets/2026%20Conf%20ID%20front.png',
-  name:     { x: 20, y: 350, fontSize: 45, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 850, enabled: true },
-  role:     { x: 20, y: 410, fontSize: 75, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 850, enabled: true },
-  district: { x: 20, y: 500, fontSize: 34, fontWeight: 'bold', fontStyle: 'normal', color: '#333333', textAlign: 'left', maxWidth: 850, enabled: true },
-  church:   { x: 570, y: 665, fontSize: 52, fontWeight: 'bold', fontStyle: 'italic', color: '#ffffff', textAlign: 'left', maxWidth: 460, enabled: true },
-  qr:       { x: 735, y: 300, size: 293, enabled: true },
-  profile:  { x: 50, y: 50, size: 250, enabled: false }
-}
-
-let cfg = getConfig(); function getConfig(){ try{ let s=JSON.parse(localStorage.getItem(CONFIG_KEY))||{}, m={...DEFAULT_CONFIG}; Object.keys(DEFAULT_CONFIG).forEach(k=>{ if(s[k]) m[k]=typeof s[k]==='object'?{...DEFAULT_CONFIG[k],...s[k]}:s[k] }); return m }catch{ return {...DEFAULT_CONFIG} } }
-function saveConfig(){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)) }
-
-function getLocalTemplates() { try{ return JSON.parse(localStorage.getItem(TEMPLATES_KEY))||[] }catch{ return [] } }
-function saveLocalTemplates(t) { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(t)) }
-function addLocalTemplate(dataUrl) { const t = getLocalTemplates(); t.push({ id: Date.now(), url: dataUrl }); saveLocalTemplates(t); renderTools() }
-function deleteLocalTemplate(id) { if(confirm('Delete template?')){ const t = getLocalTemplates().filter(x => x.id !== id); saveLocalTemplates(t); renderTools() } }
-function applyLocalTemplate(url) { cfg.templateUrl = url; saveConfig(); renderBadge(); renderTools() }
-
-function resetConfig(){ if(confirm('Reset layout?')){ localStorage.removeItem(CONFIG_KEY); cfg={...DEFAULT_CONFIG}; renderTools(); renderBadge() } }
-
-function downloadSingle() {
-  if (!selectedDelegate || !badgeCanvas) return
-  const a = document.createElement('a'); a.href = badgeCanvas.toDataURL('image/jpeg', 0.9); a.download = `${selectedDelegate.role}-${selectedDelegate.fullName.replace(/\s+/g,'_')}.jpg`; a.click()
-}
-function printBadge() {
-  if (!badgeCanvas) return
-  const url = badgeCanvas.toDataURL('image/jpeg', 0.9), w = window.open('','_blank'); if(!w){alert('Pop-up blocked!'); return}
-  w.document.write(`<html><body style="margin:0;display:flex;align-items:center;justify-content:center;"><img src="${url}" style="width:8.89cm;height:6.35cm;" onload="window.print();window.close();"/></body></html>`)
-}
-
-// ── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await requireAuth()
-    const [dRes, cRes, pastors, disciples] = await Promise.all([ districtService.fetchAll(), churchService.fetchAll(), pastorService.fetchAll(), discipleService.fetchAll() ])
-    districts = dRes; churches = cRes
-    
-    districts.forEach(d => {
-      if (d.theme_color) DISTRICT_COLORS[d.district_name.trim().toUpperCase()] = d.theme_color
-    })
-
-    const distMap = {}, churchMap = {}, pastorMap = {}
-    districts.forEach(d => distMap[d.id] = d.district_name)
-    churches.forEach(c => churchMap[c.id] = { name: c.church_name, distId: c.district_id })
-
-    allDelegates = []
-    pastors.forEach(p => {
-      const dn = p.district_name || distMap[p.district_id] || ''
-      const cn = p.church_name || churchMap[p.church_id]?.name || ''
-      pastorMap[p.id] = { districtId: p.district_id, districtName: dn, churchId: p.church_id, churchName: cn, fullName: p.full_name, imageUrl: p.pastor_image_url }
-      allDelegates.push({ id:p.id, fullName:p.full_name, role:'PASTOR', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, imageUrl: p.pastor_image_url })
-      if(p.wife_name) {
-        allDelegates.push({ id:p.id, fullName:p.wife_name, role:'WIFE', districtId:p.district_id, districtName:dn, churchId:p.church_id, churchName:cn, pastorName:p.full_name, imageUrl: p.wife_image_url })
-      }
-    })
-    disciples.forEach(d => {
-      allDelegates.push({ id: d.id, fullName: d.full_name, role: 'DISCIPLE', districtId: d.district_id, districtName: d.district_name || '', churchId: d.church_id, churchName: d.church_name || '', imageUrl: d.disciple_image_url || null })
-    })
-
-    const distEl = document.getElementById('filter-district-badge'), churchEl = document.getElementById('filter-church-badge')
-    if (distEl) selFilterDist = createSearchSelect(distEl, districts.map(d => ({ value:d.id, label:d.district_name })), 'District', (v) => { filterDistVal = v||null; filterChurchVal = null; const fc = churches.filter(c => !filterDistVal || c.district_id === filterDistVal); if(selFilterChurch){ selFilterChurch.setOptions([{value:'',label:'All churches'}, ...fc.map(c=>({value:c.id,label:c.church_name}))]); selFilterChurch.reset() } applyFilters() })
-    if (churchEl) selFilterChurch = createSearchSelect(churchEl, [{ value:'', label:'All churches' }, ...churches.map(c => ({ value:c.id, label:c.church_name }))], 'All churches', (v) => { filterChurchVal = v||null; applyFilters() })
-
-    applyFilters(); renderTools()
-    if (window.innerWidth <= 640) switchTab('delegates')
-  } catch (err) { console.error('Init failed:', err) }
-})
-
-// ── Helpers ──────────────────────────────────────────────────
-async function renderBadge() {
-  if (!selectedDelegate) return
-  const wrap = document.getElementById('badge-preview-wrap'); wrap.innerHTML = '<div style="font-size:13px;color:var(--text-3);">Rendering...</div>'
-  try {
-    // Wait for fonts to ensure coordinates are accurate
-    if (document.fonts) await document.fonts.ready;
-    
-    const isMobile = window.innerWidth <= 640;
-    const isTablet = window.innerWidth > 640 && window.innerWidth <= 1100;
-    let maxH = '380px';
-    if (isMobile) maxH = '500px';
-    else if (isTablet) maxH = '320px';
-
-    const canvas = document.createElement('canvas'); 
-    canvas.width = cfg.canvasWidth; 
-    canvas.height = cfg.canvasHeight; 
-    canvas.style.maxWidth = '100%'; 
-    canvas.style.maxHeight = maxH; 
-    canvas.style.height='auto'; 
-    canvas.style.display='block'; 
-    canvas.style.margin='0 auto'
-    await drawBadge(canvas, selectedDelegate); 
-    wrap.innerHTML = ''; 
-    wrap.appendChild(canvas); 
-    badgeCanvas = canvas
-  } catch(e) { wrap.innerHTML=`<div style="color:red;font-size:13px;">Error: ${e.message}</div>` }
-}
-
-async function drawBadge(canvas, d, preLoadedTemplate = null) {
-  const ctx = canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height)
-  try { 
-    const img = preLoadedTemplate || await loadImg(cfg.templateUrl); 
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-  } catch(e){}
-
-  // Draw Profile Picture if enabled and available
-  if (cfg.profile && cfg.profile.enabled && d.imageUrl) {
-    try {
-      const pImg = await loadImg(d.imageUrl);
-      ctx.save();
-      // Draw image at specified coordinates and size
-      ctx.drawImage(pImg, cfg.profile.x, cfg.profile.y, cfg.profile.size, cfg.profile.size);
-      ctx.restore();
-    } catch(err) { console.error('Profile image load failed', err); }
-  }
-
-  if (cfg.name.enabled !== false) drawText(ctx, d.fullName, cfg.name); 
-  if (cfg.role.enabled !== false) drawText(ctx, d.role, cfg.role); 
-  if (cfg.district.enabled !== false) drawText(ctx, d.districtName, cfg.district); 
-  if (cfg.church.enabled !== false) drawText(ctx, d.churchName, cfg.church)
-  
-  if (cfg.qr.enabled !== false) {
-    const qrc = document.createElement('canvas'), lib = window.QRCode||window.qrcode; 
-    await lib.toCanvas(qrc, encodeQR(d.role, d.id), {width:cfg.qr.size, margin:1}); 
-    ctx.drawImage(qrc, cfg.qr.x, cfg.qr.y, cfg.qr.size, cfg.qr.size)
-  }
-}
-
-function drawText(ctx, t='', f) { 
-  if (!t) return
-  ctx.save(); 
-  const weight = f.fontWeight==='bold'?700:400, style=f.fontStyle==='italic'?'italic ':''; 
-  let fSize = f.fontSize;
-  const maxWidth = f.maxWidth || 850;
-  const align = f.textAlign || 'left';
-  
-  // Smart Auto-Resize: Limit maxWidth to canvas edge if left-aligned
-  let effectiveMaxWidth = maxWidth;
-  if (align === 'left' && (f.x + effectiveMaxWidth > 1030)) {
-     effectiveMaxWidth = 1030 - f.x;
-  }
-
-  ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
-  while (ctx.measureText(t).width > effectiveMaxWidth && fSize > 8) {
-    fSize--;
-    ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
-  }
-
-  const tw = ctx.measureText(t).width;
-  let drawX = f.x;
-
-  // Prevent negative overflow if centered/right-aligned at a low X coordinate
-  if (align === 'center') {
-    if (drawX - tw/2 < 10) drawX = tw/2 + 10; // Keep at least 10px margin from left
-  } else if (align === 'right') {
-    if (drawX - tw < 10) drawX = tw + 10;
-  } else if (align === 'left') {
-    if (drawX < 10) drawX = 10;
-  }
-
-  ctx.fillStyle = f.color; 
-  ctx.textAlign = align;
-  ctx.textBaseline = 'top'; 
-  ctx.fillText(t, drawX, f.y); 
-  ctx.restore() 
-}
-
-function loadImg(src) { return new Promise((res, rej) => { const img = new Image(); img.crossOrigin='anonymous'; img.onload=()=>res(img); img.onerror=rej; img.src=src }) }
-
 function renderDelegateList() {
-  const el = document.getElementById('delegate-list'), cnt = document.getElementById('delegate-count'); if(cnt) cnt.textContent = `${filteredDelegates.length} results`
-  if(!el) return; if(!filteredDelegates.length){ el.innerHTML=`<div style="padding:40px 10px;text-align:center;color:var(--text-4)">No matches.</div>`; return }
+  const el = document.getElementById('delegate-list'), cnt = document.getElementById('delegate-count'); 
+  if(cnt) cnt.textContent = `${filteredDelegates.length} results`
+  if(!el) return; 
+  if(!filteredDelegates.length){ el.innerHTML=`<div style="padding:40px 10px;text-align:center;color:var(--text-4)">No matches.</div>`; return }
   el.innerHTML = filteredDelegates.map(d => renderDelCard(d)).join('')
+  el.querySelectorAll('.del-card').forEach(card => {
+      card.onclick = () => selectDelegate(card.dataset.id, card.dataset.role)
+  })
 }
 
 function renderDelCard(d) {
@@ -549,11 +513,10 @@ function renderDelCard(d) {
   let sub = d.districtName||''; 
   if(d.role==='WIFE') sub=`Spouse of ${d.pastorName||'Pastor'}`; 
   if(d.role==='DISCIPLE') sub=d.churchName || 'No Church';
-  
   const avImg = d.imageUrl ? `<img src="${d.imageUrl}" class="del-av-img" />` : `<div class="del-av-fallback">${ini}</div>`
   
   return `
-    <button type="button" class="del-card ${sel?'sel':''}" data-id="${d.id}" data-role="${d.role}" style="--district-color:${c}" onclick="selectDelegate('${d.id}','${d.role}')">
+    <button type="button" class="del-card ${sel?'sel':''}" data-id="${d.id}" data-role="${d.role}" style="--district-color:${c}">
       <div class="del-av" style="background:${c}">${avImg}</div>
       <div class="del-info">
         <div class="del-name">${esc(d.fullName)}</div>
@@ -563,211 +526,130 @@ function renderDelCard(d) {
     </button>`
 }
 
-function getDistColor(n) { 
-  const nm = (n||'').trim().toUpperCase()
-  if (DISTRICT_COLORS[nm]) return DISTRICT_COLORS[nm]
-  const m = nm.match(/(\d+)/); 
-  if(m && DISTRICT_COLORS[`DISTRICT ${m[1]}`]) return DISTRICT_COLORS[`DISTRICT ${m[1]}`]
-  return '#94a3b8' 
+function selectDelegate(id, role, scroll = true) {
+  selectedDelegate = allDelegates.find(d => d.id === id && d.role === role)
+  document.querySelectorAll('.del-card').forEach(c => c.classList.toggle('sel', c.dataset.id === id && c.dataset.role === role))
+  if (scroll) {
+    const el = document.querySelector(`.del-card.sel`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+  document.getElementById('canvas-actions').style.display = 'flex'
+  renderBadge()
 }
-let DISTRICT_COLORS = {}
 
+function getDistColor(n) { 
+  const nm = (n || '').trim().toUpperCase()
+
+  if (DISTRICT_COLORS[nm]) return DISTRICT_COLORS[nm]
+
+  const m = nm.match(/(\d+)/)
+  if (m) {
+    const key1 = `DISTRICT ${m[1]}`
+    const key2 = `DIST ${m[1]}`
+
+    if (DISTRICT_COLORS[key1]) return DISTRICT_COLORS[key1]
+    if (DISTRICT_COLORS[key2]) return DISTRICT_COLORS[key2]
+  }
+
+  return '#94a3b8'
+}
+
+// ── Editor Tools ─────────────────────────────────────────────
 function renderTools() {
-  const isMobileOrTablet = window.innerWidth <= 1100;
-  const b = document.getElementById('editor-fields-body'); 
-  const mob = document.getElementById('mobile-mini-editor');
-  
-  if(!b) return
-
-  // 1. Ensure the main desktop toolbar structure exists
+  const b = document.getElementById('editor-fields-body'); if(!b) return
   if(!b.querySelector('.editor-toolbar')){ 
     b.innerHTML=`<div class="editor-toolbar"><div class="editor-sel-wrap" id="f-sel-box"></div><div class="editor-prop-wrap" id="editor-properties-body"></div></div>`; 
     selFieldEditor = createSearchSelect(document.getElementById('f-sel-box'), [
-      {value:'name',label:'Name'},
-      {value:'role',label:'Role'},
-      {value:'district',label:'District'},
-      {value:'church',label:'Church'},
-      {value:'qr',label:'QR'},
-      {value:'profile',label:'Profile'},
-      {value:'templates',label:'Templates'}
+      {value:'name',label:'Name'}, {value:'role',label:'Role'}, {value:'district',label:'District'}, {value:'church',label:'Church'}, {value:'qr',label:'QR'}, {value:'profile',label:'Photo'}, {value:'templates',label:'Bkgd'}
     ], 'Select...', (v)=>{ if(v){activeFieldKey=v;renderTools()} }); 
-    selFieldEditor.setValue(activeFieldKey) 
+    if(activeFieldKey) selFieldEditor.setValue(activeFieldKey) 
   }
 
   const p = document.getElementById('editor-properties-body')
   let propsHtml = '';
-  
-  // 2. Generate HTML based on activeFieldKey
   if (activeFieldKey === 'templates') {
-    const ts = getLocalTemplates()
-    const isDefaultUsed = cfg.templateUrl === DEFAULT_CONFIG.templateUrl
-    
     propsHtml = `
       <div class="prop-section-title" style="margin-top:0;">Background Templates</div>
       <div style="margin-bottom:15px;">
-        <button class="btn btn-ghost" style="width:100%; height:36px; border:1px dashed var(--border); font-size:12px;" onclick="document.getElementById('tpl-upload').click()">
+        <button class="btn btn-ghost" style="width:100%; height:36px; border:1px dashed var(--border); font-size:12px;" id="btn-tpl-upload-trigger">
           <svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Template
         </button>
-        <input type="file" id="tpl-upload" accept="image/*" style="display:none;" onchange="handleTemplateUpload(this)" />
+        <input type="file" id="tpl-upload" accept="image/*" style="display:none;" />
       </div>
-      
       <div class="tpl-grid">
-        <div class="tpl-card ${isDefaultUsed?'active':''}">
-           <div class="tpl-thumb" style="background-image:url('${DEFAULT_CONFIG.templateUrl}')" onclick="applyLocalTemplate('${DEFAULT_CONFIG.templateUrl}')"></div>
+        <div class="tpl-card ${cfg.templateUrl === DEFAULT_CONFIG.templateUrl ? 'active' : ''}" data-url="${DEFAULT_CONFIG.templateUrl}">
+           <div class="tpl-thumb" style="background-image:url('${DEFAULT_CONFIG.templateUrl}')"></div>
            <div class="tpl-footer"><span class="tpl-tag">Default</span></div>
         </div>
-        ${ts.map(t => {
-          const isActive = cfg.templateUrl === t.url
-          return `
-            <div class="tpl-card ${isActive?'active':''}">
-               <div class="tpl-thumb" style="background-image:url('${t.url}')" onclick="applyLocalTemplate('${t.url}')"></div>
-               <div class="tpl-footer">
-                 <span class="tpl-tag">Custom</span>
-                 <button class="tpl-delete-btn" onclick="deleteLocalTemplate(${t.id})">
-                   <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-                 </button>
-               </div>
-            </div>`
-        }).join('')}
-      </div>
-    `;
+      </div>`;
   } else {
     const f = cfg[activeFieldKey]
     updateCoordsLabel(f.x, f.y)
-
-    const visibilityToggle = `
-      <div class="prop-item" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <div class="prop-label" style="font-weight:700; color:var(--text-2);">Field Visible</div>
-          <label class="switch-mini">
-            <input type="checkbox" ${f.enabled!==false?'checked':''} onchange="cfg.${activeFieldKey}.enabled=this.checked;saveConfig();renderBadge();" />
-            <span class="slider-mini"></span>
-          </label>
-        </div>
-      </div>
-    `;
-
+    const visibilityHtml = `<div class="prop-item"><div class="prop-label">Visible</div><input type="checkbox" id="field-enabled" ${f.enabled!==false?'checked':''} /></div>`
     if(activeFieldKey==='qr' || activeFieldKey==='profile') {
-      propsHtml = visibilityToggle + `
-        <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value, cfg.${activeFieldKey}.y);saveConfig();renderBadge()" /></div>
-        <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x, +this.value);saveConfig();renderBadge()" /></div>
-        <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.size}" oninput="cfg.${activeFieldKey}.size=+this.value;saveConfig();renderBadge()" /></div>
-      `
+      propsHtml = visibilityHtml + `
+        <div class="prop-item"><div class="prop-label">X</div><input type="number" id="field-x" value="${f.x}" /></div>
+        <div class="prop-item"><div class="prop-label">Y</div><input type="number" id="field-y" value="${f.y}" /></div>
+        <div class="prop-item"><div class="prop-label">Size</div><input type="number" id="field-size" value="${f.size}" /></div>`
     } else {
-      propsHtml = visibilityToggle + `
-        <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value, cfg.${activeFieldKey}.y);saveConfig();renderBadge()" /></div>
-        <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x, +this.value);saveConfig();renderBadge()" /></div>
-        <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.fontSize}" oninput="cfg.${activeFieldKey}.fontSize=+this.value;saveConfig();renderBadge()" /></div>
-        <div class="prop-item"><div class="prop-label">Max Width</div><input type="number" value="${f.maxWidth||800}" oninput="cfg.${activeFieldKey}.maxWidth=+this.value;saveConfig();renderBadge()" /></div>
+      propsHtml = visibilityHtml + `
+        <div class="prop-item"><div class="prop-label">X</div><input type="number" id="field-x" value="${f.x}" /></div>
+        <div class="prop-item"><div class="prop-label">Y</div><input type="number" id="field-y" value="${f.y}" /></div>
+        <div class="prop-item"><div class="prop-label">Size</div><input type="number" id="field-fsize" value="${f.fontSize}" /></div>
+        <div class="prop-item"><div class="prop-label">Max Width</div><input type="number" id="field-mw" value="${f.maxWidth||800}" /></div>
         <div class="prop-item"><div class="prop-label">Align</div>
-          <select class="input" onchange="cfg.${activeFieldKey}.textAlign=this.value;saveConfig();renderBadge()">
+          <select class="input" id="field-align">
             <option value="left" ${f.textAlign==='left'?'selected':''}>Left</option>
             <option value="center" ${f.textAlign==='center'?'selected':''}>Center</option>
             <option value="right" ${f.textAlign==='right'?'selected':''}>Right</option>
           </select>
         </div>
-        <div class="prop-item"><div class="prop-label">Color</div><input type="color" value="${f.color}" onchange="cfg.${activeFieldKey}.color=this.value;saveConfig();renderBadge()" /></div>
-      `
+        <div class="prop-item"><div class="prop-label">Color</div><input type="color" id="field-color" value="${f.color}" /></div>`
     }
   }
-
-  // 3. Inject into desktop panel
   if (p) p.innerHTML = propsHtml;
+  bindToolEvents()
+  renderMobileTools()
+}
 
-  // 4. Sync with mobile mini-editor if visible
-  if (mob) {
+function bindToolEvents() {
+    const p = document.getElementById('editor-properties-body')
+    if (!p) return
+    
+    // Templates
+    const tplTrigger = document.getElementById('btn-tpl-upload-trigger')
+    if (tplTrigger) tplTrigger.onclick = () => document.getElementById('tpl-upload').click()
+    const tplUpload = document.getElementById('tpl-upload')
+    if (tplUpload) tplUpload.onchange = (e) => handleTemplateUpload(e.target)
+    
+    p.querySelectorAll('.tpl-card').forEach(card => {
+        card.onclick = () => { cfg.templateUrl = card.dataset.url; saveConfig(); renderBadge(); renderTools(); }
+    })
+
+    // Properties
+    const f = cfg[activeFieldKey]
+    if (!f) return
+
+    const elEnabled = document.getElementById('field-enabled'); if (elEnabled) elEnabled.onchange = (e) => { f.enabled = e.target.checked; saveConfig(); renderBadge(); }
+    const elX = document.getElementById('field-x'); if (elX) elX.oninput = (e) => { f.x = +e.target.value; updateCoordsLabel(f.x, f.y); saveConfig(); renderBadge(); }
+    const elY = document.getElementById('field-y'); if (elY) elY.oninput = (e) => { f.y = +e.target.value; updateCoordsLabel(f.x, f.y); saveConfig(); renderBadge(); }
+    const elSize = document.getElementById('field-size'); if (elSize) elSize.oninput = (e) => { f.size = +e.target.value; saveConfig(); renderBadge(); }
+    const elFSize = document.getElementById('field-fsize'); if (elFSize) elFSize.oninput = (e) => { f.fontSize = +e.target.value; saveConfig(); renderBadge(); }
+    const elMW = document.getElementById('field-mw'); if (elMW) elMW.oninput = (e) => { f.maxWidth = +e.target.value; saveConfig(); renderBadge(); }
+    const elAlign = document.getElementById('field-align'); if (elAlign) elAlign.onchange = (e) => { f.textAlign = e.target.value; saveConfig(); renderBadge(); }
+    const elColor = document.getElementById('field-color'); if (elColor) elColor.onchange = (e) => { f.color = e.target.value; saveConfig(); renderBadge(); }
+}
+
+function renderMobileTools() {
+    const mob = document.getElementById('mobile-mini-editor'); if (!mob) return
     const FIELDS = [
-      {value:'name',label:'Name', icon:'N'},
-      {value:'role',label:'Role', icon:'R'},
-      {value:'district',label:'District', icon:'D'},
-      {value:'church',label:'Church', icon:'C'},
-      {value:'qr',label:'QR', icon:'QR'},
-      {value:'profile',label:'Photo', icon:'P'},
-      {value:'templates',label:'Bkgd', icon:'T'}
+        {value:'name',label:'Name'}, {value:'role',label:'Role'}, {value:'district',label:'Dist'}, {value:'church',label:'Chur'}, {value:'qr',label:'QR'}, {value:'profile',label:'Photo'}, {value:'templates',label:'Bkgd'}
     ]
-
-    const chipBar = FIELDS.map(f => `
-      <button 
-        class="qe-chip ${activeFieldKey === f.value ? 'active' : ''}" 
-        onclick="activeFieldKey='${f.value}';renderTools();">
-        ${f.label}
-      </button>`
-    ).join('')
-
-    let compactBody = ''
-
-    if (activeFieldKey === 'templates') {
-      // Show a simple upload button in mobile mode
-      compactBody = `
-        <div class="qe-templates-note">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span>Manage templates on the <strong>Editor</strong> tab</span>
-        </div>`
-    } else {
-      const fld = cfg[activeFieldKey]
-      const isTextFld = !['qr','profile'].includes(activeFieldKey)
-
-      const toggleRow = `
-        <div class="qe-toggle-row">
-          <span class="qe-toggle-label">Visible</span>
-          <label class="switch-mini">
-            <input type="checkbox" ${fld.enabled!==false?'checked':''} 
-              onchange="cfg.${activeFieldKey}.enabled=this.checked;saveConfig();renderBadge();"/>
-            <span class="slider-mini"></span>
-          </label>
-        </div>`
-
-      const posGrid = `
-        <div class="qe-grid">
-          <div class="qe-cell">
-            <label class="qe-label">X</label>
-            <input class="qe-input" type="number" value="${fld.x}" 
-              oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value,cfg.${activeFieldKey}.y);saveConfig();renderBadge()"/>
-          </div>
-          <div class="qe-cell">
-            <label class="qe-label">Y</label>
-            <input class="qe-input" type="number" value="${fld.y}"
-              oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x,+this.value);saveConfig();renderBadge()"/>
-          </div>
-          <div class="qe-cell">
-            <label class="qe-label">Size</label>
-            <input class="qe-input" type="number" value="${isTextFld ? fld.fontSize : fld.size}"
-              oninput="cfg.${activeFieldKey}.${isTextFld?'fontSize':'size'}=+this.value;saveConfig();renderBadge()"/>
-          </div>
-          ${isTextFld ? `
-          <div class="qe-cell">
-            <label class="qe-label">Max W</label>
-            <input class="qe-input" type="number" value="${fld.maxWidth||800}"
-              oninput="cfg.${activeFieldKey}.maxWidth=+this.value;saveConfig();renderBadge()"/>
-          </div>` : ''}
-        </div>`
-
-      const extraRow = isTextFld ? `
-        <div class="qe-extra-row">
-          <div class="qe-seg-grp">
-            ${['left','center','right'].map(a => `
-              <button class="qe-seg ${fld.textAlign===a?'active':''}"
-                onclick="cfg.${activeFieldKey}.textAlign='${a}';saveConfig();renderBadge();renderTools()">
-                ${a.charAt(0).toUpperCase()+a.slice(1)}
-              </button>`).join('')}
-          </div>
-          <div class="qe-color-wrap">
-            
-            <input type="color" value="${fld.color}" style="height:32px;width:48px;padding:2px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;"
-              onchange="cfg.${activeFieldKey}.color=this.value;saveConfig();renderBadge()"/>
-          </div>
-        </div>` : ''
-
-      compactBody = toggleRow + posGrid + extraRow
-    }
-
-    mob.innerHTML = `
-      <div class="quick-editor-wrap">
-        <div class="qe-chip-bar">${chipBar}</div>
-        <div class="qe-body">${compactBody}</div>
-      </div>
-    `
-  }
+    const chipBar = FIELDS.map(f => `<button class="qe-chip ${activeFieldKey === f.value ? 'active' : ''}" data-key="${f.value}">${f.label}</button>`).join('')
+    mob.innerHTML = `<div class="quick-editor-wrap"><div class="qe-chip-bar">${chipBar}</div></div>`
+    mob.querySelectorAll('.qe-chip').forEach(btn => {
+        btn.onclick = () => { activeFieldKey = btn.dataset.key; renderTools(); }
+    })
 }
 
 function updateCoordsLabel(x,y) {
@@ -777,5 +659,25 @@ function updateCoordsLabel(x,y) {
 
 function handleTemplateUpload(input) {
   const file = input.files[0]; if(!file) return
-  const reader = new FileReader(); reader.onload = (e) => { addLocalTemplate(e.target.result) }; reader.readAsDataURL(file)
+  const reader = new FileReader(); reader.onload = (e) => { cfg.templateUrl = e.target.result; saveConfig(); renderBadge(); renderTools(); }; reader.readAsDataURL(file)
+}
+
+// ── Shared Logic ─────────────────────────────────────────────
+function switchTab(view) {
+  document.querySelector('.slides-panel')?.classList.remove('active')
+  document.querySelector('.canvas-workspace')?.classList.remove('active')
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view))
+  if (view === 'delegates') document.querySelector('.slides-panel')?.classList.add('active')
+  else if (view === 'preview') { document.querySelector('.canvas-workspace')?.classList.add('active'); renderTools() }
+}
+
+function downloadSingle() {
+  if (!selectedDelegate || !badgeCanvas) return
+  const a = document.createElement('a'); a.href = badgeCanvas.toDataURL('image/jpeg', 0.9); a.download = `${selectedDelegate.role}-${selectedDelegate.fullName.replace(/\s+/g,'_')}.jpg`; a.click()
+}
+
+function printBadge() {
+  if (!badgeCanvas) return
+  const url = badgeCanvas.toDataURL('image/jpeg', 0.9), w = window.open('','_blank'); if(!w){alert('Pop-up blocked!'); return}
+  w.document.write(`<html><body style="margin:0;display:flex;align-items:center;justify-content:center;"><img src="${url}" style="width:8.89cm;height:6.35cm;" onload="window.print();window.close();"/></body></html>`)
 }

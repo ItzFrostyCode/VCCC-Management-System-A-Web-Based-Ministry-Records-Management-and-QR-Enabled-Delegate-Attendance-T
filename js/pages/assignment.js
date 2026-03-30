@@ -1,4 +1,11 @@
-// assignment.js — Supabase-backed Assignment Management (new.sql schema)
+import { requireAuth } from '../supabase.js';
+import { authService } from '../services/auth.service.js';
+import { churchService } from '../services/church.service.js';
+import { pastorService } from '../services/pastor.service.js';
+import { assignmentService } from '../services/assignment.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc, createSearchSelect } from '../utils/helper.js';
 
 let allAssignments = []
 let filteredAssignments = []
@@ -32,6 +39,10 @@ const roleLabel = {
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await requireAuth()
+    highlightNav()
+    injectMobileNav()
+    initGuide()
+
     await initData()
     initSearchSelects()
     bindEvents()
@@ -119,12 +130,17 @@ function renderAssignments() {
           </div>
         </div>
         <div class="row-actions">
-          <button class="btn-icon btn-edit" title="Edit" onclick="editRecord('${a.id}')">
+          <button class="btn-icon btn-edit-action" title="Edit">
             <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
           </button>
         </div>
       </div>`
   }).join('')
+
+  list.querySelectorAll('.data-table-row').forEach(row => {
+    const id = row.dataset.id
+    row.querySelector('.btn-edit-action').onclick = () => editRecord(id)
+  })
 
   if (count) count.textContent = `${filteredAssignments.length} total records`
 
@@ -164,7 +180,7 @@ function scrollToTableTop() {
 }
 
 // ── Actions ────────────────────────────────────────────────────
-window.editRecord = function(id) {
+function editRecord(id) {
   const a = allAssignments.find(x => x.id === id)
   if (!a) return
   editingId = id
@@ -264,6 +280,14 @@ async function handleFormSubmit(e) {
 
 // ── Events ─────────────────────────────────────────────────────
 function bindEvents() {
+  const btnLogout = document.getElementById('btn-logout')
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      await authService.signOut()
+      window.location.href = '/login.html'
+    })
+  }
+
   const btnAdd = document.getElementById('btn-add-assignment')
   if (btnAdd) {
     btnAdd.onclick = () => {
@@ -282,6 +306,11 @@ function bindEvents() {
   const btnCancel = document.getElementById('btn-cancel-modal')
   if (btnClose)  btnClose.onclick  = closeModal
   if (btnCancel) btnCancel.onclick = closeModal
+
+  const btnPrev = document.getElementById('btn-prev')
+  const btnNext = document.getElementById('btn-next')
+  if (btnPrev) btnPrev.onclick = prevPage
+  if (btnNext) btnNext.onclick = nextPage
 
   const form = document.getElementById('assign-form')
   if (form) form.onsubmit = handleFormSubmit

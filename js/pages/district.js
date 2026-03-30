@@ -1,4 +1,12 @@
-// district.js — Supabase-backed District Management (new.sql schema)
+import { requireAuth } from '../supabase.js';
+import { authService } from '../services/auth.service.js';
+import { districtService } from '../services/district.service.js';
+import { churchService } from '../services/church.service.js';
+import { pastorService } from '../services/pastor.service.js';
+import { assignmentService } from '../services/assignment.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc, createSearchSelect } from '../utils/helper.js';
 
 let allDistricts = []
 let allChurches  = []
@@ -11,6 +19,10 @@ let selLeader = null
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await requireAuth()
+    highlightNav()
+    injectMobileNav()
+    initGuide()
+
     await initData()
     initLeaderSelect()
     initAssignPastorSelect()
@@ -34,7 +46,6 @@ async function initData() {
   allChurches  = churches   || []
   allPastors   = pastors    || []
 
-  // Build active lookup: church_id → { pastor_id, pastor_name }
   allActiveAssignments = {}
   ;(assignments || []).forEach(a => {
     if (a.status_code === 'active' && !a.end_date) {
@@ -67,7 +78,7 @@ function initAssignPastorSelect() {
 }
 
 // ── Toggle ─────────────────────────────────────────────────────
-window.toggleDistrict = function(id) {
+function toggleDistrict(id) {
   if (openDistrictIds.has(id)) openDistrictIds.delete(id)
   else openDistrictIds.add(id)
   renderDistricts()
@@ -97,7 +108,7 @@ function renderDistricts() {
       return `
         <div class="district-group ${isOpen ? 'open' : ''}" data-id="${d.id}">
           <div class="district-header">
-            <div class="dist-header-main" onclick="toggleDistrict('${d.id}')">
+            <div class="dist-header-main btn-toggle-dist">
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
               <div class="dist-info">
                 <div class="dist-color-bar" style="background:${d.theme_color || '#e83820'}"></div>
@@ -106,13 +117,13 @@ function renderDistricts() {
               </div>
             </div>
             <div class="dist-actions">
-              <button class="btn-circle" title="View Detailed Report" onclick="window.location.href='district-view.html?id=${d.id}'" style="background:var(--red-light); color:var(--red);">
+              <button class="btn-circle btn-view-district" title="View Detailed Report" style="background:var(--red-light); color:var(--red);">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               </button>
-              <button class="btn-circle btn-add-church" title="Add Church" onclick="openChurchModal('${d.id}')">
+              <button class="btn-circle btn-add-church-dist" title="Add Church">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               </button>
-              <button class="btn-circle" title="Settings" onclick="openDistrictSettings('${d.id}')">
+              <button class="btn-circle btn-dist-settings" title="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
               </button>
             </div>
@@ -133,7 +144,7 @@ function renderDistricts() {
                     <div class="church-meta-line">
                       <div class="meta-item" title="Pastor">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        <span>${active ? esc(active.pastor_name) : `<span class="vacant-badge" style="cursor:pointer;" onclick="openAssignModal('${c.id}')">Assign Pastor</span>`}</span>
+                        <span class="active-pastor-wrap">${active ? esc(active.pastor_name) : `<span class="vacant-badge btn-assign-pastor" style="cursor:pointer;" data-id="${c.id}">Assign Pastor</span>`}</span>
                       </div>
                       <div class="meta-item" title="Address">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
@@ -141,8 +152,8 @@ function renderDistricts() {
                       </div>
                     </div>
                   </div>
-                  <button class="btn-unlink-church" title="Remove from District" onclick="removeFromDistrict('${c.id}', '${d.id}')" style="opacity: 1; margin-left:10px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                  <button class="btn-unlink-church-action" title="Remove from District" data-church="${c.id}" data-dist="${d.id}" style="opacity: 1; margin-left:10px; background:none; border:none; color:var(--text-3); cursor:pointer;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px;"><path d="M18 6L6 18M6 6l12 12"></path></svg>
                   </button>
                 </div>`
             }).join('') : '<div style="font-size:12px; color:var(--text-3); text-align:center; padding:15px;">No churches assigned</div>'}
@@ -151,10 +162,25 @@ function renderDistricts() {
     }).join('')
 
   if (count) count.textContent = `${allDistricts.length} total`
+
+  tree.querySelectorAll('.district-group').forEach(group => {
+    const id = group.dataset.id
+    group.querySelector('.btn-toggle-dist').onclick = () => toggleDistrict(id)
+    group.querySelector('.btn-view-district').onclick = () => window.location.href = `district-view.html?id=${id}`
+    group.querySelector('.btn-add-church-dist').onclick = () => openChurchModal(id)
+    group.querySelector('.btn-dist-settings').onclick = () => openDistrictSettings(id)
+
+    group.querySelectorAll('.btn-assign-pastor').forEach(btn => {
+      btn.onclick = () => openAssignModal(btn.dataset.id)
+    })
+    group.querySelectorAll('.btn-unlink-church-action').forEach(btn => {
+      btn.onclick = () => removeFromDistrict(btn.dataset.church, btn.dataset.dist)
+    })
+  })
 }
 
 // ── District Modal ─────────────────────────────────────────────
-window.openDistrictSettings = function(id) {
+function openDistrictSettings(id) {
   const d = allDistricts.find(x => x.id === id)
   if (!d) return
   document.getElementById('modal-title').textContent    = 'Update District'
@@ -169,7 +195,7 @@ window.openDistrictSettings = function(id) {
   document.getElementById('district-modal-overlay').classList.add('open')
 }
 
-window.deleteDistrict = async function() {
+async function deleteDistrict() {
   const id   = document.getElementById('district-id').value
   const dist = allDistricts.find(d => d.id === id)
   if (!dist) return
@@ -183,7 +209,7 @@ window.deleteDistrict = async function() {
 }
 
 // ── Church Assign Modal ────────────────────────────────────────
-window.openChurchModal = function(distId) {
+function openChurchModal(distId) {
   document.getElementById('nested-church-form').reset()
   document.getElementById('n-f-dist-id').value = distId
   toggleChurchMode('select')
@@ -200,7 +226,7 @@ window.openChurchModal = function(distId) {
   document.getElementById('nested-church-modal-overlay').classList.add('open')
 }
 
-window.toggleChurchMode = function(val) {
+function toggleChurchMode(val) {
   const panSelect = document.getElementById('mode-select-church')
   const panCreate = document.getElementById('mode-create-church')
   if (panSelect) panSelect.style.display = val === 'select' ? 'block' : 'none'
@@ -208,13 +234,13 @@ window.toggleChurchMode = function(val) {
 }
 
 // ── Pastor Assign Modal ────────────────────────────────────────
-window.openAssignModal = function(churchId) {
+function openAssignModal(churchId) {
   document.getElementById('assign-church-id').value = churchId
   document.getElementById('assignment-modal-overlay').classList.add('open')
 }
 
 // ── Remove Church from District ────────────────────────────────
-window.removeFromDistrict = async function(churchId, distId) {
+async function removeFromDistrict(churchId, distId) {
   const ch   = allChurches.find(c => c.id === churchId)
   const dist = allDistricts.find(d => d.id === distId)
   if (!ch || !dist) return
@@ -236,6 +262,14 @@ function closeAllModals() {
 
 // ── Bind Events ────────────────────────────────────────────────
 function bindEvents() {
+  const btnLogout = document.getElementById('btn-logout')
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      await authService.signOut()
+      window.location.href = '/login.html'
+    })
+  }
+
   const btnAddDist = document.getElementById('btn-add-district')
   if (btnAddDist) {
     btnAddDist.onclick = () => {
@@ -250,6 +284,13 @@ function bindEvents() {
     }
   }
 
+  const churchModeControl = document.getElementById('church-mode-control')
+  if (churchModeControl) {
+    churchModeControl.addEventListener('change', (e) => {
+      if (e.target.name === 'church-mode') toggleChurchMode(e.target.value)
+    })
+  }
+
   const colorInput = document.getElementById('f-color')
   if (colorInput) colorInput.oninput = e => {
     document.getElementById('color-hex').textContent = e.target.value.toUpperCase()
@@ -258,14 +299,12 @@ function bindEvents() {
   const delBtn = document.getElementById('btn-delete-district')
   if (delBtn) delBtn.onclick = deleteDistrict
 
-  // Close buttons
   ;['btn-cancel-modal', 'btn-close-modal', 'btn-cancel-nested-modal', 'btn-close-nested-modal',
     'btn-cancel-assign-modal', 'btn-close-assign-modal'].forEach(id => {
     const btn = document.getElementById(id)
     if (btn) btn.onclick = closeAllModals
   })
 
-  // District form
   const distForm = document.getElementById('district-form')
   if (distForm) {
     distForm.onsubmit = async (e) => {
@@ -292,7 +331,6 @@ function bindEvents() {
     }
   }
 
-  // Nested church form (assign existing or create new)
   const churchForm = document.getElementById('nested-church-form')
   if (churchForm) {
     churchForm.onsubmit = async (e) => {
@@ -327,7 +365,6 @@ function bindEvents() {
     }
   }
 
-  // Pastor assignment form
   const assignForm = document.getElementById('assignment-form')
   if (assignForm) {
     assignForm.onsubmit = async (e) => {
@@ -337,10 +374,8 @@ function bindEvents() {
       if (!pastorId) return alert('Please select a pastor.')
       const startDate = new Date().toISOString().split('T')[0]
       try {
-        // Close existing active assignment for this pastor
         const existing = await assignmentService.fetchActiveByPastor(pastorId)
         if (existing) await assignmentService.close(existing.id, startDate, 'transferred')
-        // Create new active assignment
         await assignmentService.transferPastor({
           pastor_id: pastorId, church_id: churchId,
           role_code: 'Lead Pastor', event_type: 'Transfer',

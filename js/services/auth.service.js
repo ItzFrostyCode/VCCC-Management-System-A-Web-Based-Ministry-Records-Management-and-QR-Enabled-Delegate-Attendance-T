@@ -1,9 +1,24 @@
+import { db } from '../supabase.js';
+
 class AuthService {
   constructor() {
     this.sessionKey = 'vccc_session_id';
     this.userKey    = 'vccc_user_info';
-    // DB-generated UUIDs only — rejects arbitrary injected strings
-    this._uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  }
+
+  // ── Cookie Helpers for Vercel Edge Middleware ──
+  setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+      const date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/; secure; samesite=strict";
+  }
+
+  eraseCookie(name) {
+    document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
   }
 
   getDeviceInfo() {
@@ -11,70 +26,53 @@ class AuthService {
   }
 
   // ── Sign In ────────────────────────────────────────────────────────────────
-  async signIn(username, password) {
+  async signIn(email, password) {
     try {
-      // 1. Verify credentials via RPC (checks public.users using pgcrypto crypt())
-      //    No email required — pure username + password against public.users.
-      const { data: rows, error: rpcError } = await db.rpc('verify_login', {
-        p_username: username,
-        p_password: password
+      // 1. Use Native Supabase Auth (GoTrue)
+      const { data: authData, error: authError } = await db.auth.signInWithPassword({
+        email: email,
+        password: password,
       });
 
-      if (rpcError) {
-        throw new Error(rpcError.message || 'Login failed. Please try again.');
+      if (authError || !authData.user) {
+        throw new Error(authError?.message || 'Invalid email or password.');
       }
 
-      if (!rows || rows.length === 0) {
-        throw new Error('Invalid username or password.');
+      // 2. Fetch the user's role/scope from the new `profiles` table
+      const { data: profile, error: profileErr } = await db
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileErr || !profile) {
+        // Fallback for Admins testing before trigger fires
+        throw new Error('Profile not found. Please contact an administrator.');
       }
 
-      const dbUser = rows[0];
-
-      if (!dbUser.is_active) {
+      if (!profile.is_active) {
+        await this.signOut();
         throw new Error('Your account has been deactivated. Contact your administrator.');
       }
 
-      // 2. Invalidate all existing active sessions for this user (auto-kick old devices)
-      const { error: clearError } = await db
-        .from('user_sessions')
-        .update({ active_flag: false })
-        .eq('user_id', dbUser.id)
-        .eq('active_flag', true);
-
-      if (clearError) {
-        console.warn('Failed to clear old sessions:', clearError);
-      }
-
-      // 3. Create a new session row — DB generates a UUID we cannot spoof
-      const deviceInfo = this.getDeviceInfo();
-
-      const { data: newSession, error: sessErr } = await db
-        .from('user_sessions')
-        .insert([{
-          user_id:     dbUser.id,
-          device_info: deviceInfo,
-          active_flag: true
-        }])
-        .select('id')
-        .single();
-
-      if (sessErr) {
-        throw new Error('Failed to create session: ' + sessErr.message);
-      }
+      // 3. Set the cookie so Vercel Edge Middleware can read it
+      this.setCookie('sb-access-token', authData.session.access_token, 7);
+      this.setCookie('sb-refresh-token', authData.session.refresh_token, 7);
 
       // 4. Log the login action
-      await this.logAudit(dbUser.id, 'Login', deviceInfo);
+      await this.logAudit(profile.id, 'Login', this.getDeviceInfo());
 
-      // 5. Cache in localStorage (client-side cache only — NOT the auth source of truth)
+      // 5. Cache UI info in localStorage (Not authoritative for security)
       const userInfo = {
-        id:        dbUser.id,
-        username:  dbUser.username,
-        full_name: dbUser.full_name,
-        role:      dbUser.role,
-        scope:     dbUser.scope
+        id:        profile.id,
+        username:  profile.username,
+        full_name: profile.full_name,
+        role:      profile.role,
+        scope:     profile.scope
       };
 
-      localStorage.setItem(this.sessionKey, newSession.id);
+      // Keep for backwards compatibility with UI
+      localStorage.setItem(this.sessionKey, authData.session.access_token);
       localStorage.setItem(this.userKey, JSON.stringify(userInfo));
 
       return userInfo;
@@ -87,18 +85,12 @@ class AuthService {
   // ── Sign Out ───────────────────────────────────────────────────────────────
   async signOut() {
     const user = this.getCurrentUser();
-    if (!user) {
-      this.clearSession();
-      return;
-    }
-
+    
     try {
-      await db
-        .from('user_sessions')
-        .update({ active_flag: false })
-        .eq('user_id', user.id);
-
-      await this.logAudit(user.id, 'Logout', this.getDeviceInfo());
+      if (user) {
+        await this.logAudit(user.id, 'Logout', null, this.getDeviceInfo());
+      }
+      await db.auth.signOut();
     } catch (err) {
       console.error('Signout error:', err);
     } finally {
@@ -110,6 +102,8 @@ class AuthService {
   clearSession() {
     localStorage.removeItem(this.sessionKey);
     localStorage.removeItem(this.userKey);
+    this.eraseCookie('sb-access-token');
+    this.eraseCookie('sb-refresh-token');
   }
 
   getCurrentUser() {
@@ -123,19 +117,12 @@ class AuthService {
 
   /**
    * FAST local-cache check — for quick UI gating only.
-   * The authoritative server-side guard is requireAuth() in supabase.js.
-   *
-   * Returns true only if:
-   *   - sessionKey in localStorage is a valid UUID format (cannot be an arbitrary string)
-   *   - userKey in localStorage parses to an object with a non-empty id
    */
   isAuthenticated() {
     const sessionId = localStorage.getItem(this.sessionKey);
     const user      = this.getCurrentUser();
 
     if (!sessionId || !user || !user.id) return false;
-    if (!this._uuidPattern.test(sessionId))  return false;
-
     return true;
   }
 
@@ -150,13 +137,9 @@ class AuthService {
         device_info: deviceInfo
       }]);
     } catch (err) {
-      if (err.message?.includes('does not exist')) {
-        console.warn('Audit table missing. Did you run the SQL script?');
-      } else {
-        console.error('Audit log failed:', err);
-      }
+      console.warn('Audit log failed or table missing:', err.message);
     }
   }
 }
 
-const authService = new AuthService();
+export const authService = new AuthService();

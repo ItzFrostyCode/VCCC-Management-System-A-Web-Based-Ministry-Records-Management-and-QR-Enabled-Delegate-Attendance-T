@@ -1,3 +1,12 @@
+import { db, requireAuth } from '../supabase.js';
+import { authService } from '../services/auth.service.js';
+import { districtService } from '../services/district.service.js';
+import { churchService } from '../services/church.service.js';
+import { pastorService } from '../services/pastor.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc, calculateAge, getAvatarHtml } from '../utils/helper.js';
+
 let allPastors = []
 let filteredPastors = []
 let editingId = null
@@ -12,6 +21,10 @@ let churchesData  = []
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await requireAuth()
+    highlightNav()
+    injectMobileNav()
+    initGuide()
+
     await initData()
     initFilters()
     initEventListeners()
@@ -87,7 +100,7 @@ function initFilters() {
 }
 
 function initEventListeners() {
-  const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+  const user = authService.getCurrentUser()
   const isStaff = user && user.role === 'Staff'
 
   if (isStaff) {
@@ -96,9 +109,38 @@ function initEventListeners() {
   }
 
   document.getElementById('search-input').addEventListener('input', applyFilters)
-  document.getElementById('btn-add').onclick = () => { openModal() }
-  document.getElementById('btn-save').onclick = saveItem
-  document.getElementById('btn-export').onclick = () => { if (!isStaff) exportCSV() }
+  document.getElementById('btn-add').addEventListener('click', () => { openModal() })
+  document.getElementById('btn-save').addEventListener('click', saveItem)
+  document.getElementById('btn-export').addEventListener('click', () => { if (!isStaff) exportCSV() })
+
+  // Pagination Events
+  document.getElementById('btn-prev').addEventListener('click', prevPage)
+  document.getElementById('btn-next').addEventListener('click', nextPage)
+
+  // Logout Button
+  const logoutBtn = document.getElementById('btn-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await authService.signOut()
+      window.location.href = '/login.html'
+    })
+  }
+
+  // Bind close buttons for modals
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const modal = e.target.closest('.modal-overlay')
+      if (modal) {
+        modal.classList.remove('open')
+        // Special cleanup for image viewer
+        if (modal.id === 'modal-image-viewer') {
+          setTimeout(() => {
+            document.getElementById('full-image-display').src = ''
+          }, 300)
+        }
+      }
+    })
+  })
 }
 
 function applyFilters() {
@@ -140,125 +182,130 @@ function renderTable() {
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedItems = filteredPastors.slice(startIndex, endIndex)
 
-  const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+  const user = authService.getCurrentUser()
   const isStaff = user && user.role === 'Staff'
   const isMobile = window.innerWidth <= 768
 
-  body.innerHTML = paginatedItems.map(p => {
-    const deleteBtn = !isStaff
-      ? `<button class="btn-icon btn-delete" onclick="confirmDelete('${p.id}')" title="Remove">
-          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-        </button>`
-      : ''
-    let statusBadge = ''
-    if (p.current_status_code === 'active') statusBadge = '<span class="status-badge" style="background:#e8f5e9;color:#2e7d32;">Active</span>'
-    else if (p.current_status_code === 'undeployed') statusBadge = '<span class="status-badge" style="background:#f5f5f5;color:#757575;">Undeployed</span>'
-    else if (p.current_status_code === 'transferred') statusBadge = '<span class="status-badge" style="background:#e3f2fd;color:#1565c0;">Transferred</span>'
-    else if (p.current_status_code === 'redirection') statusBadge = '<span class="status-badge" style="background:#fff3e0;color:#ef6c00;">Redirection</span>'
-    else if (p.current_status_code === 'pullout') statusBadge = '<span class="status-badge" style="background:#ffebee;color:#c62828;">Pullout</span>'
-    else statusBadge = `<span class="status-badge" style="background:#f5f5f5;color:#757575;">${esc(p.current_status_code)}</span>`
+  // Clear previous rows
+  body.innerHTML = '';
+  
+  const gridTemplate = document.getElementById('pastor-grid-template');
+  const cardTemplate = document.getElementById('pastor-card-template');
 
-    const pastorAvatar = `
-      <div class="avatar-container" onclick="openImageViewer('${p.pastor_image_url || ''}', 'Pastor ${esc(p.full_name)}')">
-        ${getAvatarHtml(p.pastor_image_url, p.full_name)}
-        <div class="avatar-hover-overlay">
-          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </div>
-      </div>`
+  paginatedItems.forEach(p => {
+    const isUndeployed = p.current_status_code === 'undeployed'
     
-    const wifeAvatar = p.wife_name ? `
-      <div class="avatar-container" onclick="openImageViewer('${p.wife_image_url || ''}', 'Wife ${esc(p.wife_name)}')">
-        ${getAvatarHtml(p.wife_image_url, p.wife_name)}
-        <div class="avatar-hover-overlay">
-          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </div>
-      </div>` : ''
-
+    // Status text mapping
+    let statusFormatted = p.current_status_code || 'NA';
+    let statusClass = 'status-default';
+    if (statusFormatted === 'active') { statusFormatted = 'Active'; statusClass = 'status-active'; }
+    else if (statusFormatted === 'undeployed') { statusFormatted = 'Undeployed'; statusClass = 'status-critical'; }
+    else if (statusFormatted === 'transferred') { statusFormatted = 'Transferred'; statusClass = 'status-warning'; }
+    
     const pAge = p.birthdate ? calculateAge(p.birthdate) : '—'
     const wAge = p.wife_birthdate ? calculateAge(p.wife_birthdate) : '—'
     const ageDisplay = p.wife_name ? `${pAge} / ${wAge}` : pAge
 
-    // ─── Mobile Card Layout ───────────────────────────────────────────
     if (isMobile) {
-      return `
-      <div class="pastor-card-mobile">
-        <div class="pcm-header">
-          <div class="pcm-avatars">
-            <div class="pcm-avatar-wrap" onclick="openImageViewer('${p.pastor_image_url || ''}', 'Pastor ${esc(p.full_name)}')">
-              ${getAvatarHtml(p.pastor_image_url, p.full_name)}
-            </div>
-            ${p.wife_name ? `<div class="pcm-avatar-wrap pcm-avatar-wife" onclick="openImageViewer('${p.wife_image_url || ''}', 'Wife ${esc(p.wife_name)}')">
-              ${getAvatarHtml(p.wife_image_url, p.wife_name)}
-            </div>` : ''}
-          </div>
-          <div class="pcm-title-area">
-            <div class="pcm-name">${esc(p.full_name)}</div>
-            ${p.wife_name ? `<div class="pcm-wife-name">w/ ${esc(p.wife_name)}</div>` : ''}
-          </div>
-          ${statusBadge}
-        </div>
+      // ── SAFE DOM RENDER FOR MOBILE CARD ──
+      const clone = cardTemplate.content.cloneNode(true);
+      const pastName = clone.querySelector('.past-name');
+      const wifeName = clone.querySelector('.wife-name');
+      const churchText = clone.querySelector('.church-text');
+      const badgeStatus = clone.querySelector('.badge-status');
+      const contactVal = clone.querySelector('.contact-val');
+      const ageVal = clone.querySelector('.age-val');
+      const sinceVal = clone.querySelector('.since-val');
+      const pastAva = clone.querySelector('.past-ava');
+      const wifeAva = clone.querySelector('.wife-ava');
+      
+      pastName.textContent = p.full_name;
+      if (p.wife_name) wifeName.textContent = `w/ ${p.wife_name}`;
+      churchText.textContent = p.church_name || '—';
+      
+      badgeStatus.innerHTML = `<span class="status-badge ${statusClass}">${statusFormatted}</span>`;
+      contactVal.textContent = p.contact_number || '—';
+      ageVal.textContent = ageDisplay;
+      sinceVal.textContent = p.pastoring_start_date || '—';
+      
+      pastAva.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name);
+      pastAva.addEventListener('click', () => openImageViewer(p.pastor_image_url || '', p.full_name));
+      
+      if (p.wife_name) {
+        wifeAva.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name);
+        wifeAva.addEventListener('click', () => openImageViewer(p.wife_image_url || '', p.wife_name));
+      } else {
+        wifeAva.style.display = 'none';
+      }
 
-        <div class="pcm-info-grid">
-          <div class="pcm-info-item">
-            <span class="pcm-info-label">Contact</span>
-            <span class="pcm-info-value">${esc(p.contact_number) || '—'}</span>
-          </div>
-          <div class="pcm-info-item">
-            <span class="pcm-info-label">Age</span>
-            <span class="pcm-info-value">${ageDisplay}</span>
-          </div>
-          <div class="pcm-info-item">
-            <span class="pcm-info-label">Since</span>
-            <span class="pcm-info-value">${esc(p.pastoring_start_date) || '—'}</span>
-          </div>
-          <div class="pcm-info-item">
-            <span class="pcm-info-label">Church</span>
-            <span class="pcm-info-value" style="font-size:11px;">${esc(p.church_name) || '—'}</span>
-          </div>
-        </div>
+      const actions = clone.querySelector('.card-actions');
+      actions.innerHTML = `
+        <button class="pcm-action-btn pcm-view" title="View Profile">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          View
+        </button>
+        <button class="pcm-action-btn pcm-edit" title="Edit">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        ${!isStaff ? `<button class="pcm-action-btn pcm-delete" title="Remove">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Delete
+        </button>` : ''}
+      `;
+      
+      clone.querySelector('.pcm-view').addEventListener('click', () => window.location.href = `pastor-view.html?id=${p.id}`);
+      clone.querySelector('.pcm-edit').addEventListener('click', () => openModal(p.id));
+      if (!isStaff) clone.querySelector('.pcm-delete').addEventListener('click', () => confirmDelete(p.id));
 
-        <div class="pcm-actions">
-          <button class="pcm-action-btn pcm-view" onclick="window.location.href='pastor-view.html?id=${p.id}'" title="View Profile">
-            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            View
-          </button>
-          <button class="pcm-action-btn pcm-edit" onclick="openModal('${p.id}')" title="Edit">
-            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit
-          </button>
-          ${!isStaff ? `<button class="pcm-action-btn pcm-delete" onclick="confirmDelete('${p.id}')" title="Remove">
-            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-            Delete
-          </button>` : ''}
-        </div>
-      </div>`
-    }
+      body.appendChild(clone);
 
-    // ─── Desktop Grid Layout ──────────────────────────────────────────
-    return `
-    <div class="data-table-row cols-pastors">
-      <div class="cell-name-primary" data-label="Pastor" title="${esc(p.full_name)}" style="display:flex;align-items:center;">
-        ${pastorAvatar}${esc(p.full_name)}
-      </div>
-      <div style="color:var(--text); font-weight:500; display:flex; align-items:center;" data-label="Wife" title="${esc(p.wife_name)}">
-        ${wifeAvatar}${esc(p.wife_name) || '—'}
-      </div>
-      <div style="color:var(--text); font-weight:600;" data-label="Contact" title="${esc(p.contact_number)}">${esc(p.contact_number) || '—'}</div>
-      <div data-label="Status">${statusBadge}</div>
-      <div style="color:var(--text-2); opacity:0.8;" data-label="Birthdate" title="${esc(p.birthdate)}">${esc(p.birthdate) || '—'}</div>
-      <div style="color:var(--text); font-weight:600;" data-label="Age">${ageDisplay}</div>
-      <div style="color:var(--text-2); opacity:0.8;" data-label="Since" title="${esc(p.pastoring_start_date)}">${esc(p.pastoring_start_date) || '—'}</div>
-      <div class="row-actions">
-        <button class="btn-icon" onclick="window.location.href='pastor-view.html?id=${p.id}'" title="View Profile" style="background:hsla(150, 100%, 97%, 1); color:hsl(150, 80%, 35%); border-color:hsla(150, 100%, 90%, 1);">
+    } else {
+      // ── SAFE DOM RENDER FOR DESKTOP GRID ──
+      const clone = gridTemplate.content.cloneNode(true);
+      
+      clone.querySelector('.col-pastor .name').textContent = p.full_name;
+      clone.querySelector('.col-pastor .church').textContent = p.church_name || '—';
+      clone.querySelector('.col-wife .name').textContent = p.wife_name || '—';
+      
+      const pastAva = clone.querySelector('.col-pastor .avatar-container');
+      pastAva.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name);
+      pastAva.addEventListener('click', () => openImageViewer(p.pastor_image_url || '', p.full_name));
+
+      const wifeAva = clone.querySelector('.col-wife .avatar-container');
+      if (p.wife_name) {
+        wifeAva.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name);
+        wifeAva.addEventListener('click', () => openImageViewer(p.wife_image_url || '', p.wife_name));
+      } else {
+        wifeAva.style.display = 'none';
+      }
+
+      clone.querySelector('.col-contact').textContent = p.contact_number || '—';
+      clone.querySelector('.badge').outerHTML = `<span class="status-badge ${statusClass}">${statusFormatted}</span>`;
+      clone.querySelector('.col-bdate').textContent = p.birthdate || '—';
+      clone.querySelector('.col-age').textContent = ageDisplay;
+      clone.querySelector('.col-since').textContent = p.pastoring_start_date || '—';
+
+      const actions = clone.querySelector('.col-actions');
+      actions.innerHTML = `
+        <button class="btn-icon" title="View Profile" style="background:hsla(150, 100%, 97%, 1); color:hsl(150, 80%, 35%); border-color:hsla(150, 100%, 90%, 1);">
           <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
-        <button class="btn-icon btn-edit" onclick="openModal('${p.id}')" title="Edit">
+        <button class="btn-icon btn-edit" title="Edit">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        ${deleteBtn}
-      </div>
-    </div>`
-  }).join('')
+        ${!isStaff ? `<button class="btn-icon btn-delete" title="Remove">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>` : ''}
+      `;
+
+      actions.querySelector('button[title="View Profile"]').addEventListener('click', () => window.location.href = `pastor-view.html?id=${p.id}`);
+      actions.querySelector('.btn-edit').addEventListener('click', () => openModal(p.id));
+      if (!isStaff) actions.querySelector('.btn-delete').addEventListener('click', () => confirmDelete(p.id));
+
+      body.appendChild(clone);
+    }
+  });
 
   const pagination = document.getElementById('pagination')
   if (pagination) {

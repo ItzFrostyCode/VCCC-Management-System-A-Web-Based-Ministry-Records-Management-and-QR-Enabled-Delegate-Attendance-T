@@ -34,7 +34,7 @@
     </nav>
     <div class="sidebar-bottom">
       <div class="sidebar-divider"></div>
-      <button class="nav-item" id="btn-logout" data-tip="Sign Out" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/login.html')" style="cursor:pointer;">
+      <button class="nav-item" id="btn-logout" data-tip="Sign Out" style="cursor:pointer;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
     </div>
@@ -353,13 +353,13 @@
         <input type="hidden" id="n-f-dist-id" />
         
         <!-- Toggle Mode -->
-        <div class="segment-control" style="margin-bottom: 20px;">
+        <div class="segment-control" style="margin-bottom: 20px;" id="church-mode-control">
           <label class="segment-item">
-            <input type="radio" name="church-mode" value="select" checked onchange="toggleChurchMode(this.value)" />
+            <input type="radio" name="church-mode" value="select" checked />
             <span>Select Existing</span>
           </label>
           <label class="segment-item">
-            <input type="radio" name="church-mode" value="create" onchange="toggleChurchMode(this.value)" />
+            <input type="radio" name="church-mode" value="create" />
             <span>Create New</span>
           </label>
         </div>
@@ -502,15 +502,6 @@
 </div>
 
 <script src="./js/libs/supabase.min.js"></script>
-<script src="./js/services/auth.service.js"></script>
-<script src="./js/supabase.js"></script>
-<script src="./js/router.js"></script>
-<script src="./js/utils/helper.js"></script>
-<script src="./js/services/district.service.js"></script>
-<script src="./js/services/church.service.js"></script>
-<script src="./js/services/pastor.service.js"></script>
-<script src="./js/services/assignment.service.js"></script>
-<script src="./js/pages/district.js"></script>
-<script src="./js/utils/guide.js"></script>
+<script type="module" src="./js/pages/district.js"></script>
 </body>
 </html>

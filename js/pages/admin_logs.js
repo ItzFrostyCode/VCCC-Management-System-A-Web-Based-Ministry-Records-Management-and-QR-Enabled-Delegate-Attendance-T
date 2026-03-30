@@ -1,35 +1,54 @@
+import { db, requireAuth } from '../supabase.js';
+import { authService } from '../services/auth.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc } from '../utils/helper.js';
+
 let allLogs = []
 let currentPage = 1
 const ITEMS_PER_PAGE = 10
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const user = await requireAuth()
-  if (user && user.role !== 'Admin') {
-    window.location.href = '/index.html'
-    return
-  }
+    try {
+        const user = await requireAuth()
+        if (user && user.role !== 'Admin') {
+            window.location.href = '/index.html'
+            return
+        }
 
-  initEventListeners()
-  await loadLogs()
+        highlightNav()
+        injectMobileNav()
+        initGuide()
+
+        initEventListeners()
+        await loadLogs()
+    } catch (err) { console.error('Logs init failed:', err) }
 })
 
 function initEventListeners() {
-  document.getElementById('btn-refresh').onclick = loadLogs
-  document.getElementById('btn-prev').onclick = prevPage
-  document.getElementById('btn-next').onclick = nextPage
+    const btnLogout = document.getElementById('btn-logout')
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            await authService.signOut()
+            window.location.href = '/login.html'
+        })
+    }
 
-  // Modal handlers
-  document.getElementById('btn-create-user').onclick = () => {
-    document.getElementById('create-user-modal').classList.add('open')
-  }
-  const closeModal = () => {
-    document.getElementById('create-user-modal').classList.remove('open')
-    document.getElementById('create-user-form').reset()
-  }
-  document.getElementById('btn-close-modal').onclick = closeModal
-  document.getElementById('btn-close-modal-x').onclick = closeModal
-  
-  document.getElementById('create-user-form').onsubmit = handleCreateUser
+    document.getElementById('btn-refresh').onclick = loadLogs
+    document.getElementById('btn-prev').onclick = prevPage
+    document.getElementById('btn-next').onclick = nextPage
+
+    document.getElementById('btn-create-user').onclick = () => {
+        document.getElementById('create-user-modal').classList.add('open')
+    }
+    const closeModal = () => {
+        document.getElementById('create-user-modal').classList.remove('open')
+        document.getElementById('create-user-form').reset()
+    }
+    document.getElementById('btn-close-modal').onclick = closeModal
+    document.getElementById('btn-close-modal-x').onclick = closeModal
+    
+    document.getElementById('create-user-form').onsubmit = handleCreateUser
 }
 
 async function handleCreateUser(e) {

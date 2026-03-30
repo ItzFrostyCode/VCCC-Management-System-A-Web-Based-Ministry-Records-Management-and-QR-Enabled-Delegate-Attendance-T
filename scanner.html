@@ -30,7 +30,7 @@
         <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <button class="hdr-btn mobile-scanner-logout" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/login.html')" aria-label="Sign Out">
+    <button class="hdr-btn mobile-scanner-logout" id="btn-logout-mob" aria-label="Sign Out">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       <span>Log Out</span>
     </button>
@@ -57,13 +57,13 @@
     <time class="scan-clock" id="live-clock" aria-live="off">--:-- --</time>
 
     <!-- Desktop-only buttons -->
-    <button class="hdr-btn clear-logs-btn header-desktop-only" id="logout-btn" title="Sign Out" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/login.html')">
+    <button class="hdr-btn clear-logs-btn header-desktop-only" id="btn-logout-desk" title="Sign Out">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       <span>Sign Out</span>
     </button>
 
     <!-- Mobile logs toggle (hidden on desktop) -->
-    <button class="hdr-btn mobile-logs-btn" id="mobile-logs-btn" title="View Scan Logs" onclick="toggleMobileLogs()">
+    <button class="hdr-btn mobile-logs-btn" id="mobile-logs-btn" title="View Scan Logs">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/></svg>
       <span class="btn-label">Logs</span>
     </button>
@@ -90,7 +90,7 @@
           <span class="asi-dot" aria-hidden="true"></span>
           <span id="asi-label">—</span>
         </div>
-        <button class="cam-close-btn" onclick="closeScanner()" aria-label="Stop scanning">
+        <button class="cam-close-btn" id="btn-close-scanner" aria-label="Stop scanning">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           <span>Stop Scanning</span>
         </button>
@@ -128,7 +128,7 @@
           <p class="cam-ios-note hidden" id="cam-ios-note">
             📱 <strong>iOS Safari:</strong> You must tap "Allow" in the popup that appears. If no popup shows, go to <strong>Settings → Safari → Camera</strong> and set it to <strong>Allow</strong>.
           </p>
-          <button id="btn-start-camera" class="start-btn" onclick="startCamera()">
+          <button id="btn-start-camera" class="start-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             Enable Camera
           </button>
@@ -150,7 +150,7 @@
           <p class="cam-android-note" id="cam-android-note">
             <strong>Android Chrome:</strong> Go to <em>Site Settings → Camera → Allow</em>.
           </p>
-          <button class="start-btn retry-btn" onclick="retryCamera()">
+          <button class="start-btn retry-btn" id="btn-retry-camera">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Try Again
           </button>
@@ -207,11 +207,11 @@
     </div>
 
     <div class="logs-filters" role="group" aria-label="Filter logs by slot" id="logs-filters">
-      <button class="log-filter-btn active" data-filter="all"       onclick="setLogFilter('all', this)">All</button>
-      <button class="log-filter-btn" data-filter="MORNING"   onclick="setLogFilter('MORNING', this)">🌅 Morning</button>
-      <button class="log-filter-btn" data-filter="AFTERNOON" onclick="setLogFilter('AFTERNOON', this)">☀️ Afternoon</button>
-      <button class="log-filter-btn" data-filter="EVENING"   onclick="setLogFilter('EVENING', this)">🌙 Evening</button>
-      <button class="log-filter-btn log-filter-success" data-filter="SUCCESS" onclick="setLogFilter('SUCCESS', this)">✔ Success</button>
+      <button class="log-filter-btn active" data-filter="all">All</button>
+      <button class="log-filter-btn" data-filter="MORNING">🌅 Morning</button>
+      <button class="log-filter-btn" data-filter="AFTERNOON">☀️ Afternoon</button>
+      <button class="log-filter-btn" data-filter="EVENING">🌙 Evening</button>
+      <button class="log-filter-btn log-filter-success" data-filter="SUCCESS">✔ Success</button>
     </div>
 
     <!-- Column headers -->
@@ -237,7 +237,7 @@
 <!-- ═══════════════════════════════════════════
      MOBILE: Backdrop (shared by both drawers)
 ══════════════════════════════════════════════ -->
-<div class="mob-backdrop hidden" id="mob-backdrop" onclick="closeMobileLogs(); closeMobileNav();" aria-hidden="true"></div>
+<div class="mob-backdrop hidden" id="mob-backdrop" aria-hidden="true"></div>
 
 <!-- ═══════════════════════════════════════════
      MOBILE: Logs Bottom Sheet
@@ -249,20 +249,20 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Scan Logs
     </span>
-    <button class="mob-close-btn" onclick="closeMobileLogs()" aria-label="Close logs">
+    <button class="mob-close-btn" id="btn-close-logs-mob" aria-label="Close logs">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
   <div class="logs-search-wrap">
     <svg class="logs-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="search" class="logs-search" id="logs-search-mob" placeholder="Search by name…" oninput="filterLogsMob()" aria-label="Search scan logs" />
+    <input type="search" class="logs-search" id="logs-search-mob" placeholder="Search by name…" aria-label="Search scan logs" />
   </div>
-  <div class="logs-filters" role="group" aria-label="Filter logs">
-    <button class="log-filter-btn active" onclick="setLogFilterMob('all', this)">All</button>
-    <button class="log-filter-btn" onclick="setLogFilterMob('MORNING', this)">🌅 Morning</button>
-    <button class="log-filter-btn" onclick="setLogFilterMob('AFTERNOON', this)">☀️ Afternoon</button>
-    <button class="log-filter-btn" onclick="setLogFilterMob('EVENING', this)">🌙 Evening</button>
-    <button class="log-filter-btn log-filter-success" onclick="setLogFilterMob('SUCCESS', this)">✔ Success</button>
+  <div class="logs-filters" role="group" aria-label="Filter logs" id="logs-filters-mob">
+    <button class="log-filter-btn active" data-filter="all">All</button>
+    <button class="log-filter-btn" data-filter="MORNING">🌅 Morning</button>
+    <button class="log-filter-btn" data-filter="AFTERNOON">☀️ Afternoon</button>
+    <button class="log-filter-btn" data-filter="EVENING">🌙 Evening</button>
+    <button class="log-filter-btn log-filter-success" data-filter="SUCCESS">✔ Success</button>
   </div>
   <div class="log-col-head" aria-hidden="true"><span>Time</span><span>Name / ID</span><span>Status</span></div>
   <div class="logs-list" id="logs-list-mob" aria-live="polite"></div>
@@ -275,7 +275,7 @@
   <div class="mob-drawer-handle" aria-hidden="true"></div>
   <div class="mob-drawer-head">
     <span class="logs-title">Navigation</span>
-    <button class="mob-close-btn" onclick="closeMobileNav()" aria-label="Close navigation">
+    <button class="mob-close-btn" id="btn-close-nav-mob" aria-label="Close navigation">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
@@ -336,7 +336,7 @@
 
   </nav>
   <div class="mob-drawer-foot" style="padding: 12px 16px; border-top: 1px solid var(--s-border);">
-    <button class="mob-tool-btn" style="width:100%; border:none; background:none; cursor:pointer; color:var(--t-muted); display:flex; align-items:center; gap:12px; font-weight:600; padding:12px 0;" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/login')">
+    <button class="mob-tool-btn" id="btn-logout-nav" style="width:100%; border:none; background:none; cursor:pointer; color:var(--t-muted); display:flex; align-items:center; gap:12px; font-weight:600; padding:12px 0;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sign Out
     </button>
@@ -360,18 +360,6 @@
 ══════════════════════════════════════════════ -->
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script src="js/libs/supabase.min.js"></script>
-<script src="js/services/auth.service.js"></script>
-<script src="js/supabase.js"></script>
-<script src="js/router.js"></script>
-<script src="js/utils/helper.js"></script>
-<script src="js/services/pastor.service.js"></script>
-<script src="js/services/disciple.service.js"></script>
-<script src="js/services/conference.service.js"></script>
-<script src="js/services/meal.service.js"></script>
-<script src="js/services/attendance.service.js"></script>
-<script src="js/services/scan_log.service.js"></script>
-<script src="js/pages/scanner.js"></script>
-
-<script src="./js/utils/guide.js"></script>
+<script src="js/pages/scanner.js" type="module"></script>
 </body>
 </html>

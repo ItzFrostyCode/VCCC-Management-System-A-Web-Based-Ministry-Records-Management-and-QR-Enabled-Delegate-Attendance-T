@@ -1,3 +1,9 @@
+import { requireAuth } from '../supabase.js';
+import { districtService } from '../services/district.service.js';
+import { churchService } from '../services/church.service.js';
+import { assignmentService } from '../services/assignment.service.js';
+import { esc } from '../utils/helper.js';
+
 // district-view.js
 
 let allChurches = []

@@ -1,4 +1,7 @@
-const assignmentService = {
+import { db } from '../supabase.js';
+import { authService } from './auth.service.js';
+
+export const assignmentService = {
   // Fetch all assignments, joining pastor, church, and district names
   async fetchAll() {
     const { data, error } = await db
@@ -137,7 +140,7 @@ const assignmentService = {
     if (error) throw error
 
     if (data) {
-      const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+      const user = authService.getCurrentUser()
       if (user) {
         await authService.logAudit(
           user.id,
@@ -193,7 +196,7 @@ const assignmentService = {
     if (error) throw error
 
     if (data) {
-      const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+      const user = authService.getCurrentUser()
       if (user) {
         await authService.logAudit(
           user.id,
@@ -241,7 +244,7 @@ const assignmentService = {
       
       if (error) throw error;
       
-      const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
+      const user = authService.getCurrentUser();
       if (user) {
         await authService.logAudit(
           user.id,
@@ -273,7 +276,7 @@ const assignmentService = {
 
       if (error) throw error;
 
-      const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
+      const user = authService.getCurrentUser();
       if (user) {
         await authService.logAudit(
           user.id,

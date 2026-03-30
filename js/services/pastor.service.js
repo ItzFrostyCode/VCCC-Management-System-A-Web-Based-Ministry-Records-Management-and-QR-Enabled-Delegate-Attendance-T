@@ -1,4 +1,7 @@
-const pastorService = {
+import { db } from '../supabase.js';
+import { authService } from './auth.service.js';
+
+export const pastorService = {
   // Shared view model mapper to ensure identical shapes
   _mapPastorResponse(p) {
     const activeAssignment = (p.assignments || []).find(
@@ -114,7 +117,7 @@ const pastorService = {
     const result = results[0]
 
     if (result) {
-      const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+      const user = authService.getCurrentUser()
       if (user) {
         await authService.logAudit(user.id, 'CREATE_PASTOR', `Added Pastor: ${result.full_name}`)
       }
@@ -182,7 +185,7 @@ const pastorService = {
     const result = results[0]
 
     if (result) {
-      const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+      const user = authService.getCurrentUser()
       if (user) {
         await authService.logAudit(user.id, 'UPDATE_PASTOR', `Updated Pastor: ${result.full_name}`)
       }
@@ -216,7 +219,7 @@ const pastorService = {
     }
 
     // 3. Log Audit
-    const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
+    const user = authService.getCurrentUser()
     if (user && p) {
       await authService.logAudit(user.id, 'DELETE_PASTOR', `Removed Pastor: ${p.full_name}`)
     }

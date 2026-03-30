@@ -1,34 +1,35 @@
-const trainingService = {
-  // Add a new training log
-  async addTrainingLog(data) {
-    const { pastor_id, course_name, status_code, completion_date, notes, blocker_flag, precision_flag } = data;
+import { db } from '../supabase.js';
+import { authService } from './auth.service.js';
 
-    const { data: newLog, error } = await db
-      .from('training_log')
+export const trainingService = {
+  // Add a training entry
+  async addTraining(data) {
+    const { pastor_id, course_name, completion_date, status, notes } = data;
+
+    const { data: newEntry, error } = await db
+      .from('training_history')
       .insert({
         pastor_id,
         course_name: course_name.trim(),
-        status_code: status_code.trim(),
         completion_date: completion_date || null,
-        precision_flag: precision_flag || 'exact',
-        notes: notes ? notes.trim() : null,
-        blocker_flag: Boolean(blocker_flag)
+        status: status || 'completed',
+        notes: notes ? notes.trim() : null
       })
-      .select('id, course_name, status_code')
+      .select('id, course_name')
       .single();
 
     if (error) throw error;
 
     // Log the audit
-    const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
+    const user = authService.getCurrentUser();
     if (user) {
       await authService.logAudit(
         user.id,
-        'LOG_TRAINING',
-        `Logged Training for Pastor ID ${pastor_id}: ${course_name} (${status_code})`
+        'ADD_TRAINING',
+        `Pastor ID ${pastor_id} completed training: ${course_name}`
       );
     }
 
-    return newLog;
+    return newEntry;
   }
 };

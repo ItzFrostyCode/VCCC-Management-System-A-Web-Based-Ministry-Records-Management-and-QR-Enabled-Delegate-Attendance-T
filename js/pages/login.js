@@ -1,3 +1,5 @@
+import { authService } from '../services/auth.service.js';
+
 document.addEventListener('DOMContentLoaded', () => {
   const btnLogin = document.getElementById('btn-login');
   const errorEl = document.getElementById('login-error');
@@ -22,11 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   btnLogin.addEventListener('click', async () => {
-    const username = document.getElementById('login-username').value.trim();
+    const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value.trim();
 
-    if (!username || !password) {
-      errorEl.textContent = 'Please enter both username and password.';
+    if (!email || !password) {
+      errorEl.textContent = 'Please enter both email and password.';
       errorEl.style.display = 'block';
       return;
     }
@@ -36,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     errorEl.style.display = 'none';
 
     try {
-      const user = await authService.signIn(username, password);
+      const user = await authService.signIn(email, password);
       // Redirect based on role
       if (user.role === 'Scanner') {
         window.location.href = '/scanner.html';

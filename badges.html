@@ -40,7 +40,7 @@
     </nav>
     <div class="sidebar-bottom">
       <div class="sidebar-divider"></div>
-      <button class="nav-item" id="btn-logout" data-tip="Sign Out" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/login')" style="cursor:pointer;">
+      <button class="nav-item" id="btn-logout" data-tip="Sign Out" style="cursor:pointer;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
     </div>
@@ -65,7 +65,7 @@
 
       <div class="topbar-actions">
         <!-- Unified Export ZIP Button -->
-        <button type="button" class="tb-zip-btn" id="btn-export" onclick="openDownloadModal(event)" title="Export ZIP">
+        <button type="button" class="tb-zip-btn" id="btn-export-all" title="Export ZIP">
            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
@@ -84,16 +84,16 @@
         <div class="slides-search">
           <div class="ss-search-wrap">
             <svg viewBox="0 0 24 24" class="ss-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="search-delegate" class="ss-search-input" placeholder="Search delegates..." oninput="applyFilters()" />
+            <input type="text" id="search-delegate" class="ss-search-input" placeholder="Search delegates..." />
           </div>
           <div class="ss-filter-row">
             <div id="filter-district-badge" class="ss-filter-slot"></div>
             <div id="filter-church-badge" class="ss-filter-slot"></div>
           </div>
           <div class="ss-role-chips">
-            <button type="button" class="role-chip on chip-pastor"   data-role="PASTOR"   onclick="toggleRole(this)">Pastor</button>
-            <button type="button" class="role-chip on chip-wife"     data-role="WIFE"     onclick="toggleRole(this)">Wife</button>
-            <button type="button" class="role-chip on chip-disciple" data-role="DISCIPLE" onclick="toggleRole(this)">Disciple</button>
+            <button type="button" class="role-chip on chip-pastor"   data-role="PASTOR"   id="chip-pastor">Pastor</button>
+            <button type="button" class="role-chip on chip-wife"     data-role="WIFE"     id="chip-wife">Wife</button>
+            <button type="button" class="role-chip on chip-disciple" data-role="DISCIPLE" id="chip-disciple">Disciple</button>
           </div>
           <div class="ss-count" id="delegate-count">0 results</div>
         </div>
@@ -112,11 +112,11 @@
             </div>
           </div>
           <div class="canvas-actions" id="canvas-actions" style="display:none;">
-            <button class="ca-btn" id="btn-download" onclick="downloadSingle()">
+            <button class="ca-btn" id="btn-download-jpg">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Save JPEG
             </button>
-            <button class="ca-btn ca-btn-ghost" id="btn-print" onclick="printBadge()">
+            <button class="ca-btn ca-btn-ghost" id="btn-print-badge">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               Print
             </button>
@@ -142,11 +142,11 @@
 
     <!-- Mobile Tab Bar -->
     <nav class="mobile-tabbar mobile-only">
-      <button class="tab-btn active" data-view="delegates" onclick="switchTab('delegates')">
+      <button class="tab-btn active" data-view="delegates" id="btn-tab-delegates">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
         Delegates
       </button>
-      <button class="tab-btn" data-view="preview" onclick="switchTab('preview')">
+      <button class="tab-btn" data-view="preview" id="btn-tab-preview">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
         Preview
       </button>
@@ -157,14 +157,14 @@
 
 <!-- ─── Unified Export Modal (NUCLEAR STABILITY RESTORED) ─── -->
 <div id="modal-download" class="modal-system-wrap" style="display:none;">
-  <div class="modal-backdrop" onclick="closeDownloadModal()"></div>
-  <div class="aesthetic-modal" onclick="event.stopPropagation()">
+  <div class="modal-backdrop" id="btn-close-backdrop"></div>
+  <div class="aesthetic-modal">
     <div class="modal-header">
       <div>
         <h3>Export Badges ZIP</h3>
         <p class="modal-subtitle">Filter by District, Church, or Select All</p>
       </div>
-      <button type="button" class="btn-close" onclick="closeDownloadModal()">&times;</button>
+        <button type="button" class="btn-close" id="btn-close-download-modal">&times;</button>
     </div>
     <div class="modal-body">
       <div id="modal-download-content">
@@ -172,8 +172,8 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button type="button" class="mf-btn mf-ghost" onclick="closeDownloadModal()">Cancel</button>
-      <button type="button" class="mf-btn mf-primary" id="btn-modal-generate" onclick="startExportFromModal()">
+      <button type="button" class="mf-btn mf-ghost" id="btn-cancel-download">Cancel</button>
+      <button type="button" class="mf-btn mf-primary" id="btn-modal-generate">
         Generate ZIP
       </button>
     </div>
@@ -200,33 +200,21 @@
 
       <!-- Cancel button — visible during rendering -->
       <button id="export-modal-cancel" type="button"
-        onclick="cancelExport()" 
-        style="margin-top: 20px; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 20px; border-radius: 99px; border: 1.5px solid #ef4444; background: #fff; color: #ef4444; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
-        onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">
+        style="margin-top: 20px; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 20px; border-radius: 99px; border: 1.5px solid #ef4444; background: #fff; color: #ef4444; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         Cancel Export
       </button>
     </div>
     <!-- Done / Dismissed footer — visible after finish or cancel -->
-    <div class="modal-footer" id="export-modal-footer" style="display:none; justify-content: center; padding: 15px 30px; background: #fff; border-top: 1px solid var(--border);">
-      <button type="button" class="mf-btn mf-primary" onclick="document.getElementById('modal-export-progress').style.display='none'">Done</button>
+      <div class="modal-footer" id="export-modal-footer" style="display:none; justify-content: center; padding: 15px 30px; background: #fff; border-top: 1px solid var(--border);">
+        <button type="button" class="mf-btn mf-primary" onclick="this.closest('.modal-system-wrap').style.display='none'">Dismiss</button>
+      </div>
     </div>
   </div>
 </div>
 
-<script src="js/libs/supabase.min.js"></script>
 <script src="js/libs/qrcode.min.js"></script>
 <script src="js/libs/jszip.min.js"></script>
-<script src="js/services/auth.service.js"></script>
-<script src="js/supabase.js"></script>
-<script src="js/router.js"></script>
-<script src="js/utils/helper.js"></script>
-<script src="js/utils/badge.js"></script>
-<script src="js/services/district.service.js"></script>
-<script src="js/services/church.service.js"></script>
-<script src="js/services/pastor.service.js"></script>
-<script src="js/services/disciple.service.js"></script>
-<script src="js/pages/badges.js"></script>
-<script src="./js/utils/guide.js"></script>
+<script src="js/pages/badges.js" type="module"></script>
 </body>
 </html>

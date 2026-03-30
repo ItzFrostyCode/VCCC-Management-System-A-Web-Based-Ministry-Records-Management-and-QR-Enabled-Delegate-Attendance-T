@@ -1,4 +1,6 @@
-function highlightNav() {
+import { authService } from './services/auth.service.js';
+
+export function highlightNav() {
   const path = window.location.pathname
   // Sidebar items
   document.querySelectorAll('.nav-item[data-page], .mob-nav-link[data-page]').forEach(el => {
@@ -10,7 +12,7 @@ function highlightNav() {
   })
 }
 
-function injectMobileNav() {
+export function injectMobileNav() {
   const topbar = document.querySelector('.topbar')
   if (!topbar) return // Only for standard layout pages
 
@@ -91,7 +93,7 @@ function injectMobileNav() {
 
       </div>
       <div class="mob-nav-foot">
-        <button class="mob-nav-link" style="width:100%; border:none; background:none; cursor:pointer; color:var(--text-2);" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/login.html')">
+        <button class="mob-nav-link" id="mob-logout-btn" style="width:100%; border:none; background:none; cursor:pointer; color:var(--text-2);">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Sign Out
         </button>
@@ -110,9 +112,13 @@ function injectMobileNav() {
 
   // Re-run highlight to catch the new mobile links
   highlightNav()
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-  highlightNav()
-  injectMobileNav()
-})
+  // Bind logout
+  const mobLogout = document.getElementById('mob-logout-btn')
+  if (mobLogout) {
+    mobLogout.addEventListener('click', async () => {
+      await authService.signOut()
+      window.location.href = '/login.html'
+    })
+  }
+}

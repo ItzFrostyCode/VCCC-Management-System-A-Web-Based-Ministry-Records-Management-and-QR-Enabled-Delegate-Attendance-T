@@ -1,14 +1,30 @@
-// church-view.js
+import { requireAuth } from '../supabase.js';
+import { districtService } from '../services/district.service.js';
+import { churchService } from '../services/church.service.js';
+import { pastorService } from '../services/pastor.service.js';
+import { assignmentService } from '../services/assignment.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc, formatDate } from '../utils/helper.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await requireAuth()
+    highlightNav()
+    injectMobileNav()
+    initGuide()
+
     const urlParams = new URLSearchParams(window.location.search)
     const churchId = urlParams.get('id')
 
     if (!churchId) {
       window.location.href = 'church.html'
       return
+    }
+
+    const btnBack = document.getElementById('btn-back')
+    if (btnBack) {
+      btnBack.addEventListener('click', () => history.back())
     }
 
     await loadData(churchId)
@@ -42,13 +58,18 @@ async function loadData(id) {
 
   } catch (err) {
     console.error('Data load failed:', err)
-    document.getElementById('loading-state').innerHTML = `
-      <div style="color:var(--red); padding:40px;">
-        <h3>Error Loading Data</h3>
-        <p>${esc(err.message)}</p>
-        <button class="btn btn-ghost" onclick="location.reload()">Retry</button>
-      </div>
-    `
+    const loadingState = document.getElementById('loading-state')
+    if (loadingState) {
+      loadingState.innerHTML = `
+        <div style="color:var(--red); padding:40px;">
+          <h3>Error Loading Data</h3>
+          <p>${esc(err.message)}</p>
+          <button class="btn btn-ghost" id="btn-retry-load">Retry</button>
+        </div>
+      `
+      const btnRetry = document.getElementById('btn-retry-load')
+      if (btnRetry) btnRetry.onclick = () => location.reload()
+    }
   }
 }
 
@@ -78,10 +99,12 @@ function renderCurrentPastor(history) {
           <p>No active pastor is currently assigned to this church.</p>
         </div>
         <div style="margin-left:auto;">
-          <button class="btn btn-primary" onclick="window.location.href='assignment.html'">Assign Pastor</button>
+          <button class="btn btn-primary" id="btn-assign-now">Assign Pastor</button>
         </div>
       </div>
     `
+    const btn = document.getElementById('btn-assign-now')
+    if (btn) btn.onclick = () => window.location.href = 'assignment.html'
     return
   }
 
@@ -95,10 +118,12 @@ function renderCurrentPastor(history) {
         <p>Current ${esc(active.role_code)} (${esc(active.event_type)}) since ${formatDate(active.start_date)}</p>
       </div>
       <div style="margin-left:auto;">
-        <button class="btn btn-ghost" onclick="window.location.href='pastor-view.html?id=${active.pastor_id}'">View Profile</button>
+        <button class="btn btn-ghost" id="btn-view-active-profile">View Profile</button>
       </div>
     </div>
   `
+  const btnView = document.getElementById('btn-view-active-profile')
+  if (btnView) btnView.onclick = () => window.location.href = `pastor-view.html?id=${active.pastor_id}`
 }
 
 function renderStats(c, history) {

@@ -1,6 +1,8 @@
 // Attendance → attendance table
 
-const attendanceService = {
+import { db } from '../supabase.js';
+
+export const attendanceService = {
 
   async checkDuplicate(conferenceId, dayId, slotId, delegateId) {
     const { data, error } = await db

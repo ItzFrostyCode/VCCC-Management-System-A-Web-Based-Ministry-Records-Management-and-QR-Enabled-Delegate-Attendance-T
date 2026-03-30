@@ -1,13 +1,13 @@
 // guide.js — Global Context-Aware System Help Guide
-// Injects a floating action button on every page that provides custom SaaS-style guides.
+// Injected via page modules.
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initGuide() {
   // Only inject if the user is logged in (checking for sidebar nav ensures we're inside the app)
   if (!document.querySelector('.sidebar-nav') && !document.querySelector('.app-shell')) return;
 
   injectGuideUI();
   bindGuideEvents();
-});
+}
 
 function getGuideContent() {
   const path = window.location.pathname.split('/').pop() || 'index.html';
@@ -217,20 +217,20 @@ function injectGuideUI() {
   `;
 
   const modalHtml = `
-    <div class="modal-overlay" id="modal-global-guide" style="z-index: 10000;" onclick="if(event.target===this) document.getElementById('modal-global-guide').classList.remove('open')">
+    <div class="modal-overlay" id="modal-global-guide" style="z-index: 10000;">
       <div class="modal-box" style="max-width: 480px; border-top: 4px solid var(--red);">
         <div class="modal-head">
           <div class="modal-title" style="display:flex; align-items:center; gap:8px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px; height:20px; color:var(--red);"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             ${guideData.title}
           </div>
-          <button class="modal-close" type="button" onclick="document.getElementById('modal-global-guide').classList.remove('open')">&times;</button>
+          <button class="modal-close-guide" type="button" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="font-size: 14px; line-height: 1.6; color: var(--text-2);">
           ${guideData.content}
         </div>
         <div class="modal-foot" style="margin-top:16px; padding:0; border:none; justify-content:flex-end;">
-          <button type="button" class="btn btn-primary" onclick="document.getElementById('modal-global-guide').classList.remove('open')">Got it</button>
+          <button type="button" class="btn btn-primary btn-close-guide">Got it</button>
         </div>
       </div>
     </div>
@@ -239,6 +239,21 @@ function injectGuideUI() {
   document.body.insertAdjacentHTML('beforeend', fabStyle);
   document.body.insertAdjacentHTML('beforeend', fabHtml);
   document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Bind close buttons manually (to avoid inline onclick)
+  const modal = document.getElementById('modal-global-guide');
+  const closeBtns = [
+    modal.querySelector('.modal-close-guide'),
+    modal.querySelector('.btn-close-guide'),
+    modal
+  ];
+  closeBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      if (e.target === btn || btn.classList.contains('modal-close-guide') || btn.classList.contains('btn-close-guide')) {
+        modal.classList.remove('open');
+      }
+    });
+  });
 }
 
 function bindGuideEvents() {

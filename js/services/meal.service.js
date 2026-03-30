@@ -1,6 +1,8 @@
 // Meal service for new schema: meals table connects day_id and slot_id
 
-const mealService = {
+import { db } from '../supabase.js';
+
+export const mealService = {
 
   async fetchByConference(conferenceId) {
     const { data, error } = await db

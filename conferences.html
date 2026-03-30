@@ -86,7 +86,7 @@
     </nav>
     <div class="sidebar-bottom">
       <div class="sidebar-divider"></div>
-      <button class="nav-item" id="btn-logout" data-tip="Sign Out" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/login.html')" style="cursor:pointer;">
+      <button class="nav-item" id="btn-logout" data-tip="Sign Out" style="cursor:pointer;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
     </div>
@@ -111,14 +111,14 @@
         <div class="page-header">
           <div class="page-header-info" style="flex-direction:column; align-items:flex-start; gap:2px;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <button class="btn btn-ghost" onclick="closeReport()" style="width:36px; padding:0; height:36px; border-radius:50%;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
+              <button class="btn btn-ghost" id="btn-close-report" style="width:36px; padding:0; height:36px; border-radius:50%;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
               <span class="page-header-title" id="report-title">Conference Report</span>
             </div>
             <span id="last-updated" style="font-size:11px; color:var(--text-3); font-weight:500; margin-left:48px;"></span>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-ghost" onclick="refreshReport()" style="width:38px; padding:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
-            <button class="btn btn-primary" onclick="exportToExcel()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Export</button>
+            <button class="btn btn-ghost" id="btn-refresh-report" style="width:38px; padding:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
+            <button class="btn btn-primary" id="btn-export-excel"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Export</button>
           </div>
         </div>
 
@@ -139,10 +139,10 @@
 
           <!-- Role Filter Chips -->
           <div style="display:flex; gap:8px; flex-wrap:wrap; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--bg-input);">
-            <button class="role-chip active" id="chip-all"       onclick="filterByRole('ALL')"     >All <span class="chip-count" id="count-all">0</span></button>
-            <button class="role-chip"        id="chip-pastor"    onclick="filterByRole('PASTOR')"  >Pastors <span class="chip-count" id="count-pastor">0</span></button>
-            <button class="role-chip"        id="chip-wife"      onclick="filterByRole('WIFE')"    >Wives <span class="chip-count" id="count-wife">0</span></button>
-            <button class="role-chip"        id="chip-disciple"  onclick="filterByRole('DISCIPLE')">Disciples <span class="chip-count" id="count-disciple">0</span></button>
+            <button class="role-chip active" id="chip-all"       data-role="ALL"     >All <span class="chip-count" id="count-all">0</span></button>
+            <button class="role-chip"        id="chip-pastor"    data-role="PASTOR"  >Pastors <span class="chip-count" id="count-pastor">0</span></button>
+            <button class="role-chip"        id="chip-wife"      data-role="WIFE"    >Wives <span class="chip-count" id="count-wife">0</span></button>
+            <button class="role-chip"        id="chip-disciple"  data-role="DISCIPLE">Disciples <span class="chip-count" id="count-disciple">0</span></button>
           </div>
 
           <!-- Table -->
@@ -235,17 +235,6 @@
 
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script src="js/libs/supabase.min.js"></script>
-<script src="js/services/auth.service.js"></script>
-<script src="js/supabase.js"></script>
-<script src="js/router.js"></script>
-<script src="js/utils/helper.js"></script>
-<script src="js/utils/formatters.js"></script>
-<script src="js/services/pastor.service.js"></script>
-<script src="js/services/disciple.service.js"></script>
-<script src="js/services/conference.service.js"></script>
-<script src="js/services/meal.service.js"></script>
-<script src="js/services/attendance.service.js"></script>
-<script src="js/pages/conferences.js"></script>
-<script src="./js/utils/guide.js"></script>
+<script type="module" src="js/pages/conferences.js"></script>
 </body>
 </html>

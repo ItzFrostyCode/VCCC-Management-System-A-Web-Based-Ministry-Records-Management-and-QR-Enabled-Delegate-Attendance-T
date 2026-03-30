@@ -1,82 +1,74 @@
-// ══════════════════════════════════════════════════════════════
-//  VCCC Scanner — Time-Driven State Machine (fixed)
-//  2-Panel layout: Days (left) + Logs (right)
-//  Slot states: active | disabled | closed | locked
-// ══════════════════════════════════════════════════════════════
+import { requireAuth } from '../supabase.js';
+import { authService } from '../services/auth.service.js';
+import { conferenceService } from '../services/conference.service.js';
+import { pastorService } from '../services/pastor.service.js';
+import { discipleService } from '../services/disciple.service.js';
+import { attendanceService } from '../services/attendance.service.js';
+import { scanLogService } from '../services/scan_log.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc, decodeQR } from '../utils/helper.js';
 
-// ─── Camera & Scan Engine (html5-qrcode) ────────────────────
+// Camera & Scan Engine
 let html5QrCode = null
 let isProcessing = false
 
-// ─── Conference State ────────────────────────────────────────
+// Conference State
 let activeConf = null
 let confDays = []
 let confSlots = []
 
-// ─── Session (currently scanning slot) ───────────────────────
-let currentSession = null   // { day, slot }
-let activeSlotId = null      // computed by tick
+// Session
+let currentSession = null
+let activeSlotId = null
 
-// ─── Anti-spam ───────────────────────────────────────────────
+// Anti-spam
 let lastQR = null
 let lastQRTime = 0
-let lastScannedId = null // Track last ID to prevent accidental double-taps
-const LOCK_MS = 3000    // 3-second debounce: prevents the same QR firing twice in a burst
+let lastScannedId = null
+const LOCK_MS = 3000
 
-// ─── Test Mode ───────────────────────────────────────────────
+// Test Mode
 let isTestMode = false
 
-// ─── Log Panel ───────────────────────────────────────────────
+// Log Panel
 let allLogs = []
 let activeFilter = 'all'
 
-// ─── Slot metadata ───────────────────────────────────────────
+// Slot metadata
 const SLOT_EMOJI = { MORNING: '🌅', AFTERNOON: '☀️', EVENING: '🌙' }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  INIT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 document.addEventListener('DOMContentLoaded', async () => {
-  await requireAuth()
+    try {
+        await requireAuth()
+        highlightNav()
+        injectMobileNav()
+        initGuide()
 
-  // Navigation restriction: Hide hamburger and dashboard link for Scanners or Unauthenticated
-  const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
-  const isScannerRole = user && user.role === 'Scanner';
-  const isUnauthenticated = !user;
+        // Navigation restriction
+        const user = authService.getCurrentUser();
+        const isScannerRole = user && user.role === 'Scanner';
+        if (isScannerRole) {
+            const hamburger = document.getElementById('mob-hamburger');
+            const backBtn = document.querySelector('.scan-back');
+            const logoutDesk = document.getElementById('btn-logout-desk');
+            if (hamburger) hamburger.style.display = 'none';
+            if (backBtn) backBtn.style.display = 'none';
+            
+            const mobDashboardLink = document.querySelector('.mob-nav-item[href="/index.html"]');
+            if (mobDashboardLink) mobDashboardLink.remove();
+        }
 
-  if (isScannerRole || isUnauthenticated) {
-    const hamburger = document.getElementById('mob-hamburger');
-    const backBtn = document.querySelector('.scan-back');
-    const logoutBtn = document.getElementById('logout-btn');
-    const clearLogsBtn = document.getElementById('clear-logs-btn');
-    const testModeBtn = document.getElementById('test-mode-btn');
-    const mobTestModeBtn = document.getElementById('mob-test-mode-btn');
+        updateClock()
+        setInterval(updateClock, 1000)
+        setInterval(tickStateMachine, 1000)
 
-    if (hamburger) hamburger.style.display = 'none';
-    if (backBtn) backBtn.style.display = 'none';
-    if (logoutBtn && isUnauthenticated) logoutBtn.style.display = 'none';
-    if (clearLogsBtn) clearLogsBtn.style.display = 'none';
-    if (testModeBtn) testModeBtn.style.display = 'none';
-    if (mobTestModeBtn) mobTestModeBtn.style.display = 'none';
-    
-    // Also remove the Dashboard link from mobile nav entirely
-    const mobDashboardLink = document.querySelector('.mob-nav-item[href="/"]');
-    if (mobDashboardLink) mobDashboardLink.remove();
-  }
+        html5QrCode = new Html5Qrcode("qr-reader")
 
-  video = document.getElementById('cam-video')
-  canvas = document.createElement('canvas')
-  ctx = canvas.getContext('2d', { willReadFrequently: true })
-
-  updateClock()
-  setInterval(updateClock, 1000)
-  setInterval(tickStateMachine, 1000)
-
-  // Initialize html5-qrcode instance
-  html5QrCode = new Html5Qrcode("qr-reader")
-
-  await loadConference()
-  await refreshLogs()
+        bindEvents()
+        await loadConference()
+        await refreshLogs()
+    } catch (err) { console.error('Scanner init failed:', err) }
 })
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -366,7 +358,8 @@ function renderSchedule() {
         ${statusHtml}
       </div>
       <div style="padding:40px 20px;text-align:center;color:rgba(255,255,255,0.35);font-size:13px;line-height:1.6;">
-        No schedule to display.
+        No active conference found.<br>
+        Create one in the Conferences section first.
       </div>`
     return
   }
@@ -382,11 +375,7 @@ function renderSchedule() {
 
       const dateLabel = (() => {
         const [y, m, d] = day.date.split('-')
-        return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
-        })
+        return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       })()
 
       let badge = ''
@@ -398,33 +387,21 @@ function renderSchedule() {
         const state = getSlotState(day, slot)
         const emoji = SLOT_EMOJI[slot.name] || '⏱'
         const isActive = state === 'active'
-        const isScanning =
-          currentSession &&
-          currentSession.slot.id === slot.id &&
-          currentSession.day.id === day.id
+        const isScanning = currentSession && currentSession.slot.id === slot.id && currentSession.day.id === day.id
 
         let badgeHtml = ''
         if (state === 'active') {
-          badgeHtml = isTestMode 
-            ? `<span class="slot-state-badge state-active active">🧪 TEST MODE</span>` 
-            : `<span class="slot-state-badge state-active">▶ Active</span>`
+          badgeHtml = isTestMode ? `<span class="slot-state-badge state-active active">🧪 TEST MODE</span>` : `<span class="slot-state-badge state-active">▶ Active</span>`
         }
         if (state === 'disabled') badgeHtml = `<span class="slot-state-badge state-disabled">Waiting</span>`
         if (state === 'closed') badgeHtml = `<span class="slot-state-badge state-closed">Closed: ${fmt12(slot.end_time)}</span>`
         if (state === 'locked') badgeHtml = `<span class="slot-state-badge state-locked">—</span>`
 
-        const scanHint = isActive && !isScanning
-          ? `<div class="slot-scan-hint">▶ Tap to scan</div>`
-          : ''
-
-        const clickAttr = isActive
-          ? `onclick="selectSlot('${day.id}', '${slot.id}')" role="button" tabindex="0"`
-          : ''
-
+        const scanHint = isActive && !isScanning ? `<div class="slot-scan-hint">▶ Tap to scan</div>` : ''
         const extraClass = isScanning ? ' scanning' : ''
 
         return `
-          <div class="slot-cell ${state}${extraClass}" id="slot-${day.id}-${slot.id}" ${clickAttr}>
+          <div class="slot-cell ${state}${extraClass}" id="slot-${day.id}-${slot.id}" data-day="${day.id}" data-slot="${slot.id}" role="${isActive?'button':''}" tabindex="${isActive?'0':''}">
             <div class="slot-emoji">${emoji}</div>
             <div class="slot-info-wrap">
               <div class="slot-name">${esc(slot.name)}</div>
@@ -446,6 +423,11 @@ function renderSchedule() {
         </div>`
     }).join('')}
   `
+
+  // Attach dynamic events
+  body.querySelectorAll('.slot-cell.active').forEach(cell => {
+      cell.onclick = () => selectSlot(cell.dataset.day, cell.dataset.slot)
+  })
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -504,10 +486,7 @@ function updateSlotBadgesOnly() {
       if (!el) return
 
       const state = getSlotState(day, slot)
-      const isScanning =
-        currentSession &&
-        currentSession.slot.id === slot.id &&
-        currentSession.day.id === day.id
+      const isScanning = currentSession && currentSession.slot.id === slot.id && currentSession.day.id === day.id
 
       el.className = `slot-cell ${state}${isScanning ? ' scanning' : ''}`
 
@@ -529,11 +508,11 @@ function updateSlotBadgesOnly() {
       }
 
       if (state === 'active') {
-        el.setAttribute('onclick', `selectSlot('${day.id}', '${slot.id}')`)
+        el.onclick = () => selectSlot(day.id, slot.id)
         el.setAttribute('role', 'button')
         el.setAttribute('tabindex', '0')
       } else {
-        el.removeAttribute('onclick')
+        el.onclick = null
         el.removeAttribute('role')
         el.removeAttribute('tabindex')
       }
@@ -595,8 +574,41 @@ function closeScanner() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  CAMERA ENGINE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function bindEvents() {
+    const btnLogoutDesk = document.getElementById('btn-logout-desk')
+    if (btnLogoutDesk) btnLogoutDesk.onclick = () => authService.signOut().then(() => window.location.href='/login.html')
+    
+    const btnLogoutMob = document.getElementById('btn-logout-mob')
+    if (btnLogoutMob) btnLogoutMob.onclick = () => authService.signOut().then(() => window.location.href='/login.html')
+
+    const btnLogoutNav = document.getElementById('btn-logout-nav')
+    if (btnLogoutNav) btnLogoutNav.onclick = () => authService.signOut().then(() => window.location.href='/login.html')
+
+    document.getElementById('mobile-logs-btn').onclick = toggleMobileLogs
+    document.getElementById('mob-hamburger').onclick = toggleMobileNav
+    document.getElementById('mob-backdrop').onclick = () => { closeMobileLogs(); closeMobileNav(); }
+    document.getElementById('btn-close-logs-mob').onclick = closeMobileLogs
+    document.getElementById('btn-close-nav-mob').onclick = closeMobileNav
+
+    document.getElementById('btn-close-scanner').onclick = closeScanner
+    document.getElementById('btn-start-camera').onclick = startCamera
+    document.getElementById('btn-retry-camera').onclick = retryCamera
+
+    const searchInp = document.getElementById('logs-search')
+    if (searchInp) searchInp.oninput = filterLogs
+    
+    const searchMobInp = document.getElementById('logs-search-mob')
+    if (searchMobInp) searchMobInp.oninput = filterLogsMob
+
+    document.getElementById('logs-filters').querySelectorAll('.log-filter-btn').forEach(btn => {
+        btn.onclick = () => setLogFilter(btn.dataset.filter, btn)
+    })
+    document.getElementById('logs-filters-mob').querySelectorAll('.log-filter-btn').forEach(btn => {
+        btn.onclick = () => setLogFilterMob(btn.dataset.filter, btn)
+    })
+}
+
 async function startCamera() {
-  // Hide permission state, show loading
   const permState  = document.getElementById('cam-permission-state')
   const deniedState = document.getElementById('cam-denied-state')
   const nocamState  = document.getElementById('cam-nocam-state')

@@ -1,7 +1,8 @@
 // js/services/dashboard.service.js
 // Dashboard aggregation service
+import { db } from '../supabase.js';
 
-const dashboardService = {
+export const dashboardService = {
   // 1. KPI Bar
   async getKpis() {
     const [

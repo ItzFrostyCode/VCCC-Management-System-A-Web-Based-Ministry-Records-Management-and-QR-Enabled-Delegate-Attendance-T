@@ -1,4 +1,7 @@
-const churchService = {
+import { db } from '../supabase.js';
+import { authService } from './auth.service.js';
+
+export const churchService = {
   async fetchAll() {
     const { data, error } = await db
       .from('churches')
@@ -37,6 +40,7 @@ const churchService = {
       .eq('is_deleted', false)
       .order('church_name')
     if (error) throw error
+
     return data
   },
 
@@ -79,6 +83,12 @@ const churchService = {
       `)
       .single()
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'CREATE_CHURCH', `Added Church: ${data.church_name}`)
+    }
+
     return {
       id: data.id,
       church_name: data.church_name,
@@ -109,6 +119,12 @@ const churchService = {
       `)
       .single()
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'UPDATE_CHURCH', `Updated Church: ${data.church_name}`)
+    }
+
     return {
       id: data.id,
       church_name: data.church_name,
@@ -126,5 +142,10 @@ const churchService = {
       .update({ is_deleted: true, updated_at: new Date().toISOString() })
       .eq('id', id)
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'DELETE_CHURCH', `Removed Church ID: ${id}`)
+    }
   }
 }

@@ -1,8 +1,28 @@
 // js/pages/dashboard.js
+import { db, requireAuth } from '../supabase.js';
+import { dashboardService } from '../services/dashboard.service.js';
+import { authService } from '../services/auth.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc } from '../utils/helper.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await requireAuth()
-  
+  const user = await requireAuth()
+  if (!user) return; // Stop execution if auth failed and redirecting
+
+  highlightNav();
+  injectMobileNav();
+  initGuide();
+
+  // Bind logout button
+  const logoutBtn = document.getElementById('btn-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await authService.signOut();
+      window.location.href = '/login.html';
+    });
+  }
+
   // Initial load
   await loadDashboardAll();
   

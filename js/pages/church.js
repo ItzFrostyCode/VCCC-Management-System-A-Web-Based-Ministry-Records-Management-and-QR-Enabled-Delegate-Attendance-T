@@ -1,4 +1,13 @@
-// church.js — Supabase-backed Church Management (new.sql schema)
+import { db, requireAuth } from '../supabase.js';
+import { authService } from '../services/auth.service.js';
+import { churchService } from '../services/church.service.js';
+import { districtService } from '../services/district.service.js';
+import { pastorService } from '../services/pastor.service.js';
+import { assignmentService } from '../services/assignment.service.js';
+import { discipleService } from '../services/disciple.service.js';
+import { highlightNav, injectMobileNav } from '../router.js';
+import { initGuide } from '../utils/guide.js';
+import { esc, createSearchSelect } from '../utils/helper.js';
 
 let allChurches   = []
 let allDistricts  = []
@@ -17,6 +26,10 @@ let selFilterScope    = null
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await requireAuth()
+    highlightNav()
+    injectMobileNav()
+    initGuide()
+
     await initData()
     initSearchSelect()
     bindEvents()
@@ -119,6 +132,11 @@ function renderChurches() {
   const btnPrev      = document.getElementById('btn-prev')
   const btnNext      = document.getElementById('btn-next')
 
+  const user    = authService.getCurrentUser()
+  const isStaff = user && user.role === 'Staff'
+
+  list.innerHTML = ''
+  
   if (!paginated.length) {
     list.innerHTML = `
       <div class="empty-state">
@@ -135,54 +153,66 @@ function renderChurches() {
   if (btnPrev) btnPrev.disabled = (currentPage === 1)
   if (btnNext) btnNext.disabled = (currentPage === totalPages || totalPages === 0)
 
-  const user    = typeof authService !== 'undefined' ? authService.getCurrentUser() : null
-  const isStaff = user && user.role === 'Staff'
-
-  list.innerHTML = paginated.map(c => {
+  paginated.forEach(c => {
     const currentPastor = allPastorAssignments[c.id]
-    const deleteBtn = !isStaff
-      ? `<button class="btn-icon btn-delete" title="Delete" onclick="deleteChurch('${c.id}')">
-           <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-         </button>`
-      : ''
-    return `
-      <div class="data-table-row cols-church" data-id="${c.id}">
-        <div data-label="Church Name">
-          <div class="cell-name-primary">${esc(c.church_name)}</div>
-        </div>
-        <div data-label="Address">
-          <div class="cell-name-sub">${esc(c.church_address) || '—'}</div>
-        </div>
-        <div data-label="District">
-          <span class="pill pill-disciple" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-2); font-size:11px;">
-            ${esc(c.district_name) || 'Unassigned'}
-          </span>
-        </div>
-        <div data-label="Type">
-          <span class="pill" style="text-transform: capitalize; background:var(--bg-card); border:1px solid var(--border); color:var(--text-2); font-size:11px; padding: 2px 8px; border-radius: 4px;">
-            ${esc(c.church_scope) || 'local'}
-          </span>
-        </div>
-        <div data-label="Current Pastor">
-          ${currentPastor
-            ? `<div class="cell-name-primary" style="font-size:13px;">${esc(currentPastor)}</div>`
-            : `<span class="vacant-badge">Vacant</span>`
-          }
-        </div>
-        <div class="row-actions">
-          <button class="btn-icon" style="background:hsla(150, 100%, 97%, 1); color:hsl(150, 80%, 35%); border-color:hsla(150, 100%, 90%, 1);" title="View Profile" onclick="window.location.href='church-view.html?id=${c.id}'">
-            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-          <button class="btn-icon" style="background:var(--blue-bg); color:var(--blue); border-color:var(--blue-bg);" title="Add Disciple" onclick="openQuickAdd('${c.id}', '${esc(c.church_name)}')">
-            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-          </button>
-          <button class="btn-icon btn-edit" title="Edit" onclick="editChurch('${c.id}')">
-            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-          </button>
-          ${deleteBtn}
-        </div>
-      </div>`
-  }).join('')
+    const row = document.createElement('div')
+    row.className = 'data-table-row cols-church'
+    row.dataset.id = c.id
+    
+    let actionsHtml = `
+      <button class="btn-icon btn-view" title="View Profile" style="background:hsla(150, 100%, 97%, 1); color:hsl(150, 80%, 35%); border-color:hsla(150, 100%, 90%, 1);">
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+      <button class="btn-icon btn-quick-add" title="Add Disciple" style="background:var(--blue-bg); color:var(--blue); border-color:var(--blue-bg);">
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+      </button>
+      <button class="btn-icon btn-edit" title="Edit">
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+      </button>
+    `
+    if (!isStaff) {
+      actionsHtml += `
+        <button class="btn-icon btn-delete" title="Delete">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+      `
+    }
+
+    row.innerHTML = `
+      <div data-label="Church Name">
+        <div class="cell-name-primary">${esc(c.church_name)}</div>
+      </div>
+      <div data-label="Address">
+        <div class="cell-name-sub">${esc(c.church_address) || '—'}</div>
+      </div>
+      <div data-label="District">
+        <span class="pill pill-disciple" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-2); font-size:11px;">
+          ${esc(c.district_name) || 'Unassigned'}
+        </span>
+      </div>
+      <div data-label="Type">
+        <span class="pill" style="text-transform: capitalize; background:var(--bg-card); border:1px solid var(--border); color:var(--text-2); font-size:11px; padding: 2px 8px; border-radius: 4px;">
+          ${esc(c.church_scope) || 'local'}
+        </span>
+      </div>
+      <div data-label="Current Pastor">
+        ${currentPastor
+          ? `<div class="cell-name-primary" style="font-size:13px;">${esc(currentPastor)}</div>`
+          : `<span class="vacant-badge">Vacant</span>`
+        }
+      </div>
+      <div class="row-actions">${actionsHtml}</div>
+    `
+
+    // Bind events
+    row.querySelector('.btn-view').onclick = () => window.location.href = `church-view.html?id=${c.id}`
+    row.querySelector('.btn-quick-add').onclick = () => openQuickAdd(c.id, c.church_name)
+    row.querySelector('.btn-edit').onclick = () => openModal(c)
+    const delBtn = row.querySelector('.btn-delete')
+    if (delBtn) delBtn.onclick = () => deleteChurch(c.id)
+
+    list.appendChild(row)
+  })
 }
 
 // ── Modal ──────────────────────────────────────────────────────
@@ -219,13 +249,7 @@ function openModal(church = null) {
   overlay.classList.add('open')
 }
 
-window.editChurch = function(id) {
-  const church = allChurches.find(c => c.id === id)
-  if (!church) return
-  openModal(church)
-}
-
-window.deleteChurch = async function(id) {
+async function deleteChurch(id) {
   const church = allChurches.find(c => c.id === id)
   if (!church) return
   if (!confirm(`Remove "${church.church_name}"? This is a soft delete and can be restored.`)) return
@@ -238,7 +262,7 @@ window.deleteChurch = async function(id) {
   }
 }
 
-window.prevPage = function() {
+function prevPage() {
   if (currentPage > 1) {
     currentPage--
     renderChurches()
@@ -246,7 +270,7 @@ window.prevPage = function() {
   }
 }
 
-window.nextPage = function() {
+function nextPage() {
   if (currentPage < Math.ceil(filteredCount / ITEMS_PER_PAGE)) {
     currentPage++
     renderChurches()
@@ -310,7 +334,7 @@ async function handleFormSubmit(e) {
 }
 
 // ── Quick Add Disciple ──────────────────────────────────────────
-window.openQuickAdd = function(churchId, churchName) {
+function openQuickAdd(churchId, churchName) {
   const overlay = document.getElementById('quick-disciple-overlay')
   if (!overlay) return
   document.getElementById('qd-church-id').value = churchId
@@ -319,7 +343,7 @@ window.openQuickAdd = function(churchId, churchName) {
   overlay.classList.add('open')
 }
 
-window.closeQuickAdd = function() {
+function closeQuickAdd() {
   const overlay = document.getElementById('quick-disciple-overlay')
   if (overlay) overlay.classList.remove('open')
 }
@@ -347,6 +371,21 @@ async function handleQuickAddSubmit(e) {
 
 // ── Events ─────────────────────────────────────────────────────
 function bindEvents() {
+  // Logout
+  const btnLogout = document.getElementById('btn-logout')
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      await authService.signOut()
+      window.location.href = '/login.html'
+    })
+  }
+
+  // Pagination
+  const btnPrev = document.getElementById('btn-prev')
+  const btnNext = document.getElementById('btn-next')
+  if (btnPrev) btnPrev.onclick = prevPage
+  if (btnNext) btnNext.onclick = nextPage
+
   const qdForm = document.getElementById('quick-disciple-form')
   if (qdForm) qdForm.onsubmit = handleQuickAddSubmit
 
@@ -371,4 +410,7 @@ function bindEvents() {
   // Close on overlay click
   const overlay = document.getElementById('church-modal-overlay')
   if (overlay) overlay.addEventListener('click', e => { if (e.target === overlay) closeModal() })
+  
+  const overlayQD = document.getElementById('quick-disciple-overlay')
+  if (overlayQD) overlayQD.addEventListener('click', e => { if (e.target === overlayQD) closeQuickAdd() })
 }

@@ -1,3 +1,13 @@
+import { requireAuth } from '../supabase.js';
+import { pastorService } from '../services/pastor.service.js';
+import { timelineService } from '../services/timeline.service.js';
+import { discipleService } from '../services/disciple.service.js';
+import { rankService } from '../services/rank.service.js';
+import { trainingService } from '../services/training.service.js';
+import { assignmentService } from '../services/assignment.service.js';
+import { churchService } from '../services/church.service.js';
+import { esc, calculateAge, formatDate } from '../utils/helper.js';
+
 // pastor-view.js
 let globalPastorId = null;
 

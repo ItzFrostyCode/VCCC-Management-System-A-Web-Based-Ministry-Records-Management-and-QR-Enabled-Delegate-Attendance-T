@@ -1,4 +1,6 @@
-const discipleService = {
+import { db } from '../supabase.js';
+
+export const discipleService = {
   async fetchAll() {
     const { data, error } = await db
       .from('disciples')

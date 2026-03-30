@@ -128,7 +128,7 @@
   </aside>
   <div class="app-main">
     <header class="topbar">
-      <button class="btn-icon" onclick="history.back()" style="margin-right:12px;">
+      <button class="btn-icon" id="btn-back" style="margin-right:12px;">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="topbar-title">Church Profile</div>
@@ -209,15 +209,6 @@
 
 <!-- Scripts -->
 <script src="./js/libs/supabase.min.js"></script>
-<script src="./js/services/auth.service.js"></script>
-<script src="./js/supabase.js"></script>
-<script src="./js/router.js"></script>
-<script src="./js/utils/helper.js"></script>
-<script src="./js/services/district.service.js"></script>
-<script src="./js/services/church.service.js"></script>
-<script src="./js/services/pastor.service.js"></script>
-<script src="./js/services/assignment.service.js"></script>
-<script src="./js/pages/church-view.js"></script>
-<script src="./js/utils/guide.js"></script>
+<script type="module" src="./js/pages/church-view.js"></script>
 </body>
 </html>

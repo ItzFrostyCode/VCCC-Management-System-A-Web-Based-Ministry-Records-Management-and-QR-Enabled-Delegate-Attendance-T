@@ -1,4 +1,7 @@
-const districtService = {
+import { db } from '../supabase.js';
+import { authService } from './auth.service.js';
+
+export const districtService = {
   async fetchAll() {
     const { data, error } = await db
       .from('districts')
@@ -45,6 +48,12 @@ const districtService = {
       .select('id, district_name, theme_color, leader_pastor_id, notes, created_at')
       .single()
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'CREATE_DISTRICT', `Added District: ${data.district_name}`)
+    }
+
     return data
   },
 
@@ -63,6 +72,12 @@ const districtService = {
       .select('id, district_name, theme_color, leader_pastor_id, notes, created_at')
       .single()
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'UPDATE_DISTRICT', `Updated District: ${data.district_name}`)
+    }
+
     return data
   },
 
@@ -72,5 +87,10 @@ const districtService = {
       .update({ is_deleted: true, updated_at: new Date().toISOString() })
       .eq('id', id)
     if (error) throw error
+
+    const user = authService.getCurrentUser()
+    if (user) {
+      await authService.logAudit(user.id, 'DELETE_DISTRICT', `Removed District ID: ${id}`)
+    }
   }
 }

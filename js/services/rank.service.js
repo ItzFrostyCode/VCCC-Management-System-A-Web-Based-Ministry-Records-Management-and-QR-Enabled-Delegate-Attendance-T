@@ -1,4 +1,7 @@
-const rankService = {
+import { db } from '../supabase.js';
+import { authService } from './auth.service.js';
+
+export const rankService = {
   // Add a new rank entry
   async addRank(data) {
     const { pastor_id, rank_code, effective_date, notes, source, precision_flag } = data;
@@ -19,7 +22,7 @@ const rankService = {
     if (error) throw error;
 
     // Log the audit
-    const user = typeof authService !== 'undefined' ? authService.getCurrentUser() : null;
+    const user = authService.getCurrentUser();
     if (user) {
       await authService.logAudit(
         user.id,

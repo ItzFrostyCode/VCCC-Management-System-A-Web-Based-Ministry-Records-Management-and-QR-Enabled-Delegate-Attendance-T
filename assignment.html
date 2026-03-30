@@ -34,7 +34,7 @@
     </nav>
     <div class="sidebar-bottom">
       <div class="sidebar-divider"></div>
-      <button class="nav-item" id="btn-logout" data-tip="Sign Out" onclick="if(typeof authService !== 'undefined') authService.signOut().then(() => window.location.href='/login.html')" style="cursor:pointer;">
+      <button class="nav-item" id="btn-logout" data-tip="Sign Out" style="cursor:pointer;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
     </div>
@@ -101,8 +101,8 @@
         <div id="pagination" style="display:none; justify-content:space-between; align-items:center; padding: 12px 16px; border-top: 1px solid var(--border);">
           <div style="font-size:13px; color:var(--text-3); font-weight:500;" id="page-info">Showing 1-10 of 0</div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-prev" onclick="prevPage()">Prev</button>
-            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-next" onclick="nextPage()">Next</button>
+            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-prev">Prev</button>
+            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-next">Next</button>
           </div>
         </div>
       </div>
@@ -205,15 +205,6 @@
 </div>
 
 <script src="./js/libs/supabase.min.js"></script>
-<script src="./js/services/auth.service.js"></script>
-<script src="./js/supabase.js"></script>
-<script src="./js/router.js"></script>
-<script src="./js/utils/helper.js"></script>
-<script src="./js/services/district.service.js"></script>
-<script src="./js/services/church.service.js"></script>
-<script src="./js/services/pastor.service.js"></script>
-<script src="./js/services/assignment.service.js"></script>
-<script src="./js/pages/assignment.js"></script>
-<script src="./js/utils/guide.js"></script>
+<script type="module" src="./js/pages/assignment.js"></script>
 </body>
 </html>

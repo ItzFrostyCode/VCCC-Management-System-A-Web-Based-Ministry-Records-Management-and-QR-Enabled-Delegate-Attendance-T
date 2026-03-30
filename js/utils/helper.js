@@ -1,5 +1,5 @@
 // ── Formatters ──────────────────────────────────────────── 
-function esc(str) {
+export function esc(str) {
   return String(str || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -8,22 +8,22 @@ function esc(str) {
     .replace(/'/g, '&#039;');
 }
 
-function formatPartOfDay(part) {
+export function formatPartOfDay(part) {
   return { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' }[part] || part
 }
 
-function formatMealLabel(dayNumber, partOfDay) {
+export function formatMealLabel(dayNumber, partOfDay) {
   return `Day ${dayNumber} · ${formatPartOfDay(partOfDay)}`
 }
 
-function formatDate(iso) {
+export function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('en-PH', {
     year: 'numeric', month: 'long', day: 'numeric'
   })
 }
 
-function formatDateTime(iso) {
+export function formatDateTime(iso) {
   if (!iso) return ''
   return new Date(iso).toLocaleString('en-PH', {
     month: 'short', day: 'numeric',
@@ -31,7 +31,7 @@ function formatDateTime(iso) {
   })
 }
 
-function calculateAge(birthdate) {
+export function calculateAge(birthdate) {
   if (!birthdate) return 0
   const birthDate = new Date(birthdate)
   if (isNaN(birthDate.getTime())) return 0
@@ -48,11 +48,11 @@ function calculateAge(birthdate) {
 // Format: {"t":"PASTOR","id":"uuid"}
 // t = delegate type, id = uuid (for WIFE, id = pastor's uuid)
 
-function encodeQR(delegateType, delegateId) {
+export function encodeQR(delegateType, delegateId) {
   return JSON.stringify({ t: delegateType, id: delegateId })
 }
 
-function decodeQR(raw) {
+export function decodeQR(raw) {
   try {
     const obj = JSON.parse(raw)
     if (!obj || !obj.t || !obj.id) return null
@@ -64,7 +64,7 @@ function decodeQR(raw) {
 }
 
 // ── CSV Export ────────────────────────────────────────────
-function arrayToCSV(rows) {
+export function arrayToCSV(rows) {
   if (!rows.length) return ''
   const headers = Object.keys(rows[0])
   const escape  = v => {
@@ -78,7 +78,7 @@ function arrayToCSV(rows) {
   ].join('\n')
 }
 
-function downloadCSV(filename, rows) {
+export function downloadCSV(filename, rows) {
   const csv  = arrayToCSV(rows)
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url  = URL.createObjectURL(blob)
@@ -102,7 +102,7 @@ function downloadCSV(filename, rows) {
 //   sel.reset()           — clear selection
 //   sel.destroy()         — remove portal & listeners
 
-function createSearchSelect(container, options = [], placeholder = 'Select...', onChange = null) {
+export function createSearchSelect(container, options = [], placeholder = 'Select...', onChange = null) {
   let selectedValue = null
   let selectedLabel = null
   let currentOptions = [...options]

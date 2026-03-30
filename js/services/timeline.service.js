@@ -1,7 +1,9 @@
 // js/services/timeline.service.js
 // Specialized service for the Ministry Timeline Engine
 
-const timelineService = {
+import { db } from '../supabase.js';
+
+export const timelineService = {
   
   // Fetches and interleaves assignments, ranks, and training into a single timeline feed
   async fetchPastorTimeline(pastorId) {
