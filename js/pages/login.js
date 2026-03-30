@@ -49,6 +49,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Bind button and Enter key
   btnLogin.addEventListener('click', handleLogin)
-  document.getElementById('login-password').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin() })
+  
+  const passwordInput = document.getElementById('login-password')
+  const toggleBtn = document.getElementById('toggle-password')
+  const eyeIcon = toggleBtn.querySelector('.eye')
+  const eyeOffIcon = toggleBtn.querySelector('.eye-off')
+
+  toggleBtn.addEventListener('click', () => {
+    const isPassword = passwordInput.type === 'password'
+    passwordInput.type = isPassword ? 'text' : 'password'
+    eyeIcon.style.display = isPassword ? 'block' : 'none'
+    eyeOffIcon.style.display = isPassword ? 'none' : 'block'
+    toggleBtn.title = isPassword ? 'Hide password' : 'Show password'
+  })
+
+  passwordInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin() })
   document.getElementById('login-email').addEventListener('keypress',    e => { if (e.key === 'Enter') handleLogin() })
 })
