@@ -175,25 +175,39 @@ function getGuideContent() {
 function injectGuideUI() {
   const guideData = getGuideContent();
 
+  const fabStyle = `
+    <style>
+      :root { --guide-fab-bottom: 32px; }
+      @media (max-width: 640px) {
+        :root { --guide-fab-bottom: 90px; }
+      }
+      .guide-fab {
+        position: fixed;
+        bottom: var(--guide-fab-bottom);
+        right: 32px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        cursor: pointer;
+        border: 2px solid #fff;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, bottom 0.3s ease;
+        background-color: var(--primary);
+        color: white;
+      }
+      .guide-fab:hover {
+        transform: scale(1.08);
+        box-shadow: var(--shadow-xl);
+      }
+    </style>
+  `;
+
   const fabHtml = `
-    <button id="btn-global-guide" class="btn-primary" style="
-      position: fixed;
-      bottom: 32px;
-      right: 32px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      box-shadow: var(--shadow-lg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      cursor: pointer;
-      border: 2px solid #fff;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    " onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='var(--shadow-xl)'" 
-       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='var(--shadow-lg)'"
-       title="How does this page work?">
+    <button id="btn-global-guide" class="guide-fab" title="How does this page work?">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:28px; height:28px;">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
@@ -222,6 +236,7 @@ function injectGuideUI() {
     </div>
   `;
 
+  document.body.insertAdjacentHTML('beforeend', fabStyle);
   document.body.insertAdjacentHTML('beforeend', fabHtml);
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 }

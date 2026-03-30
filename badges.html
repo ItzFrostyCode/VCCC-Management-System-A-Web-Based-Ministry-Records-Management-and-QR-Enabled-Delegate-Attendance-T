@@ -121,13 +121,13 @@
               Print
             </button>
           </div>
+
+          <!-- Mobile Editor Container (appears below badge on mobile) -->
+          <div id="mobile-mini-editor" class="mobile-only"></div>
         </div>
 
-        <!-- Batch progress bar -->
-        <div id="batch-progress" style="display:none;" class="batch-bar-wrap">
-            <div class="batch-bar"><div class="batch-fill" id="batch-fill"></div></div>
-            <div class="batch-label" id="batch-label">Rendering badges...</div>
-        </div>
+        <!-- Legacy Batch progress bar (hidden in favor of modal) -->
+        <div id="batch-progress" style="display:none;" class="batch-bar-wrap"></div>
       </main>
 
       <!-- RIGHT: Properties Panel -->
@@ -143,16 +143,12 @@
     <!-- Mobile Tab Bar -->
     <nav class="mobile-tabbar mobile-only">
       <button class="tab-btn active" data-view="delegates" onclick="switchTab('delegates')">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
         Delegates
       </button>
       <button class="tab-btn" data-view="preview" onclick="switchTab('preview')">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
         Preview
-      </button>
-      <button class="tab-btn" data-view="editor" onclick="switchTab('editor')">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        Editor
       </button>
     </nav>
 
@@ -180,6 +176,40 @@
       <button type="button" class="mf-btn mf-primary" id="btn-modal-generate" onclick="startExportFromModal()">
         Generate ZIP
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Export Progress Modal ─── -->
+<div id="modal-export-progress" class="modal-system-wrap" style="display:none; z-index: 20000;">
+  <div class="modal-backdrop"></div>
+  <div class="aesthetic-modal" style="max-width: 400px;">
+    <div class="modal-body" style="padding: 40px 30px 28px; text-align: center;">
+      <div class="export-loading-icon">
+        <svg id="export-modal-spinner" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--primary)" stroke-width="1.5" style="animation: spin 2s linear infinite;">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+      </div>
+      <h3 id="export-modal-title" style="margin: 20px 0 6px; font-size: 18px;">Generating Badges</h3>
+      <p id="export-modal-label" style="font-size: 13px; color: var(--text-3); margin-bottom: 20px; min-height: 18px;">Preparing files...</p>
+      
+      <div class="batch-bar" style="height: 8px; background: var(--bg-shell); border-radius: 99px; overflow: hidden;">
+        <div id="export-modal-fill" class="batch-fill" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease;"></div>
+      </div>
+      <div id="export-modal-percent" style="margin-top: 8px; font-weight: 800; color: var(--primary); font-size: 14px;">0%</div>
+
+      <!-- Cancel button — visible during rendering -->
+      <button id="export-modal-cancel" type="button"
+        onclick="cancelExport()" 
+        style="margin-top: 20px; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 20px; border-radius: 99px; border: 1.5px solid #ef4444; background: #fff; color: #ef4444; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+        onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Cancel Export
+      </button>
+    </div>
+    <!-- Done / Dismissed footer — visible after finish or cancel -->
+    <div class="modal-footer" id="export-modal-footer" style="display:none; justify-content: center; padding: 15px 30px; background: #fff; border-top: 1px solid var(--border);">
+      <button type="button" class="mf-btn mf-primary" onclick="document.getElementById('modal-export-progress').style.display='none'">Done</button>
     </div>
   </div>
 </div>

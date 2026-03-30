@@ -213,35 +213,87 @@ async function startExport(type) {
   else await executeBatchDownload(filteredDelegates, 'VCCC_Filtered.zip')
 }
 
-// ── Export Engine (Optimized) ───────────────────────────────
+// ── Export Engine (Cancellable) ─────────────────────────────
+let _exportCancelled = false;
+
+function cancelExport() {
+  _exportCancelled = true;
+  const lab = document.getElementById('export-modal-label');
+  if (lab) lab.textContent = 'Cancelling...';
+}
+
 async function executeBatchDownload(targets, zipName) {
-  const fill = document.getElementById('batch-fill'), lab = document.getElementById('batch-label'), prog = document.getElementById('batch-progress')
-  if (prog) prog.style.display='block'; 
+  _exportCancelled = false;
+
+  const modal    = document.getElementById('modal-export-progress');
+  const fill     = document.getElementById('export-modal-fill');
+  const lab      = document.getElementById('export-modal-label');
+  const per      = document.getElementById('export-modal-percent');
+  const footer   = document.getElementById('export-modal-footer');
+  const cancelBtn= document.getElementById('export-modal-cancel');
+  const spinner  = document.getElementById('export-modal-spinner');
+  const titleEl  = document.getElementById('export-modal-title');
+  
+  if (modal) {
+    modal.style.display = 'flex';
+    if (footer) footer.style.display = 'none';
+    if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+    if (fill) fill.style.width = '0%';
+    if (per) per.textContent = '0%';
+    if (lab) lab.textContent = 'Initializing...';
+    // Reset spinner
+    if (spinner) spinner.style.animation = 'spin 2s linear infinite';
+    if (titleEl) titleEl.textContent = 'Generating Badges';
+  }
+
   const zip = new JSZip(), safe = s => (s||'').replace(/[/\\?%*:|"<>]/g, '_').trim()
   
   try {
-    // Pre-load template image once to optimize
     const templateImg = await loadImg(cfg.templateUrl)
     
-    for (let i=0; i<targets.length; i++) {
-        const d = targets[i], canvas = document.createElement('canvas')
-        canvas.width = cfg.canvasWidth; canvas.height = cfg.canvasHeight
-        await drawBadge(canvas, d, templateImg)
-        
-        const path = `${safe(d.districtName)}/${safe(d.churchName)}/${d.role==='DISCIPLE'?'Disciples/':''}${d.role}_${safe(d.fullName)}.jpg`
-        zip.file(path, canvas.toDataURL('image/jpeg', 0.92).split(',')[1], {base64:true})
-        
-        if (fill) fill.style.width = ((i+1)/targets.length*100)+'%'
-        if (lab) lab.textContent = `Rendering ${i+1}/${targets.length}: ${d.fullName}`
-        if (i%10===0) await new Promise(r=>setTimeout(r, 0))
+    for (let i = 0; i < targets.length; i++) {
+      // ── Cancellation check ──
+      if (_exportCancelled) {
+        // Stop spinner immediately so user knows nothing is running
+        if (spinner) spinner.style.animation = 'none';
+        if (titleEl) titleEl.textContent = 'Export Cancelled';
+        if (lab) lab.textContent = 'No files were downloaded.';
+        if (per) per.textContent = '';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        if (footer) footer.style.display = 'flex';
+        return;
+      }
+
+      const d = targets[i], canvas = document.createElement('canvas')
+      canvas.width = cfg.canvasWidth; canvas.height = cfg.canvasHeight
+      await drawBadge(canvas, d, templateImg)
+      
+      const path = `${safe(d.districtName)}/${safe(d.churchName)}/${d.role==='DISCIPLE'?'Disciples/':''}${d.role}_${safe(d.fullName)}.jpg`
+      zip.file(path, canvas.toDataURL('image/jpeg', 0.92).split(',')[1], {base64:true})
+      
+      const pct = Math.round(((i+1)/targets.length) * 100);
+      if (fill) fill.style.width = pct + '%';
+      if (per) per.textContent = pct + '%';
+      if (lab) lab.textContent = `Rendering ${i+1}/${targets.length}: ${d.fullName}`;
+      
+      if (i % 8 === 0) await new Promise(r => setTimeout(r, 0))
     }
+    
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (lab) lab.textContent = 'Finalizing ZIP...';
     const blob = await zip.generateAsync({type:'blob'}), a = document.createElement('a')
-    a.href=URL.createObjectURL(blob); a.download=zipName; a.click()
+    a.href = URL.createObjectURL(blob); a.download = zipName; a.click()
+    
+    // Stop spinner, update title to show it's done
+    if (spinner) spinner.style.animation = 'none';
+    if (titleEl) titleEl.textContent = 'Export Complete ✓';
+    if (lab) lab.textContent = 'Your ZIP file has been downloaded.';
+    if (per) per.textContent = '100%';
+    if (footer) footer.style.display = 'flex';
   } catch (err) { 
     console.error('Export Error', err); 
-    alert('Export Failed: ' + err.message) 
-  } finally { 
-    if(prog) prog.style.display='none' 
+    alert('Export Failed: ' + err.message);
+    if (modal) modal.style.display = 'none';
   }
 }
 
@@ -285,17 +337,29 @@ function selectDelegate(id, role, shouldJump = true) {
   if (document.getElementById('canvas-actions')) document.getElementById('canvas-actions').style.display = 'flex'
   if (document.getElementById('no-selection-msg')) document.getElementById('no-selection-msg').style.display = 'none'
   renderBadge()
-  if (shouldJump) { const tb = document.querySelector('.mobile-tabbar'); if (tb && getComputedStyle(tb).display!=='none' && window.innerWidth <= 640) switchTab('preview') }
+  // On mobile/tablet, auto-jump to Preview tab when a delegate is selected
+  if (shouldJump) { 
+    const tb = document.querySelector('.mobile-tabbar'); 
+    if (tb && getComputedStyle(tb).display !== 'none' && window.innerWidth <= 640) {
+      switchTab('preview') 
+    } else if (window.innerWidth <= 1100) {
+      // On tablet there's no tab bar, but we still want the mini editor populated
+      renderTools()
+    }
+  }
 }
 
 function switchTab(view) {
   document.querySelector('.slides-panel')?.classList.remove('active')
   document.querySelector('.canvas-workspace')?.classList.remove('active')
-  document.querySelector('.props-panel')?.classList.remove('active')
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view))
-  if(view==='delegates') document.querySelector('.slides-panel')?.classList.add('active')
-  else if(view==='preview') document.querySelector('.canvas-workspace')?.classList.add('active')
-  else if(view==='editor'){ document.querySelector('.props-panel')?.classList.add('active'); renderTools() }
+  
+  if (view === 'delegates') {
+    document.querySelector('.slides-panel')?.classList.add('active')
+  } else if (view === 'preview') {
+    document.querySelector('.canvas-workspace')?.classList.add('active')
+    renderTools() // Always populate mini editor below the badge
+  }
 }
 function switchMobileView(v){ switchTab(v==='delegates'?'delegates':'editor') }
 
@@ -378,6 +442,9 @@ async function renderBadge() {
   if (!selectedDelegate) return
   const wrap = document.getElementById('badge-preview-wrap'); wrap.innerHTML = '<div style="font-size:13px;color:var(--text-3);">Rendering...</div>'
   try {
+    // Wait for fonts to ensure coordinates are accurate
+    if (document.fonts) await document.fonts.ready;
+    
     const isMobile = window.innerWidth <= 640;
     const isTablet = window.innerWidth > 640 && window.innerWidth <= 1100;
     let maxH = '380px';
@@ -506,7 +573,13 @@ function getDistColor(n) {
 let DISTRICT_COLORS = {}
 
 function renderTools() {
-  const b = document.getElementById('editor-fields-body'); if(!b) return
+  const isMobileOrTablet = window.innerWidth <= 1100;
+  const b = document.getElementById('editor-fields-body'); 
+  const mob = document.getElementById('mobile-mini-editor');
+  
+  if(!b) return
+
+  // 1. Ensure the main desktop toolbar structure exists
   if(!b.querySelector('.editor-toolbar')){ 
     b.innerHTML=`<div class="editor-toolbar"><div class="editor-sel-wrap" id="f-sel-box"></div><div class="editor-prop-wrap" id="editor-properties-body"></div></div>`; 
     selFieldEditor = createSearchSelect(document.getElementById('f-sel-box'), [
@@ -520,13 +593,16 @@ function renderTools() {
     ], 'Select...', (v)=>{ if(v){activeFieldKey=v;renderTools()} }); 
     selFieldEditor.setValue(activeFieldKey) 
   }
+
   const p = document.getElementById('editor-properties-body')
+  let propsHtml = '';
   
+  // 2. Generate HTML based on activeFieldKey
   if (activeFieldKey === 'templates') {
     const ts = getLocalTemplates()
     const isDefaultUsed = cfg.templateUrl === DEFAULT_CONFIG.templateUrl
     
-    p.innerHTML = `
+    propsHtml = `
       <div class="prop-section-title" style="margin-top:0;">Background Templates</div>
       <div style="margin-bottom:15px;">
         <button class="btn btn-ghost" style="width:100%; height:36px; border:1px dashed var(--border); font-size:12px;" onclick="document.getElementById('tpl-upload').click()">
@@ -536,14 +612,10 @@ function renderTools() {
       </div>
       
       <div class="tpl-grid">
-        <!-- Default -->
         <div class="tpl-card ${isDefaultUsed?'active':''}">
            <div class="tpl-thumb" style="background-image:url('${DEFAULT_CONFIG.templateUrl}')" onclick="applyLocalTemplate('${DEFAULT_CONFIG.templateUrl}')"></div>
-           <div class="tpl-footer">
-             <span class="tpl-tag">Default</span>
-           </div>
+           <div class="tpl-footer"><span class="tpl-tag">Default</span></div>
         </div>
-        
         ${ts.map(t => {
           const isActive = cfg.templateUrl === t.url
           return `
@@ -555,56 +627,145 @@ function renderTools() {
                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                  </button>
                </div>
-            </div>
-          `
+            </div>`
         }).join('')}
       </div>
-    `
-    return
+    `;
+  } else {
+    const f = cfg[activeFieldKey]
+    updateCoordsLabel(f.x, f.y)
+
+    const visibilityToggle = `
+      <div class="prop-item" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+          <div class="prop-label" style="font-weight:700; color:var(--text-2);">Field Visible</div>
+          <label class="switch-mini">
+            <input type="checkbox" ${f.enabled!==false?'checked':''} onchange="cfg.${activeFieldKey}.enabled=this.checked;saveConfig();renderBadge();" />
+            <span class="slider-mini"></span>
+          </label>
+        </div>
+      </div>
+    `;
+
+    if(activeFieldKey==='qr' || activeFieldKey==='profile') {
+      propsHtml = visibilityToggle + `
+        <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value, cfg.${activeFieldKey}.y);saveConfig();renderBadge()" /></div>
+        <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x, +this.value);saveConfig();renderBadge()" /></div>
+        <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.size}" oninput="cfg.${activeFieldKey}.size=+this.value;saveConfig();renderBadge()" /></div>
+      `
+    } else {
+      propsHtml = visibilityToggle + `
+        <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value, cfg.${activeFieldKey}.y);saveConfig();renderBadge()" /></div>
+        <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x, +this.value);saveConfig();renderBadge()" /></div>
+        <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.fontSize}" oninput="cfg.${activeFieldKey}.fontSize=+this.value;saveConfig();renderBadge()" /></div>
+        <div class="prop-item"><div class="prop-label">Max Width</div><input type="number" value="${f.maxWidth||800}" oninput="cfg.${activeFieldKey}.maxWidth=+this.value;saveConfig();renderBadge()" /></div>
+        <div class="prop-item"><div class="prop-label">Align</div>
+          <select class="input" onchange="cfg.${activeFieldKey}.textAlign=this.value;saveConfig();renderBadge()">
+            <option value="left" ${f.textAlign==='left'?'selected':''}>Left</option>
+            <option value="center" ${f.textAlign==='center'?'selected':''}>Center</option>
+            <option value="right" ${f.textAlign==='right'?'selected':''}>Right</option>
+          </select>
+        </div>
+        <div class="prop-item"><div class="prop-label">Color</div><input type="color" value="${f.color}" onchange="cfg.${activeFieldKey}.color=this.value;saveConfig();renderBadge()" /></div>
+      `
+    }
   }
 
-  const f = cfg[activeFieldKey]
-  
-  updateCoordsLabel(f.x, f.y)
+  // 3. Inject into desktop panel
+  if (p) p.innerHTML = propsHtml;
 
-  const visibilityToggle = `
-    <div class="prop-item" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-        <div class="prop-label" style="font-weight:700; color:var(--text-2);">Field Visible</div>
-        <label class="switch-mini">
-          <input type="checkbox" ${f.enabled!==false?'checked':''} onchange="cfg.${activeFieldKey}.enabled=this.checked;saveConfig();renderBadge()" />
-          <span class="slider-mini"></span>
-        </label>
-      </div>
-    </div>
-  `;
+  // 4. Sync with mobile mini-editor if visible
+  if (mob) {
+    const FIELDS = [
+      {value:'name',label:'Name', icon:'N'},
+      {value:'role',label:'Role', icon:'R'},
+      {value:'district',label:'District', icon:'D'},
+      {value:'church',label:'Church', icon:'C'},
+      {value:'qr',label:'QR', icon:'QR'},
+      {value:'profile',label:'Photo', icon:'P'},
+      {value:'templates',label:'Bkgd', icon:'T'}
+    ]
 
-  if(activeFieldKey==='qr') {
-    p.innerHTML = visibilityToggle + `
-      <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.qr.x=+this.value;updateCoordsLabel(+this.value, cfg.qr.y);saveConfig();renderBadge()" /></div>
-      <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.qr.y=+this.value;updateCoordsLabel(cfg.qr.x, +this.value);saveConfig();renderBadge()" /></div>
-      <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.size}" oninput="cfg.qr.size=+this.value;saveConfig();renderBadge()" /></div>
-    `
-  } else if (activeFieldKey==='profile') {
-    p.innerHTML = visibilityToggle + `
-      <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.profile.x=+this.value;updateCoordsLabel(+this.value, cfg.profile.y);saveConfig();renderBadge()" /></div>
-      <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.profile.y=+this.value;updateCoordsLabel(cfg.profile.x, +this.value);saveConfig();renderBadge()" /></div>
-      <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.size}" oninput="cfg.profile.size=+this.value;saveConfig();renderBadge()" /></div>
-    `
-  } else {
-    p.innerHTML = visibilityToggle + `
-      <div class="prop-item"><div class="prop-label">X</div><input type="number" value="${f.x}" oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value, cfg.${activeFieldKey}.y);saveConfig();renderBadge()" /></div>
-      <div class="prop-item"><div class="prop-label">Y</div><input type="number" value="${f.y}" oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x, +this.value);saveConfig();renderBadge()" /></div>
-      <div class="prop-item"><div class="prop-label">Size</div><input type="number" value="${f.fontSize}" oninput="cfg.${activeFieldKey}.fontSize=+this.value;saveConfig();renderBadge()" /></div>
-      <div class="prop-item"><div class="prop-label">Max Width</div><input type="number" value="${f.maxWidth||800}" oninput="cfg.${activeFieldKey}.maxWidth=+this.value;saveConfig();renderBadge()" /></div>
-      <div class="prop-item"><div class="prop-label">Align</div>
-        <select class="input" style="height:32px; padding:0 8px; font-size:12px;" onchange="cfg.${activeFieldKey}.textAlign=this.value;saveConfig();renderBadge()">
-          <option value="left" ${f.textAlign==='left'?'selected':''}>Left</option>
-          <option value="center" ${f.textAlign==='center'?'selected':''}>Center</option>
-          <option value="right" ${f.textAlign==='right'?'selected':''}>Right</option>
-        </select>
+    const chipBar = FIELDS.map(f => `
+      <button 
+        class="qe-chip ${activeFieldKey === f.value ? 'active' : ''}" 
+        onclick="activeFieldKey='${f.value}';renderTools();">
+        ${f.label}
+      </button>`
+    ).join('')
+
+    let compactBody = ''
+
+    if (activeFieldKey === 'templates') {
+      // Show a simple upload button in mobile mode
+      compactBody = `
+        <div class="qe-templates-note">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Manage templates on the <strong>Editor</strong> tab</span>
+        </div>`
+    } else {
+      const fld = cfg[activeFieldKey]
+      const isTextFld = !['qr','profile'].includes(activeFieldKey)
+
+      const toggleRow = `
+        <div class="qe-toggle-row">
+          <span class="qe-toggle-label">Visible</span>
+          <label class="switch-mini">
+            <input type="checkbox" ${fld.enabled!==false?'checked':''} 
+              onchange="cfg.${activeFieldKey}.enabled=this.checked;saveConfig();renderBadge();"/>
+            <span class="slider-mini"></span>
+          </label>
+        </div>`
+
+      const posGrid = `
+        <div class="qe-grid">
+          <div class="qe-cell">
+            <label class="qe-label">X</label>
+            <input class="qe-input" type="number" value="${fld.x}" 
+              oninput="cfg.${activeFieldKey}.x=+this.value;updateCoordsLabel(+this.value,cfg.${activeFieldKey}.y);saveConfig();renderBadge()"/>
+          </div>
+          <div class="qe-cell">
+            <label class="qe-label">Y</label>
+            <input class="qe-input" type="number" value="${fld.y}"
+              oninput="cfg.${activeFieldKey}.y=+this.value;updateCoordsLabel(cfg.${activeFieldKey}.x,+this.value);saveConfig();renderBadge()"/>
+          </div>
+          <div class="qe-cell">
+            <label class="qe-label">Size</label>
+            <input class="qe-input" type="number" value="${isTextFld ? fld.fontSize : fld.size}"
+              oninput="cfg.${activeFieldKey}.${isTextFld?'fontSize':'size'}=+this.value;saveConfig();renderBadge()"/>
+          </div>
+          ${isTextFld ? `
+          <div class="qe-cell">
+            <label class="qe-label">Max W</label>
+            <input class="qe-input" type="number" value="${fld.maxWidth||800}"
+              oninput="cfg.${activeFieldKey}.maxWidth=+this.value;saveConfig();renderBadge()"/>
+          </div>` : ''}
+        </div>`
+
+      const extraRow = isTextFld ? `
+        <div class="qe-extra-row">
+          <div class="qe-seg-grp">
+            ${['left','center','right'].map(a => `
+              <button class="qe-seg ${fld.textAlign===a?'active':''}"
+                onclick="cfg.${activeFieldKey}.textAlign='${a}';saveConfig();renderBadge();renderTools()">
+                ${a.charAt(0).toUpperCase()+a.slice(1)}
+              </button>`).join('')}
+          </div>
+          <div class="qe-color-wrap">
+            
+            <input type="color" value="${fld.color}" style="height:32px;width:48px;padding:2px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;"
+              onchange="cfg.${activeFieldKey}.color=this.value;saveConfig();renderBadge()"/>
+          </div>
+        </div>` : ''
+
+      compactBody = toggleRow + posGrid + extraRow
+    }
+
+    mob.innerHTML = `
+      <div class="quick-editor-wrap">
+        <div class="qe-chip-bar">${chipBar}</div>
+        <div class="qe-body">${compactBody}</div>
       </div>
-      <div class="prop-item"><div class="prop-label">Color</div><input type="color" value="${f.color}" onchange="cfg.${activeFieldKey}.color=this.value;saveConfig();renderBadge()" /></div>
     `
   }
 }
