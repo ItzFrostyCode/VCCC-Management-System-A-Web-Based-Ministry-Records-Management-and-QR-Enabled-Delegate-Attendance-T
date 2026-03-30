@@ -2,7 +2,7 @@ import { next } from '@vercel/edge';
 
 export const config = {
   // Apply middleware to all standard UI routes
-  matcher: ['/dashboard.html', '/pastors.html', '/church.html', '/district.html', '/conferences.html', '/badges.html', '/scanner.html', '/admin_logs.html', '/disciples.html', '/assignment.html', '/index.html', '/'],
+  matcher: ['/pastors.html', '/church.html', '/district.html', '/conferences.html', '/badges.html', '/scanner.html', '/admin_logs.html', '/disciples.html', '/assignment.html'],
 };
 
 export default function middleware(request) {
