@@ -1,9 +1,4 @@
 {
   "cleanUrls": true,
-  "routes": [
-    {
-      "src": "/(.*\\.html|/)",
-      "middlewarePath": "middleware.js"
-    }
-  ]
+  "trailingSlash": false
 }
