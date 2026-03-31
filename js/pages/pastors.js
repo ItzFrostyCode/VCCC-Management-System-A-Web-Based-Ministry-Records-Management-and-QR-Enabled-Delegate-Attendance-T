@@ -14,7 +14,8 @@ let currentPage = 1
 const ITEMS_PER_PAGE = 10
 
 let selFilterDist, selFilterChurch
-let selModalDist, selModalChurch
+let selModalParent = null
+let _selectedParentId = null
 let districtsData = []
 let churchesData  = []
 
@@ -29,6 +30,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     initFilters()
     initEventListeners()
     renderTable()
+
+    // Pre-open add modal from "Add Fruit" link in pastor profile
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('add') === '1' && urlParams.get('parent_id')) {
+      const parentId = urlParams.get('parent_id')
+      const parentName = decodeURIComponent(urlParams.get('parent_name') || '')
+      openModal()
+      // Pre-select parent after modal opens
+      setTimeout(() => {
+        _selectedParentId = parentId
+        if (selModalParent) selModalParent.setValue(parentId, parentName)
+      }, 50)
+    }
+
   } catch (err) {
     console.error('Page init failed:', err)
     const body = document.getElementById('table-body')
@@ -96,7 +111,96 @@ function initFilters() {
     () => applyFilters()
   )
 
-  // selModalDist and selModalChurch removed - District/Church assignment is now handled in Assignments page
+  // Parent pastor select (inside modal)
+  initParentSelect()
+  initRecordStatusToggle()
+}
+
+function initParentSelect() {
+  const container = document.getElementById('parent-pastor-select-container')
+  if (!container) return
+
+  const options = [
+    { value: '', label: 'None (root / unknown origin)' },
+    ...allPastors.map(p => ({
+      value: p.id,
+      label: p.full_name + (p.record_status === 'draft' ? ' [Draft]' : '')
+    }))
+  ]
+
+  selModalParent = createSearchSelect(
+    container,
+    options,
+    'None (root / unknown origin)',
+    (val, label) => {
+      _selectedParentId = val || null
+      // Show "+ Draft parent" only when user typed something not found
+      const btn = document.getElementById('btn-create-draft-parent')
+      if (btn) btn.setAttribute('data-typed-name', label || '')
+    }
+  )
+
+  // "+ Draft parent" button handler
+  const btnDraftParent = document.getElementById('btn-create-draft-parent')
+  if (btnDraftParent) {
+    btnDraftParent.addEventListener('click', async () => {
+      const typedName = btnDraftParent.getAttribute('data-typed-name') || ''
+      const name = prompt(`Create a draft parent pastor with name:`, typedName)
+      if (!name || !name.trim()) return
+
+      btnDraftParent.disabled = true
+      btnDraftParent.textContent = 'Creating...'
+      try {
+        const draft = await pastorService.createDraft(name.trim())
+        // Add to options and select it
+        allPastors.push({ ...draft, record_status: 'draft' })
+        selModalParent.setOptions([
+          { value: '', label: 'None (root / unknown origin)' },
+          ...allPastors.map(p => ({
+            value: p.id,
+            label: p.full_name + (p.record_status === 'draft' ? ' [Draft]' : '')
+          }))
+        ])
+        selModalParent.setValue(draft.id, `${draft.full_name} [Draft]`)
+        _selectedParentId = draft.id
+
+        const preview = document.getElementById('parent-draft-preview')
+        if (preview) {
+          preview.style.display = 'block'
+          preview.textContent = `Draft parent "${draft.full_name}" created and linked. You can complete their record later.`
+        }
+      } catch (err) {
+        alert('Failed to create draft parent: ' + err.message)
+      } finally {
+        btnDraftParent.disabled = false
+        btnDraftParent.textContent = '+ Draft parent'
+      }
+    })
+  }
+}
+
+function initRecordStatusToggle() {
+  const radios = document.querySelectorAll('input[name="record-status"]')
+  radios.forEach(r => r.addEventListener('change', updateRecordStatusUI))
+  updateRecordStatusUI()
+}
+
+function updateRecordStatusUI() {
+  const isDraft = document.getElementById('rec-draft')?.checked
+  const hint = document.getElementById('draft-hint')
+  const activeLbl = document.getElementById('rec-status-active-lbl')
+  const draftLbl = document.getElementById('rec-status-draft-lbl')
+
+  if (hint) hint.style.display = isDraft ? 'block' : 'none'
+  if (activeLbl) {
+    activeLbl.style.border = isDraft ? '1.5px solid var(--border)' : '1.5px solid var(--red)'
+    activeLbl.style.background = isDraft ? 'transparent' : 'var(--red-light)'
+    activeLbl.style.color = isDraft ? 'var(--text-2)' : 'var(--red)'
+  }
+  if (draftLbl) {
+    draftLbl.style.border = isDraft ? '1.5px solid var(--text-2)' : '1.5px solid var(--border)'
+    draftLbl.style.color = isDraft ? 'var(--text)' : 'var(--text-2)'
+  }
 }
 
 function initEventListeners() {
@@ -361,8 +465,6 @@ function openModal(id = null) {
 
     document.getElementById('item-name').value = p.full_name || ''
     document.getElementById('wife-name').value = p.wife_name || ''
-    // Cannot set value to file inputs due to browser security, so leave empty. 
-    // We already have their current URLs in the database.
     document.getElementById('pastor-image').value = ''
     document.getElementById('wife-image').value = ''
     document.getElementById('contact-number').value = p.contact_number || ''
@@ -370,6 +472,22 @@ function openModal(id = null) {
     document.getElementById('wife-birthdate').value = p.wife_birthdate || ''
     document.getElementById('pastoring-start').value = p.pastoring_start_date || ''
     document.getElementById('status-code').value = p.current_status_code || 'undeployed'
+
+    // Record status
+    const isD = (p.record_status || 'active') === 'draft'
+    document.getElementById('rec-draft').checked = isD
+    document.getElementById('rec-active').checked = !isD
+    updateRecordStatusUI()
+
+    // Parent pastor
+    _selectedParentId = p.parent_id || null
+    if (selModalParent) {
+      selModalParent.setValue(
+        p.parent_id || '',
+        p.parent_id ? (p.parent_name || 'Unknown') : 'None (root / unknown origin)'
+      )
+    }
+    document.getElementById('parent-draft-preview').style.display = 'none'
 
     // Show removal options if images exist
     const pRemoveWrap = document.getElementById('p-img-remove-wrap')
@@ -399,6 +517,16 @@ function openModal(id = null) {
     document.getElementById('wife-birthdate').value = ''
     document.getElementById('pastoring-start').value = ''
     document.getElementById('status-code').value = 'undeployed'
+
+    // Reset record status to active
+    document.getElementById('rec-active').checked = true
+    document.getElementById('rec-draft').checked = false
+    updateRecordStatusUI()
+
+    // Reset parent
+    _selectedParentId = null
+    if (selModalParent) selModalParent.reset()
+    document.getElementById('parent-draft-preview').style.display = 'none'
 
     document.getElementById('p-img-remove-wrap').style.display = 'none'
     document.getElementById('w-img-remove-wrap').style.display = 'none'
@@ -484,7 +612,9 @@ async function saveItem() {
       birthdate: bdate || null,
       wife_birthdate: wdate || null,
       pastoring_start_date: start || null,
-      current_status_code: status
+      current_status_code: status,
+      record_status: document.querySelector('input[name="record-status"]:checked')?.value || 'active',
+      parent_id: _selectedParentId || null
     }
 
     const isUpdate = id && id !== 'null' && id !== 'undefined'
@@ -510,8 +640,23 @@ function confirmDelete(id) {
   const p = allPastors.find(x => String(x.id) === String(id))
   if (!p) return
 
+  // If pastor has children, block immediately with a friendly message
+  if (p.child_count && Number(p.child_count) > 0) {
+    const count = Number(p.child_count)
+    const msg = `Cannot delete ${p.full_name}: they have ${count} fruit${count > 1 ? 's' : ''}/disciple${count > 1 ? 's' : ''} linked. Unlink or reassign them first.`
+    document.getElementById('delete-msg').textContent = msg
+    const modal = document.getElementById('modal-delete')
+    modal.classList.add('open')
+    // Hide the confirm button — this is info-only
+    const confirmBtn = document.getElementById('btn-delete-confirm')
+    if (confirmBtn) confirmBtn.style.display = 'none'
+    return
+  }
+
   document.getElementById('delete-msg').textContent =
     `Are you sure you want to remove Pastor ${p.full_name}?`
+  const confirmBtn = document.getElementById('btn-delete-confirm')
+  if (confirmBtn) confirmBtn.style.display = ''
 
   const modal = document.getElementById('modal-delete')
   modal.classList.add('open')
@@ -523,7 +668,7 @@ function confirmDelete(id) {
       applyFilters()
       modal.classList.remove('open')
     } catch (err) {
-      alert('Error removing pastor: ' + err.message)
+      alert(err.message)
     }
   }
 }

@@ -33,18 +33,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadData(id) {
   try {
-    const [pastor, history, disciples, ranks, trainings] = await Promise.all([
+    const [pastor, history, disciples, ranks, trainings, children, pioneered] = await Promise.all([
       pastorService.fetchById(id),
       timelineService.fetchPastorTimeline(id),
       discipleService.fetchByPastor(id),
       rankService.fetchByPastor(id),
-      trainingService.fetchByPastor(id)
+      trainingService.fetchByPastor(id),
+      pastorService.getChildren(id),
+      pastorService.fetchPioneeredChurches(id)
     ])
 
     renderProfile(pastor)
-    renderStats(pastor, history, disciples, ranks, trainings)
+    renderStats(pastor, history, disciples, ranks, trainings, pioneered)
     renderMasterTimeline(history)
     renderDisciples(disciples)
+    renderLineage(pastor, children)
+    renderFoundations(pioneered)
 
     document.getElementById('loading-state').style.display = 'none'
     document.getElementById('content-area').style.display = 'block'
@@ -91,12 +95,15 @@ function renderProfile(p) {
   }
   
   const st = statusMap[p.current_status_code] || { label: p.current_status_code, color: '#757575', bg: '#f5f5f5' }
-  document.getElementById('p-status').innerHTML = `<span class="status-badge" style="background:${st.bg}; color:${st.color};">${st.label}</span>`
+  document.getElementById('p-status').innerHTML = `<span class="status-badge" style="background:${st.bg}; color:${st.color}; font-size:12px; font-weight:700;">${st.label}</span>`
   
-  document.getElementById('p-phone').textContent = p.contact_number || 'No contact provided'
+  // Append text node after the SVG icon in the pill spans
+  const phoneEl = document.getElementById('p-phone')
+  phoneEl.appendChild(document.createTextNode(p.contact_number || 'No contact'))
   
   const pAge = p.birthdate ? ` (${calculateAge(p.birthdate)} yrs)` : ''
-  document.getElementById('p-bday').textContent = p.birthdate ? 'Born ' + formatDate(p.birthdate) + pAge : 'Birthdate unknown'
+  const bdayEl = document.getElementById('p-bday')
+  bdayEl.appendChild(document.createTextNode(p.birthdate ? formatDate(p.birthdate) + pAge : 'Birthdate unknown'))
   
   let notesHtml = p.notes || ''
   if (p.wife_name) {
@@ -107,12 +114,13 @@ function renderProfile(p) {
   document.getElementById('p-notes').innerHTML = notesHtml
 }
 
-function renderStats(p, history, disciples, ranks, trainings) {
+function renderStats(p, history, disciples, ranks, trainings, pioneered) {
   // Years of Service
   if (p.pastoring_start_date) {
     const start = new Date(p.pastoring_start_date)
     const now = new Date()
-    const diff = now.getFullYear() - start.getFullYear()
+    let diff = now.getFullYear() - start.getFullYear()
+    if (diff < 0) diff = 0
     document.getElementById('stat-years').textContent = diff + (diff === 1 ? ' Year' : ' Years')
   }
 
@@ -122,6 +130,11 @@ function renderStats(p, history, disciples, ranks, trainings) {
 
   // Disciples
   document.getElementById('stat-disciples').textContent = disciples.length
+
+  // Pioneered
+  if (document.getElementById('stat-pioneered')) {
+    document.getElementById('stat-pioneered').textContent = (pioneered ? pioneered.length : 0)
+  }
 
   // Current Rank
   if (ranks && ranks.length > 0) {
@@ -182,6 +195,9 @@ function renderMasterTimeline(timeline) {
     else if (event.type === 'TRAINING_LOG') typePill = `<span class="pill" style="font-size:11px; background:#e8f5e9; color:#2e7d32; border:none;">Training</span>`;
     else if (event.type === 'TRAINING_FAILED') typePill = `<span class="pill" style="font-size:11px; background:#ffebee; color:#c62828; border:none;">Blocker</span>`;
     else if (event.type === 'ASSIGNMENT_END') typePill = `<span class="pill" style="font-size:11px; background:#f5f5f5; color:#757575; border:none;">Conclusion</span>`;
+    else if (event.type === 'PIONEERED_CHURCH') typePill = `<span class="pill" style="font-size:11px; background:#e0f2f1; color:#00796b; border:none;">Foundation</span>`;
+
+    if (event.type === 'PIONEERED_CHURCH') { dotColor = '#00796b'; dotBorder = '#00796b'; }
 
     return `
       <div class="timeline-item ${isActiveAss ? 'active' : ''}">
@@ -411,6 +427,133 @@ function renderDisciples(disciples) {
       ${esc(d.full_name)}
     </div>
   `).join('')
+}
+
+// ─── Zone 3: Foundations ───────────────────────────────────────────────────
+function renderFoundations(churches) {
+  const section = document.getElementById('foundations-section')
+  const container = document.getElementById('foundations-list')
+  if (!section || !container) return
+
+  if (!churches || churches.length === 0) {
+    section.style.display = 'none'
+    return
+  }
+
+  section.style.display = 'block'
+  container.innerHTML = churches.map(c => `
+    <a href="church-view.html?id=${esc(String(c.id))}" class="foundation-card">
+      <div class="foundation-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:14px; font-weight:600; color:var(--text);">${esc(c.church_name)}</div>
+        <div style="font-size:12px; color:var(--text-3);">${esc(c.district_name || 'No District')}</div>
+      </div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--text-3);"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+  `).join('')
+}
+
+// ─── Zone 3: Ministry Lineage ─────────────────────────────────────────────────
+function renderLineage(pastor, children) {
+  const container = document.getElementById('lineage-tree')
+  if (!container) return
+
+  const isDraft = (pastor.record_status || 'active') === 'draft'
+
+  let html = ''
+
+  // 1. Mentor (Parent)
+  html += `
+    <div class="lineage-section-label">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Mentor / Spiritual Father
+    </div>
+  `
+
+  if (pastor.parent_id && pastor.parent_name) {
+    html += `
+      <a href="pastor-view.html?id=${esc(String(pastor.parent_id))}" class="lineage-node lineage-parent">
+        <div class="lineage-avatar">${pastor.parent_name.charAt(0)}</div>
+        <div class="lineage-node-info">
+          <div class="lineage-node-name">${esc(pastor.parent_name)}</div>
+          <div class="lineage-node-sub">Source of Mentorship</div>
+        </div>
+        <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>`
+  } else {
+    html += `
+      <div class="lineage-node lineage-empty">
+        <div class="lineage-avatar" style="background:var(--bg-body); color:var(--text-3);"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2v20M2 12h20"/></svg></div>
+        <div class="lineage-node-info">
+          <div class="lineage-node-name" style="color:var(--text-3);">Origin Unknown</div>
+          <div class="lineage-node-sub">No recorded mentor</div>
+        </div>
+      </div>`
+  }
+
+  // 2. Current Profile
+  html += `
+    <div class="lineage-section-label" style="margin-top:24px;">Current Profile</div>
+    <div class="lineage-node" style="border-color:var(--red); background:#fff5f5; cursor:default;">
+      <div class="lineage-avatar" style="background:var(--red); color:white;">${pastor.full_name.charAt(0)}</div>
+      <div class="lineage-node-info">
+        <div class="lineage-node-name" style="color:var(--red); font-weight:800;">${esc(pastor.full_name)}</div>
+        <div class="lineage-node-sub">${esc(pastor.current_church || 'Unassigned')} · ${esc(pastor.rank_code || 'No Rank')}</div>
+      </div>
+      ${isDraft ? '<span class="lineage-draft-badge" style="margin-left:auto;">Draft</span>' : ''}
+    </div>
+  `
+
+  // 3. Fruits (Children)
+  html += `
+    <div class="lineage-section-label" style="margin-top:24px; justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+        Spiritual Fruit / Disciples (${children ? children.length : 0})
+      </div>
+      <a href="pastors.html?add=1&parent_id=${esc(String(pastor.id))}&parent_name=${encodeURIComponent(pastor.full_name)}" 
+         class="btn" style="height:26px; padding:0 10px; font-size:11px; font-weight:700; background:var(--bg-body); color:var(--text); border:1px solid var(--border);">
+        + Add Fruit
+      </a>
+    </div>
+  `
+
+  if (children && children.length > 0) {
+    html += `
+      <div class="lineage-tree-wrapper">
+        <div class="lineage-tree-line"></div>
+        ${children.map(ch => {
+          const chDraft = (ch.record_status || 'active') === 'draft'
+          return `
+            <div class="lineage-tree-item">
+              <a href="pastor-view.html?id=${esc(String(ch.id))}" class="lineage-node lineage-child${chDraft ? ' lineage-draft' : ''}">
+                <div class="lineage-avatar" style="${chDraft ? 'opacity:0.5;' : ''}">${ch.full_name.charAt(0)}</div>
+                <div class="lineage-node-info">
+                  <div class="lineage-node-name">
+                    ${esc(ch.full_name)}
+                    ${chDraft ? '<span class="lineage-draft-badge">Draft</span>' : ''}
+                  </div>
+                  <div class="lineage-node-sub">${esc(ch.church_name || 'Unassigned')}</div>
+                </div>
+                <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>
+            </div>`
+        }).join('')}
+      </div>`
+  } else {
+    html += `
+      <div class="lineage-node lineage-empty">
+        <div class="lineage-avatar" style="background:var(--bg-body); color:var(--text-3);"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+        <div class="lineage-node-info">
+          <div class="lineage-node-name" style="color:var(--text-3);">No disciples yet</div>
+          <div class="lineage-node-sub">This pastor has no recorded spiritual fruit</div>
+        </div>
+      </div>`
+  }
+
+  container.innerHTML = html
 }
 
 function openImageViewer(url, title) {

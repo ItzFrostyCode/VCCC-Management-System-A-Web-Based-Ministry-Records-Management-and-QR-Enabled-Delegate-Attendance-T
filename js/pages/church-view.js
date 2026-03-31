@@ -40,10 +40,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadData(id) {
   try {
-    const [church, history, timeline] = await Promise.all([
+    const [church, history, timeline, offspring] = await Promise.all([
       churchService.fetchById(id),
       assignmentService.fetchByChurch(id),
-      timelineService.fetchChurchTimeline(id)
+      timelineService.fetchChurchTimeline(id),
+      churchService.fetchOffspring(id)
     ])
 
     // Fetch district info for leader name
@@ -57,6 +58,7 @@ async function loadData(id) {
     renderStats(church, history)
     renderTimeline(timeline)
     renderDistrictContext(district)
+    renderChurchLineage(church, offspring)
 
     document.getElementById('loading-state').style.display = 'none'
     document.getElementById('content-area').style.display = 'block'
@@ -155,6 +157,92 @@ function renderDistrictContext(d) {
   document.getElementById('d-name').textContent = d.district_name
   document.getElementById('d-leader').querySelector('span').textContent = d.leader_name || 'No leader assigned'
   document.getElementById('d-notes').textContent = d.notes || ''
+}
+
+function renderChurchLineage(church, offspring) {
+  const container = document.getElementById('church-lineage-tree')
+  if (!container) return
+
+  let html = ''
+
+  // 1. Mother Church (Parent)
+  html += `
+    <div class="lineage-section-label">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Mother Church
+    </div>
+  `
+  if (church.mother_church_id) {
+    html += `
+      <a href="church-view.html?id=${church.mother_church_id}" class="lineage-node lineage-parent">
+        <div class="lineage-avatar">${esc(church.mother_name.charAt(0))}</div>
+        <div class="lineage-node-info">
+          <div class="lineage-node-name">${esc(church.mother_name)}</div>
+          <div class="lineage-node-sub">Source / Planting Church</div>
+        </div>
+        <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    `
+  } else {
+    html += `
+      <div class="lineage-node lineage-empty">
+        <div class="lineage-avatar" style="background:var(--bg-body); color:var(--text-3);"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="lineage-node-info">
+          <div class="lineage-node-name" style="color:var(--text-3);">Independent / Legacy</div>
+          <div class="lineage-node-sub">No recorded mother church</div>
+        </div>
+      </div>
+    `
+  }
+
+  // 2. Current Church (Central)
+  html += `
+    <div class="lineage-section-label" style="margin-top:24px;">Current Profile</div>
+    <div class="lineage-node" style="border-color:var(--red); background:#fff5f5; cursor:default;">
+      <div class="lineage-avatar" style="background:var(--red); color:white;">${esc(church.church_name.charAt(0))}</div>
+      <div class="lineage-node-info">
+        <div class="lineage-node-name" style="color:var(--red); font-weight:800;">${esc(church.church_name)}</div>
+        <div class="lineage-node-sub">Pioneered by ${esc(church.pioneer_name || 'Unknown')}</div>
+      </div>
+    </div>
+  `
+
+  // 3. Daughter Churches (Children)
+  html += `
+    <div class="lineage-section-label" style="margin-top:24px;">Daughter Churches (${offspring.length})</div>
+  `
+
+  if (offspring.length > 0) {
+    html += `
+      <div class="lineage-tree-wrapper">
+        <div class="lineage-tree-line"></div>
+        ${offspring.map(child => `
+          <div class="lineage-tree-item">
+            <a href="church-view.html?id=${child.id}" class="lineage-node lineage-child">
+              <div class="lineage-avatar">${esc(child.church_name.charAt(0))}</div>
+              <div class="lineage-node-info">
+                <div class="lineage-node-name">${esc(child.church_name)}</div>
+                <div class="lineage-node-sub">${esc(child.district_name)} District</div>
+              </div>
+              <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        `).join('')}
+      </div>
+    `
+  } else {
+    html += `
+      <div class="lineage-node lineage-empty">
+        <div class="lineage-avatar" style="background:var(--bg-body); color:var(--text-3);"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+        <div class="lineage-node-info">
+          <div class="lineage-node-name" style="color:var(--text-3);">No Daughters Recorded</div>
+          <div class="lineage-node-sub">This church hasn't pioneered other locations yet</div>
+        </div>
+      </div>
+    `
+  }
+
+  container.innerHTML = html
 }
 
 function renderTimeline(timeline) {

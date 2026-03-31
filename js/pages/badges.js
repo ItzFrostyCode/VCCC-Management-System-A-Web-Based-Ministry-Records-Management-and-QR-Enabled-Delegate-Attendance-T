@@ -436,20 +436,26 @@ async function renderBadge() {
   wrap.innerHTML = '<div style="font-size:13px;color:var(--text-3);">Rendering...</div>'
   try {
     if (document.fonts) await document.fonts.ready;
-    const isMobile = window.innerWidth <= 640;
-    const isTablet = window.innerWidth > 640 && window.innerWidth <= 1100;
-    let maxH = '380px';
-    if (isMobile) maxH = '500px';
-    else if (isTablet) maxH = '320px';
-
+    
     const canvas = document.createElement('canvas'); 
-    canvas.width = cfg.canvasWidth; canvas.height = cfg.canvasHeight; 
-    canvas.style.maxWidth = '100%'; canvas.style.maxHeight = maxH; 
-    canvas.style.height='auto'; canvas.style.display='block'; canvas.style.margin='0 auto'
+    canvas.width = cfg.canvasWidth; 
+    canvas.height = cfg.canvasHeight; 
+    
+    // Responsive styling for the preview canvas
+    canvas.style.maxWidth = '100%'; 
+    canvas.style.height = 'auto'; 
+    canvas.style.display = 'block'; 
+    canvas.style.margin = '0 auto';
+    canvas.style.boxShadow = '0 10px 40px rgba(0,0,0,0.2)';
+    
     await drawBadge(canvas, selectedDelegate); 
-    wrap.innerHTML = ''; wrap.appendChild(canvas); 
+    wrap.innerHTML = ''; 
+    wrap.appendChild(canvas); 
     badgeCanvas = canvas
-  } catch(e) { wrap.innerHTML=`<div style="color:red;font-size:13px;">Error: ${e.message}</div>` }
+  } catch(e) { 
+    console.error('renderBadge failed:', e);
+    wrap.innerHTML=`<div style="color:red;font-size:13px;">Error: ${e.message}</div>` 
+  }
 }
 
 async function drawBadge(canvas, d, preLoadedTemplate = null) {

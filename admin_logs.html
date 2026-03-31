@@ -57,10 +57,6 @@
           <span class="page-header-count" id="count-label">0 logs</span>
         </div>
         <div class="page-header-actions">
-           <button class="btn btn-primary btn-sm" id="btn-create-user" style="margin-right:8px;">
-             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a8 8 0 0 1 14.5-5M20 18v-4M18 16h4"/></svg>
-             Create User
-           </button>
            <button class="btn btn-secondary btn-sm" id="btn-refresh">Refresh</button>
         </div>
       </div>
@@ -86,54 +82,6 @@
             <span id="page-info" style="font-size: 13px; color: var(--text-3);"></span>
             <button class="btn btn-secondary btn-sm" id="btn-next">Next</button>
           </div>
-        </div>
-      </div>
-
-      <!-- Create User Modal -->
-      <div class="modal-overlay" id="create-user-modal">
-        <div class="modal-box" style="max-width: 400px;">
-          <div class="modal-head">
-            <h2 class="modal-title">Create Account</h2>
-            <button type="button" class="modal-close" id="btn-close-modal-x">&times;</button>
-          </div>
-          <form id="create-user-form">
-            <div class="modal-body">
-              <div class="form-field">
-                <label class="form-label">Full Name <span class="req">*</span></label>
-                <input type="text" id="user-fullname" class="input" required placeholder="e.g. John Doe">
-              </div>
-              
-              <div class="form-field">
-                <label class="form-label">Username <span class="req">*</span></label>
-                <input type="text" id="user-username" class="input" required placeholder="e.g. jdoe123">
-              </div>
-
-              <div class="form-field">
-                <label class="form-label">Password <span class="req">*</span></label>
-                <input type="password" id="user-password" class="input" required placeholder="Min 6 characters">
-              </div>
-
-              <div class="form-field">
-                <label class="form-label">Role <span class="req">*</span></label>
-                <select id="user-role" class="input" required>
-                  <option value="Staff">Staff</option>
-                  <option value="Scanner">Scanner</option>
-                </select>
-              </div>
-
-              <div class="form-field">
-                <label class="form-label">Scope / Access Level <span class="req">*</span></label>
-                <input type="text" id="user-scope" class="input" required placeholder="e.g. FULL, restricted">
-              </div>
-            </div>
-
-            <div class="modal-foot" style="justify-content: flex-end;">
-              <div style="display:flex; gap:10px;">
-                <button type="button" class="btn btn-ghost" id="btn-close-modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="btn-save-user">Create Account</button>
-              </div>
-            </div>
-          </form>
         </div>
       </div>
     </main>

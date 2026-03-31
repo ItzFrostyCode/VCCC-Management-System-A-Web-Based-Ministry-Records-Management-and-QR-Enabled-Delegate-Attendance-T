@@ -2,8 +2,8 @@ import { db } from '../db.js';
 import { requireAuth } from '../supabase.js';
 import { authService } from '../services/auth.service.js';
 import { churchService } from '../services/church.service.js';
-import { districtService } from '../services/district.service.js';
 import { pastorService } from '../services/pastor.service.js';
+import { districtService } from '../services/district.service.js';
 import { assignmentService } from '../services/assignment.service.js';
 import { discipleService } from '../services/disciple.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
@@ -12,6 +12,7 @@ import { esc, createSearchSelect } from '../utils/helper.js';
 
 let allChurches   = []
 let allDistricts  = []
+let allPastors    = []
 let allPastorAssignments = {} // church_id -> pastor_name  (active only)
 let editingId     = null
 let currentPage   = 1
@@ -20,6 +21,8 @@ const ITEMS_PER_PAGE = 10
 
 // Custom search-select
 let selModalDistrict = null
+let selModalPioneer  = null
+let selModalMother    = null
 let selFilterDistrict = null
 let selFilterScope    = null
 
@@ -70,15 +73,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initData() {
   try {
     console.log('initData: Starting Promise.all...')
-    const [churches, districts, assignments] = await Promise.all([
+    const [churches, districts, assignments, pastors] = await Promise.all([
       churchService.fetchAll(),
       districtService.fetchAll(),
-      assignmentService.fetchAll()
+      assignmentService.fetchAll(),
+      pastorService.fetchAll()
     ])
-    console.log('initData: Promise.all success', { c: !!churches, d: !!districts, a: !!assignments })
+    console.log('initData: Promise.all success', { c: !!churches, d: !!districts, a: !!assignments, p: !!pastors })
 
     allChurches  = churches  || []
     allDistricts = districts || []
+    allPastors   = pastors   || []
 
     // Build active pastor lookup keyed by church_id
     allPastorAssignments = {}
@@ -102,6 +107,24 @@ function initSearchSelect() {
       wrap,
       [{ value: '', label: '-- Select District --' }, ...allDistricts.map(d => ({ value: d.id, label: d.district_name }))],
       '-- Select District --'
+    )
+  }
+
+  const pWrap = document.getElementById('f-pioneer')
+  if (pWrap) {
+    selModalPioneer = createSearchSelect(
+      pWrap,
+      [{ value: '', label: '-- Select Pioneer --' }, ...allPastors.map(p => ({ value: p.id, label: p.full_name }))],
+      '-- Select Pioneer --'
+    )
+  }
+
+  const mWrap = document.getElementById('f-mother')
+  if (mWrap) {
+    selModalMother = createSearchSelect(
+      mWrap,
+      [{ value: '', label: '-- Select Mother Church --' }, ...allChurches.map(c => ({ value: c.id, label: c.church_name }))],
+      '-- Select Mother Church --'
     )
   }
 
@@ -323,9 +346,23 @@ function openModal(church = null) {
 
     // Set district
     if (selModalDistrict) selModalDistrict.setValue(church.district_id || '')
+    // Set pioneer
+    if (selModalPioneer) selModalPioneer.setValue(church.pioneer_pastor_id || '')
+    // Set mother
+    if (selModalMother) {
+      // Filter out self to prevent circular ref
+      const motherOptions = [{ value: '', label: '-- Select Mother Church --' }, ...allChurches.filter(c => c.id !== church.id).map(c => ({ value: c.id, label: c.church_name }))]
+      selModalMother.updateOptions(motherOptions)
+      selModalMother.setValue(church.mother_church_id || '')
+    }
   } else {
     title.textContent = 'Add New Church'
     if (selModalDistrict) selModalDistrict.reset()
+    if (selModalPioneer) selModalPioneer.reset()
+    if (selModalMother) {
+      selModalMother.updateOptions([{ value: '', label: '-- Select Mother Church --' }, ...allChurches.map(c => ({ value: c.id, label: c.church_name }))])
+      selModalMother.reset()
+    }
     const radios = document.getElementsByName('f-type')
     if (radios.length) radios[0].checked = true
   }
@@ -383,6 +420,8 @@ async function handleFormSubmit(e) {
   const scopeEl    = document.querySelector('input[name="f-type"]:checked')
   const scope      = scopeEl ? scopeEl.value : 'local'
   const districtId = selModalDistrict ? selModalDistrict.getValue() : ''
+  const pioneerId  = selModalPioneer ? selModalPioneer.getValue() : ''
+  const motherId   = selModalMother ? selModalMother.getValue() : ''
 
   if (!churchName) { alert('Church name is required.'); return }
 
@@ -392,10 +431,12 @@ async function handleFormSubmit(e) {
   try {
     const payload = {
       church_name:    churchName,
-      church_address: address,
-      church_scope:   scope,
-      district_id:    districtId || null,
-      notes:          notes
+      church_address:    address,
+      church_scope:      scope,
+      district_id:       districtId || null,
+      pioneer_pastor_id: pioneerId || null,
+      mother_church_id:  motherId || null,
+      notes:             notes
     }
     if (id) {
       await churchService.update(id, payload)

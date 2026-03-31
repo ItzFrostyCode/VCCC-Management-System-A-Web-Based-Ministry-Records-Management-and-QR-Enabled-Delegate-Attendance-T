@@ -257,21 +257,43 @@ export const dashboardService = {
 
   // 8. User Activity Logs
   async getUserActivity() {
-    const { data, error } = await db
-      .from('audit_logs')
-      .select(`
-        action, details, timestamp,
-        profiles!audit_logs_user_id_fkey ( full_name )
-      `)
-      .order('timestamp', { ascending: false })
-      .limit(15);
-    
-    if (error) throw error;
-    return data.map(d => ({
-      actor: d.profiles?.full_name || 'System',
-      action: d.action,
-      details: d.details,
-      time: d.timestamp
-    }));
+    try {
+      const { data, error } = await db
+        .from('audit_logs')
+        .select(`
+          action, details, timestamp,
+          profiles ( full_name )
+        `)
+        .order('timestamp', { ascending: false })
+        .limit(15);
+      
+      if (error) {
+        console.warn('Audit logs profile join failed, retrying without join:', error);
+        // Fallback: fetch without profiles
+        const { data: fallbackData, error: fallbackError } = await db
+          .from('audit_logs')
+          .select('action, details, timestamp')
+          .order('timestamp', { ascending: false })
+          .limit(15);
+        
+        if (fallbackError) throw fallbackError;
+        return fallbackData.map(d => ({
+          actor: 'System',
+          action: d.action,
+          details: d.details,
+          time: d.timestamp
+        }));
+      }
+
+      return data.map(d => ({
+        actor: d.profiles?.full_name || 'System',
+        action: d.action,
+        details: d.details,
+        time: d.timestamp
+      }));
+    } catch (err) {
+      console.error('getUserActivity failed:', err);
+      throw err;
+    }
   }
 };

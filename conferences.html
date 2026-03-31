@@ -56,8 +56,17 @@
 
     .form-label { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
     
-    .btn-action-group { display: flex; gap: 6px; }
+    .btn-action-group { display: flex; gap: 6px; flex-wrap: wrap; }
     .btn-action { height: 28px; padding: 0 10px; font-size: 12px; font-weight: 500; border-radius: 6px; display: flex; align-items: center; gap: 4px; }
+
+    @media (max-width: 640px) {
+      .conf-head { padding: 12px; }
+      .conf-title { font-size: 14px; }
+      .conf-meta { font-size: 12px; }
+      .btn-action-group { width: 100%; justify-content: flex-start; margin-top: 4px; }
+      .btn-scan, .btn-report-action { flex: 1; justify-content: center; height: 36px; font-size: 12px; }
+      .btn-icon { width: 36px; height: 36px; }
+    }
 </style>
 </head>
 <body>

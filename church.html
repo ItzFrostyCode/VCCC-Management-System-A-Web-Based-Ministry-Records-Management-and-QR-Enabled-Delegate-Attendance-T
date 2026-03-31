@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="./css/layout.css" />
   <link rel="stylesheet" href="./css/components.css" />
   <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
+  <style>
+    /* Modal Responsive Refinements */
+    @media (max-width: 480px) {
+      .form-row-2 { grid-template-columns: 1fr !important; gap: 16px !important; }
+      .modal-box { padding: 20px 16px; width: 95%; max-height: 95vh; margin: 10px; }
+      .modal-body { gap: 12px; }
+    }
+  </style>
 </head>
 <body>
 <div class="app-shell">
@@ -136,11 +144,21 @@
           <textarea id="f-address" class="input" style="height:80px; padding-top:10px; resize:none;" placeholder="Complete street address..." required></textarea>
         </div>
 
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">District <span class="opt">(Optional)</span></label>
+            <div id="f-district"></div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">Pioneer Pastor <span class="opt">(Optional)</span></label>
+            <div id="f-pioneer"></div>
+          </div>
+        </div>
+
         <div class="form-field">
-          <label class="form-label">District <span class="opt">(Optional)</span></label>
-          <select id="f-district" class="input">
-            <option value="">-- Select District --</option>
-          </select>
+          <label class="form-label">Mother Church <span class="opt">(Optional - for daughter churches)</span></label>
+          <div id="f-mother"></div>
         </div>
 
         <div class="form-field">

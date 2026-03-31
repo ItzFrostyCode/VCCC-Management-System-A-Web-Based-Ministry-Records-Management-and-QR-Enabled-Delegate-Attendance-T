@@ -7,6 +7,31 @@
   <link rel="stylesheet" href="./css/layout.css" />
   <link rel="stylesheet" href="./css/components.css?v=2" />
    <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
+   <style>
+     /* Modal Responsive Refinements */
+     .rec-status-group { display: flex; gap: 10px; }
+     .rec-status-group label {
+       flex: 1; display: flex; align-items: center; gap: 8px;
+       padding: 10px 14px; border: 1.5px solid var(--border);
+       border-radius: 10px; cursor: pointer; font-size: 13px;
+       font-weight: 600; color: var(--text-2); transition: all 0.2s;
+     }
+     .rec-status-group label:has(input:checked) {
+       border-color: var(--red); background: var(--red-light); color: var(--red);
+     }
+     #rec-status-draft-lbl:has(input:checked) {
+       border-color: var(--text-2); background: var(--bg-input); color: var(--text);
+     }
+
+     .parent-row { display: flex; gap: 10px; align-items: stretch; }
+     
+     @media (max-width: 480px) {
+       .rec-status-group { flex-direction: column; }
+       .parent-row { flex-direction: column; align-items: stretch; }
+       #btn-create-draft-parent { height: 42px !important; width: 100%; border-style: solid !important; }
+       .form-row-2 { grid-template-columns: 1fr !important; gap: 16px !important; }
+     }
+   </style>
 </head>
 <body>
 <div class="app-shell">
@@ -172,7 +197,7 @@
       <div class="form-row-2">
         <div class="form-field"><label class="form-label">Pastoring Start <span class="opt">(optional)</span></label><input class="input" type="date" id="pastoring-start" /></div>
         <div class="form-field">
-          <label class="form-label">Status</label>
+          <label class="form-label">Ministry Status</label>
           <select id="status-code" class="input">
             <option value="active">Active</option>
             <option value="redirection">Redirection</option>
@@ -182,10 +207,44 @@
           </select>
         </div>
       </div>
+
+      <!-- Record Status (completeness) -->
+      <div class="form-field">
+        <label class="form-label">Record Type</label>
+        <div class="rec-status-group">
+          <label id="rec-status-active-lbl">
+            <input type="radio" name="record-status" id="rec-active" value="active" checked style="accent-color:var(--red);" />
+            Active record
+          </label>
+          <label id="rec-status-draft-lbl">
+            <input type="radio" name="record-status" id="rec-draft" value="draft" style="accent-color:var(--text-3);" />
+            Draft / Placeholder
+          </label>
+        </div>
+        <div id="draft-hint" style="display:none; margin-top:6px; font-size:12px; color:var(--text-3); padding:8px 12px; background:var(--bg-input); border-radius:6px; border:1px solid var(--border);">
+          ℹ️ Draft records are for incomplete or placeholder entries. Optional fields will be skipped.
+        </div>
+      </div>
+
+      <!-- Parent Pastor (lineage) -->
+      <div class="form-field" id="parent-pastor-field">
+        <label class="form-label">Came From <span class="opt">(parent pastor — optional)</span></label>
+        <div class="parent-row">
+          <div id="parent-pastor-select-container" style="flex:1;"></div>
+          <button type="button" id="btn-create-draft-parent"
+            style="height:42px; padding:0 16px; font-size:12px; font-weight:700; background:var(--bg-input); border:1.5px dashed var(--border); border-radius:10px; color:var(--text-2); cursor:pointer; white-space:nowrap; flex-shrink:0; display:none;"
+            title="Create a new draft parent pastor with just a name">
+            + Draft parent
+          </button>
+        </div>
+        <div id="parent-draft-preview" style="display:none; margin-top:6px; padding:8px 12px; border-radius:8px; background:#fff8e1; border:1px solid #ffe082; font-size:12px; color:#795548;"></div>
+      </div>
+
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="btn-save">Save pastor</button></div>
   </div>
 </div>
+
 
 <div class="modal-overlay" id="modal-delete">
   <div class="modal-box modal-sm">

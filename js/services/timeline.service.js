@@ -5,25 +5,30 @@ import { db } from '../db.js';
 
 export const timelineService = {
   
-  // Fetches and interleaves assignments, ranks, and training into a single timeline feed
+  // Fetches and interleaves assignments, ranks, training, and pioneering into a single timeline feed
   async fetchPastorTimeline(pastorId) {
-    // 1. Fetch data from secure RPCs
-    const [assignmentsRes, ranksRes, trainingRes] = await Promise.all([
+    // 1. Fetch data from secure RPCs and churches table
+    const [assignmentsRes, ranksRes, trainingRes, pioneeredRes] = await Promise.all([
       db.rpc('get_assignments_v3'),
       db.rpc('get_ranks_v3'),
-      db.rpc('get_training_v3')
+      db.rpc('get_training_v3'),
+      db.from('churches')
+        .select('id, church_name, created_at, church_address, districts(district_name)')
+        .eq('pioneer_pastor_id', pastorId)
+        .eq('is_deleted', false)
     ]);
 
     // 2. Comprehensive error checking
     if (assignmentsRes.error) throw assignmentsRes.error;
     if (ranksRes.error) throw ranksRes.error;
     if (trainingRes.error) throw trainingRes.error;
+    if (pioneeredRes.error) throw pioneeredRes.error;
 
     // 3. Filter by pastor
-    // (Note: If your RPCs accept params, passing { p_pastor_id: pastorId } directly to db.rpc is much faster)
     const assignments = (assignmentsRes.data || []).filter(a => a.pastor_id === pastorId);
     const ranks       = (ranksRes.data || []).filter(r => r.pastor_id === pastorId);
     const training    = (trainingRes.data || []).filter(t => t.pastor_id === pastorId);
+    const pioneered   = pioneeredRes.data || [];
 
     // 4. Combine events safely
     const timeline = [];
@@ -91,6 +96,21 @@ export const timelineService = {
         is_blocker: t.blocker_flag,
         raw_data: t,
         sort_date: getSortTime(t.completion_date)
+      });
+    });
+
+    // Map Pioneered Churches
+    pioneered.forEach(c => {
+      timeline.push({
+        type: 'PIONEERED_CHURCH',
+        id: `pioneer_${c.id}`,
+        date: c.created_at,
+        precision: 'exact',
+        title: `Pioneered ${c.church_name}`,
+        subtitle: `Foundation · ${c.districts?.district_name || 'No'} District`,
+        notes: `Original Address: ${c.church_address || '—'}`,
+        raw_data: c,
+        sort_date: getSortTime(c.created_at)
       });
     });
 

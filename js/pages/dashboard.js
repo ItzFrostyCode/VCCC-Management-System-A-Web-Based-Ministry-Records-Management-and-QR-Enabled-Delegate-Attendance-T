@@ -5,7 +5,6 @@ import { dashboardService } from '../services/dashboard.service.js';
 import { authService } from '../services/auth.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc } from '../utils/helper.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth()
@@ -262,6 +261,7 @@ async function loadUserActivity() {
       </div>
     `).join('');
   } catch(e) {
+    console.error('Error in loadUserActivity:', e);
     el.innerHTML = `<div class="text-3 center">Error loading logs.</div>`;
   }
 }

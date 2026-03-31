@@ -207,9 +207,9 @@ function injectGuideUI() {
       .guide-fab {
         position: fixed;
         bottom: var(--guide-fab-bottom);
-        right: 32px;
-        width: 56px;
-        height: 56px;
+        right: 24px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         display: flex;
@@ -226,6 +226,7 @@ function injectGuideUI() {
         transform: scale(1.08);
         box-shadow: 0 8px 24px rgba(232, 56, 32, 0.4);
       }
+      .guide-fab svg { width: 22px; height: 22px; }
     </style>
   `;
 
@@ -241,19 +242,19 @@ function injectGuideUI() {
 
   const modalHtml = `
     <div class="modal-overlay" id="modal-global-guide" style="z-index: 10000;">
-      <div class="modal-box" style="max-width: 480px; border-top: 4px solid var(--red);">
-        <div class="modal-head">
-          <div class="modal-title" style="display:flex; align-items:center; gap:8px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px; height:20px; color:var(--red);"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      <div class="modal-box" style="max-width: 440px; border-top: 4px solid var(--red); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <div class="modal-head" style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border-light);">
+          <div class="modal-title" style="display:flex; align-items:center; gap:8px; font-weight: 800; font-size: 15px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:18px; height:18px; color:var(--red);"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             ${guideData.title}
           </div>
-          <button class="modal-close-guide" type="button" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+          <button class="modal-close-guide" type="button" style="background:none; border:none; font-size:24px; cursor:pointer; color: var(--text-3);">&times;</button>
         </div>
-        <div class="modal-body" style="font-size: 14px; line-height: 1.6; color: var(--text-2);">
+        <div class="modal-body" style="font-size: 13px; line-height: 1.6; color: var(--text-2); padding: 20px;">
           ${guideData.content}
         </div>
-        <div class="modal-foot" style="margin-top:16px; padding:0; border:none; justify-content:flex-end;">
-          <button type="button" class="btn btn-primary btn-close-guide">Got it</button>
+        <div class="modal-foot" style="margin-top:0; padding: 12px 20px 16px; border:none; justify-content:flex-end;">
+          <button type="button" class="btn btn-primary btn-close-guide" style="padding: 0 20px; height: 36px; font-size: 13px; border-radius: 8px;">Got it</button>
         </div>
       </div>
     </div>

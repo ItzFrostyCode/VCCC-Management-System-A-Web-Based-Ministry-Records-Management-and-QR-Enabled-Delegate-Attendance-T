@@ -376,24 +376,28 @@ body.badges-page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 20px;
+  margin: 0 auto;
 }
 .canvas-frame {
   width: 100%;
   background: var(--bg-canvas-frame);
-  border-radius: 0;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);
+  border-radius: 8px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
   overflow: hidden;
-  min-height: 180px;
+  min-height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  transition: all 0.3s ease;
 }
 .canvas-frame canvas {
   display: block;
-  width: 100% !important;
+  max-width: 100% !important;
   height: auto !important;
+  object-fit: contain;
 }
 
 .no-selection {
@@ -1150,11 +1154,14 @@ body.badges-page {
   }
 
   .canvas-frame {
-    max-width: 560px;
+    max-width: 100%;
+    margin: 0 auto;
+    border-radius: 12px;
   }
 
   .canvas-bg {
-    max-width: 560px;
+    max-width: 100%;
+    padding: 0 10px;
   }
 }
 

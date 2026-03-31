@@ -115,6 +115,49 @@
       border-left: 4px solid var(--district-theme, var(--red));
       padding-left: 16px;
     }
+
+    /* ─── Lineage Tree Styles ─── */
+    .lineage-section-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+    .lineage-node {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border: 1px solid var(--border);
+      border-radius: 12px; background: var(--surface);
+      text-decoration: none; color: var(--text);
+      transition: all 0.2s; position: relative;
+      margin-bottom: 8px;
+    }
+    .lineage-node:hover { border-color: var(--red); transform: translateX(4px); box-shadow: var(--shadow-sm); }
+    .lineage-node.lineage-parent { border-style: solid; border-color: var(--border); }
+    .lineage-node.lineage-child { border-color: var(--border); }
+    .lineage-empty { border-style: dashed; opacity: 0.6; cursor: default; }
+    .lineage-empty:hover { transform: none; box-shadow: none; border-color: var(--border); }
+    
+    .lineage-avatar {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--red-light); color: var(--red);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px; flex-shrink: 0;
+    }
+    .lineage-node-info { flex: 1; min-width: 0; }
+    .lineage-node-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lineage-node-sub { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+    .lineage-arrow { width: 14px; height: 14px; color: var(--text-3); flex-shrink: 0; }
+
+    .lineage-tree-wrapper { position: relative; padding-left: 20px; margin-top: 10px; }
+    .lineage-tree-line {
+      position: absolute; left: 0; top: -10px; bottom: 20px;
+      width: 2px; background: var(--border);
+    }
+    .lineage-tree-item { position: relative; margin-bottom: 24px; }
+    .lineage-tree-item::before {
+      content: ''; position: absolute; left: -20px; top: 22px;
+      width: 20px; height: 2px; background: var(--border);
+    }
   </style>
 </head>
 <body>
@@ -183,6 +226,13 @@
               <p id="d-leader">District Leader: <span>—</span></p>
               <p id="d-notes" style="margin-top:8px; font-style:italic; font-size:12px;"></p>
             </div>
+          </div>
+        </div>
+
+        <div class="view-section">
+          <h3 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Organizational Lineage</h3>
+          <div id="church-lineage-tree">
+             <!-- Injected by church-view.js -->
           </div>
         </div>
 

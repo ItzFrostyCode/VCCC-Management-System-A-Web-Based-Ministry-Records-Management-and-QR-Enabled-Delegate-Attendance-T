@@ -193,14 +193,15 @@
 .dash-table { 
   width: 100%; 
   border-collapse: collapse; 
-  table-layout: fixed; /* Keep columns exact */
+  table-layout: auto; /* Let columns size naturally */
 }
 .dash-table th {
   text-align: left;
-  padding: 10px 20px;
+  padding: 9px 16px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--text-3);
   background: #f8fafc;
   border-bottom: 1px solid var(--border);
@@ -210,27 +211,68 @@
   white-space: nowrap;
 }
 .dash-table td {
-  padding: 10px 20px;
+  padding: 11px 16px;
   font-size: 13px;
+  font-weight: 500;
   border-bottom: 1px solid var(--border);
   color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
+  line-height: 1.4;
+}
+.dash-table td.col-church,
+.dash-table td.col-pastor { font-weight: 600; }
+.dash-table td.col-dist { font-size: 12px; color: var(--text-2); }
+.dash-table td.col-status { text-align: right; white-space: nowrap; min-width: 70px; }
+
+/* Status badges inside tables — never clip */
+.dash-table .status-badge {
+  font-size: 11px;
+  padding: 3px 8px;
   white-space: nowrap;
+  display: inline-block;
 }
 
-/* Explicit widths for Church Vacancy Board */
-#church-panel tr td.col-church { width: 35%; }
-#church-panel tr td.col-dist   { width: 22%; font-size: 11px; color: var(--text-2); }
-#church-panel tr td.col-pastor { width: 28%; }
-#church-panel tr td.col-status { width: 15%; text-align: right; }
-
-/* Explicit widths for Pastor Deployment */
-#pastor-panel tr td.col-pastor { width: 40%; }
-#pastor-panel tr td.col-church { width: 40%; }
-#pastor-panel tr td.col-status { width: 20%; text-align: right; }
-
 .dash-table tr:hover td { background: var(--bg-input); }
+
+/* ── Mobile: collapse to stacked cards at 640px ─────────── */
+@media (max-width: 640px) {
+  .dash-table thead { display: none; }
+  .dash-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 4px;
+  }
+  .dash-table tbody td {
+    padding: 0;
+    font-size: 13px;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: normal;
+    word-break: break-word;
+  }
+  .dash-table tbody td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    min-width: 64px;
+    flex-shrink: 0;
+  }
+  .dash-table td.col-church::before { content: 'Church'; }
+  .dash-table td.col-dist::before { content: 'District'; }
+  .dash-table td.col-pastor::before { content: 'Pastor'; }
+  .dash-table td.col-status {
+    text-align: left;
+    min-width: unset;
+  }
+  .dash-table td.col-status::before { content: 'Status'; }
+}
 
 /* Scan Log Feed */
 .scan-feed-item {
