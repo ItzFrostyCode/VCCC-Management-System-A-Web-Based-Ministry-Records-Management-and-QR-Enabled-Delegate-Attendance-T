@@ -381,7 +381,9 @@ body.badges-page {
   margin: 0 auto;
 }
 .canvas-frame {
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
+  aspect-ratio: 1050 / 750;
   background: var(--bg-canvas-frame);
   border-radius: 8px;
   box-shadow: 0 12px 48px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
@@ -392,11 +394,12 @@ body.badges-page {
   justify-content: center;
   position: relative;
   transition: all 0.3s ease;
+  margin: 0 auto;
 }
 .canvas-frame canvas {
   display: block;
-  max-width: 100% !important;
-  height: auto !important;
+  width: 100% !important;
+  height: 100% !important;
   object-fit: contain;
 }
 
@@ -985,9 +988,12 @@ body.badges-page {
   }
 
   .canvas-frame {
-    width: 100%;
+    width: fit-content;
+    max-width: 100%;
+    aspect-ratio: 1050 / 750;
     box-shadow: var(--shadow);
     border-radius: var(--radius-sm);
+    margin: 0 auto;
   }
 
   .props-body { padding: 12px 12px 90px; }

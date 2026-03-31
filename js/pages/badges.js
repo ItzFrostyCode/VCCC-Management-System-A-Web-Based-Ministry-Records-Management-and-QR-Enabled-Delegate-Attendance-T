@@ -433,24 +433,38 @@ async function executeBatchDownload(targets, zipName) {
 async function renderBadge() {
   if (!selectedDelegate) return
   const wrap = document.getElementById('badge-preview-wrap'); 
-  wrap.innerHTML = '<div style="font-size:13px;color:var(--text-3);">Rendering...</div>'
+  if (!wrap) return;
+
   try {
-    if (document.fonts) await document.fonts.ready;
+    // Robust font check
+    if (document.fonts) {
+      await document.fonts.ready;
+      // Double check specifically for Public Sans if it's in the list
+      const isLoaded = document.fonts.check('12px "Public Sans"');
+      if (!isLoaded) {
+          // Small delay if not fully ready to allow layout engine to catch up
+          await new Promise(r => setTimeout(r, 50));
+      }
+    }
     
-    const canvas = document.createElement('canvas'); 
+    // Reuse existing canvas if possible to prevent flickering/layout shifts
+    let canvas = wrap.querySelector('canvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas'); 
+      wrap.innerHTML = ''; 
+      wrap.appendChild(canvas); 
+    }
+    
     canvas.width = cfg.canvasWidth; 
     canvas.height = cfg.canvasHeight; 
     
-    // Responsive styling for the preview canvas
+    // Style values handled by CSS now for consistency, but kept here for fallback
     canvas.style.maxWidth = '100%'; 
     canvas.style.height = 'auto'; 
     canvas.style.display = 'block'; 
     canvas.style.margin = '0 auto';
-    canvas.style.boxShadow = '0 10px 40px rgba(0,0,0,0.2)';
     
     await drawBadge(canvas, selectedDelegate); 
-    wrap.innerHTML = ''; 
-    wrap.appendChild(canvas); 
     badgeCanvas = canvas
   } catch(e) { 
     console.error('renderBadge failed:', e);
@@ -635,7 +649,9 @@ function renderTools() {
     if(activeFieldKey) selFieldEditor.setValue(activeFieldKey) 
   }
 
+  // Update properties without clearing the whole toolbar to prevent focus/cursor loss
   const p = document.getElementById('editor-properties-body')
+  if (!p) return;
   let propsHtml = '';
   if (activeFieldKey === 'templates') {
     propsHtml = `
@@ -762,7 +778,25 @@ function renderMobileTools() {
        `
     }
 
-    mob.innerHTML = `<div class="quick-editor-wrap"><div class="qe-chip-bar">${chipBar}</div>${bodyHtml}</div>`
+    // Only update body if field key changed or it's empty
+    const currentBody = mob.querySelector('.qe-body');
+    const existingWrap = mob.querySelector('.quick-editor-wrap');
+    
+    if (!existingWrap) {
+        mob.innerHTML = `<div class="quick-editor-wrap"><div class="qe-chip-bar">${chipBar}</div><div id="qe-body-content">${bodyHtml}</div></div>`;
+    } else {
+        // Update chip active states
+        mob.querySelectorAll('.qe-chip').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.key === activeFieldKey);
+        });
+        
+        // Update body content only if we aren't currently focused on an input
+        // to prevent keyboard hide/flicker on mobile
+        if (document.activeElement.tagName !== 'INPUT' || activeFieldKey === 'templates') {
+            const bodyCont = document.getElementById('qe-body-content');
+            if (bodyCont) bodyCont.innerHTML = bodyHtml;
+        }
+    }
     
     mob.querySelectorAll('.qe-chip').forEach(btn => {
         btn.onclick = () => { activeFieldKey = btn.dataset.key; renderTools(); }
