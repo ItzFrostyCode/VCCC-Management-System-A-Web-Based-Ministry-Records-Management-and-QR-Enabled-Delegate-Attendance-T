@@ -82,9 +82,16 @@ async function loadData(id) {
 
 function renderChurchInfo(c, d) {
   document.getElementById('c-name').textContent = c.church_name
+  document.getElementById('c-avatar').textContent = c.church_name.charAt(0).toUpperCase()
   document.getElementById('c-scope').textContent = (c.church_scope || 'local').toUpperCase()
   document.getElementById('c-address').textContent = c.church_address || 'No address provided'
-  document.getElementById('c-notes').textContent = c.notes || ''
+  
+  if (c.notes) {
+    document.getElementById('c-notes-wrap').style.display = 'block'
+    document.getElementById('c-notes').textContent = c.notes
+  } else {
+    document.getElementById('c-notes-wrap').style.display = 'none'
+  }
   
   if (d && d.theme_color) {
     document.documentElement.style.setProperty('--district-theme', d.theme_color)
@@ -97,16 +104,18 @@ function renderCurrentPastor(history) {
 
   if (!active) {
     container.innerHTML = `
-      <div class="pastor-card vacant">
-        <div style="width:48px; height:48px; border-radius:50%; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center;">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="active-pastor-card vacant">
+        <div class="pastor-card-body">
+          <div class="pastor-c-avatar" style="background:var(--red-light); color:var(--red); border-color:var(--red-light);">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div class="pastor-c-info">
+            <div class="pastor-c-name" style="color:var(--red);">VACANT / NEEDS ASSIGNMENT</div>
+            <div class="pastor-c-sub">No active pastor is currently assigned.</div>
+          </div>
         </div>
-        <div class="pastor-info">
-          <h4 style="color:var(--red);">VACANT / NEEDS ASSIGNMENT</h4>
-          <p>No active pastor is currently assigned to this church.</p>
-        </div>
-        <div style="margin-left:auto;">
-          <button class="btn btn-primary" id="btn-assign-now">Assign Pastor</button>
+        <div class="pastor-c-foot">
+          <button class="pastor-c-btn" id="btn-assign-now" style="color:var(--red);">+ Assign Pastor</button>
         </div>
       </div>
     `
@@ -116,16 +125,18 @@ function renderCurrentPastor(history) {
   }
 
   container.innerHTML = `
-    <div class="pastor-card">
-      <div style="width:48px; height:48px; border-radius:50%; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px;">
-        ${active.pastor_name.charAt(0)}
+    <div class="active-pastor-card">
+      <div class="pastor-card-body">
+        <div class="pastor-c-avatar" onclick="if(typeof openImageViewer === 'function') openImageViewer('${active.pastor_image_url || ''}', '${esc(active.pastor_name)}')" style="cursor:pointer;">${active.pastor_name.charAt(0)}</div>
+        <div class="pastor-c-info">
+          <div class="pastor-c-name">${esc(active.pastor_name)}</div>
+          <div class="pastor-c-sub">
+            <strong>${esc(active.role_code)}</strong> &bull; ${esc(active.event_type)} since ${formatDate(active.start_date)}
+          </div>
+        </div>
       </div>
-      <div class="pastor-info">
-        <h4>${esc(active.pastor_name)}</h4>
-        <p>Current ${esc(active.role_code)} (${esc(active.event_type)}) since ${formatDate(active.start_date)}</p>
-      </div>
-      <div style="margin-left:auto;">
-        <button class="btn btn-ghost" id="btn-view-active-profile">View Profile</button>
+      <div class="pastor-c-foot">
+        <button class="pastor-c-btn" id="btn-view-active-profile">View Profile</button>
       </div>
     </div>
   `
@@ -136,8 +147,16 @@ function renderCurrentPastor(history) {
 function renderStats(c, history) {
   const active = history.find(a => a.status_code === 'active' && !a.end_date)
   
-  document.getElementById('stat-status').textContent = active ? 'Occupied' : 'Vacant'
-  document.getElementById('stat-status').style.color = active ? '#2e7d32' : 'var(--red)'
+  const statusEl = document.getElementById('stat-status')
+  const statusWrap = document.getElementById('stat-status-wrap')
+  
+  if (active) {
+    statusEl.textContent = 'Occupied'
+    statusWrap.className = 'mini-stat-pill status-occupied'
+  } else {
+    statusEl.textContent = 'Vacant'
+    statusWrap.className = 'mini-stat-pill status-vacant'
+  }
   
   document.getElementById('stat-pastors').textContent = new Set(history.map(h => h.pastor_id)).size
   
@@ -163,85 +182,76 @@ function renderChurchLineage(church, offspring) {
   const container = document.getElementById('church-lineage-tree')
   if (!container) return
 
-  let html = ''
+  let html = '<div class="lineage-stack">'
 
   // 1. Mother Church (Parent)
-  html += `
-    <div class="lineage-section-label">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      Mother Church
-    </div>
-  `
+  html += `<div class="lineage-group-title">Mother Church</div>`
+  
   if (church.mother_church_id) {
     html += `
-      <a href="church-view.html?id=${church.mother_church_id}" class="lineage-node lineage-parent">
-        <div class="lineage-avatar">${esc(church.mother_name.charAt(0))}</div>
-        <div class="lineage-node-info">
-          <div class="lineage-node-name">${esc(church.mother_name)}</div>
-          <div class="lineage-node-sub">Source / Planting Church</div>
+      <a href="church-view.html?id=${church.mother_church_id}" class="lineage-node">
+        <div class="lineage-ava">${esc(church.mother_name.charAt(0))}</div>
+        <div class="lineage-info">
+          <div class="lineage-name">${esc(church.mother_name)}</div>
+          <div class="lineage-sub">Source / Planting Church</div>
         </div>
-        <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
     `
   } else {
     html += `
       <div class="lineage-node lineage-empty">
-        <div class="lineage-avatar" style="background:var(--bg-body); color:var(--text-3);"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-        <div class="lineage-node-info">
-          <div class="lineage-node-name" style="color:var(--text-3);">Independent / Legacy</div>
-          <div class="lineage-node-sub">No recorded mother church</div>
+        <div class="lineage-ava" style="background:transparent; border-color:transparent;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="lineage-info">
+          <div class="lineage-name" style="color:var(--text-3);">Independent / Legacy</div>
+          <div class="lineage-sub">No recorded mother church</div>
         </div>
       </div>
     `
   }
 
   // 2. Current Church (Central)
+  html += `<div class="lineage-group-title">Current Profile</div>`
+  
   html += `
-    <div class="lineage-section-label" style="margin-top:24px;">Current Profile</div>
-    <div class="lineage-node" style="border-color:var(--red); background:#fff5f5; cursor:default;">
-      <div class="lineage-avatar" style="background:var(--red); color:white;">${esc(church.church_name.charAt(0))}</div>
-      <div class="lineage-node-info">
-        <div class="lineage-node-name" style="color:var(--red); font-weight:800;">${esc(church.church_name)}</div>
-        <div class="lineage-node-sub">Pioneered by ${esc(church.pioneer_name || 'Unknown')}</div>
+    <div class="lineage-node current-node">
+      <div class="lineage-ava">${esc(church.church_name.charAt(0))}</div>
+      <div class="lineage-info">
+        <div class="lineage-name" style="color:var(--text);">${esc(church.church_name)}</div>
+        <div class="lineage-sub">Pioneered by ${esc(church.pioneer_name || 'Unknown')}</div>
       </div>
     </div>
   `
 
   // 3. Daughter Churches (Children)
-  html += `
-    <div class="lineage-section-label" style="margin-top:24px;">Daughter Churches (${offspring.length})</div>
-  `
+  html += `<div class="lineage-group-title">Daughter Churches (${offspring.length})</div>`
 
   if (offspring.length > 0) {
-    html += `
-      <div class="lineage-tree-wrapper">
-        <div class="lineage-tree-line"></div>
-        ${offspring.map(child => `
-          <div class="lineage-tree-item">
-            <a href="church-view.html?id=${child.id}" class="lineage-node lineage-child">
-              <div class="lineage-avatar">${esc(child.church_name.charAt(0))}</div>
-              <div class="lineage-node-info">
-                <div class="lineage-node-name">${esc(child.church_name)}</div>
-                <div class="lineage-node-sub">${esc(child.district_name)} District</div>
-              </div>
-              <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-            </a>
+    offspring.forEach(child => {
+      html += `
+        <a href="church-view.html?id=${child.id}" class="lineage-node">
+          <div class="lineage-ava">${esc(child.church_name.charAt(0))}</div>
+          <div class="lineage-info">
+            <div class="lineage-name">${esc(child.church_name)}</div>
+            <div class="lineage-sub">${esc(child.district_name)} District</div>
           </div>
-        `).join('')}
-      </div>
-    `
+          <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      `
+    })
   } else {
     html += `
       <div class="lineage-node lineage-empty">
-        <div class="lineage-avatar" style="background:var(--bg-body); color:var(--text-3);"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
-        <div class="lineage-node-info">
-          <div class="lineage-node-name" style="color:var(--text-3);">No Daughters Recorded</div>
-          <div class="lineage-node-sub">This church hasn't pioneered other locations yet</div>
+        <div class="lineage-ava" style="background:transparent; border-color:transparent;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+        <div class="lineage-info">
+          <div class="lineage-name" style="color:var(--text-3);">No Daughters Recorded</div>
+          <div class="lineage-sub">This church hasn't pioneered other locations yet</div>
         </div>
       </div>
     `
   }
 
+  html += '</div>'
   container.innerHTML = html
 }
 
@@ -359,3 +369,42 @@ async function submitHistorical(e) {
     btn.disabled = false
   }
 }
+
+function openImageViewer(url, title) {
+  const modal = document.getElementById('modal-image-viewer')
+  if (!modal) return
+  
+  const img = document.getElementById('full-image-display')
+  const initEl = document.getElementById('full-initials-display')
+  const titleEl = document.getElementById('image-viewer-title')
+  
+  titleEl.textContent = title || 'View Profile'
+  
+  if (url) {
+    img.src = url
+    img.style.display = 'block'
+    if (initEl) initEl.style.display = 'none'
+  } else {
+    img.style.display = 'none'
+    if (initEl) {
+      initEl.style.display = 'flex'
+      let nameStr = (title || '?').trim()
+      if (!nameStr) nameStr = '?'
+      initEl.textContent = nameStr.charAt(0).toUpperCase()
+    }
+  }
+  
+  modal.classList.add('open')
+}
+
+function closeImageViewer() {
+  const modal = document.getElementById('modal-image-viewer')
+  if (modal) modal.classList.remove('open')
+  setTimeout(() => {
+    const img = document.getElementById('full-image-display')
+    if (img) img.src = ''
+  }, 300)
+}
+
+window.openImageViewer = openImageViewer;
+window.closeImageViewer = closeImageViewer;

@@ -10,8 +10,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Public+Sans:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/layout.css?v=2" />
-<link rel="stylesheet" href="css/components.css?v=2" />
+<link rel="stylesheet" href="css/components.css" /> <!-- Keeping original index -->
+  <link rel="stylesheet" href="components/button/button.css" />
+  <link rel="stylesheet" href="components/form/form.css" />
+  <link rel="stylesheet" href="components/modal/modal.css" />
+  <link rel="stylesheet" href="components/table/table.css" />
+  <link rel="stylesheet" href="components/filter-bar/filter-bar.css" />
+  <link rel="stylesheet" href="components/search-select/search-select.css" />
+  <link rel="stylesheet" href="components/avatar/avatar.css" />
+  <link rel="stylesheet" href="components/stats/stats.css" />
+  <link rel="stylesheet" href="components/tabs/tabs.css" />
+  <link rel="stylesheet" href="components/badge/badge.css" />
+  <link rel="stylesheet" href="components/history/history.css" />
+  <link rel="stylesheet" href="components/password/password.css" />
 <link rel="stylesheet" href="css/pages/badges.css?v=2" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="badges-page">
 <div class="app-shell">
@@ -58,8 +71,17 @@
 
 
 
-      <div class="topbar-mid">
-        <span class="badge-dim-label" id="coords-label">8.89 × 6.35 cm</span>
+      <div class="topbar-mid" style="display:flex; align-items:center; gap:20px;">
+        <div style="display:flex; gap:16px; align-items:center;">
+          <div style="display:flex; flex-direction:column; align-items:center; line-height:1.2;">
+             <span style="font-size:9px; font-weight:800; color:var(--text-4); text-transform:uppercase; letter-spacing:0.5px;">Width</span>
+             <span style="font-size:11px; font-weight:700; color:var(--text-2);" id="header-w-display">8.89 cm (3.5")</span>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; line-height:1.2;">
+             <span style="font-size:9px; font-weight:800; color:var(--text-4); text-transform:uppercase; letter-spacing:0.5px;">Height</span>
+             <span style="font-size:11px; font-weight:700; color:var(--text-2);" id="header-h-display">6.35 cm (2.5")</span>
+          </div>
+        </div>
       </div>
 
 

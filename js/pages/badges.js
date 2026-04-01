@@ -6,7 +6,8 @@ import { pastorService } from '../services/pastor.service.js';
 import { discipleService } from '../services/disciple.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, createSearchSelect, encodeQR } from '../utils/helper.js';
+import { esc, encodeQR } from '../utils/helper.js';
+import { createSearchSelect } from '../../components/search-select/search-select.js';
 
 // State Variables
 let allDelegates = [], filteredDelegates = [], selectedDelegate = null
@@ -28,7 +29,7 @@ const DEFAULT_CONFIG = {
   canvasWidth: 1050,
   canvasHeight: 750,
   templateUrl: 'assets/2026%20Conf%20ID%20front.png',
-  name:     { x: 20, y: 350, fontSize: 45, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 850, enabled: true },
+  name:     { x: 20, y: 350, fontSize: 50, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 700, enabled: true },
   role:     { x: 20, y: 410, fontSize: 75, fontWeight: 'bold', fontStyle: 'normal', color: '#111111', textAlign: 'left', maxWidth: 850, enabled: true },
   district: { x: 20, y: 500, fontSize: 34, fontWeight: 'bold', fontStyle: 'normal', color: '#333333', textAlign: 'left', maxWidth: 850, enabled: true },
   church:   { x: 570, y: 665, fontSize: 52, fontWeight: 'bold', fontStyle: 'italic', color: '#ffffff', textAlign: 'left', maxWidth: 460, enabled: true },
@@ -39,6 +40,22 @@ const DEFAULT_CONFIG = {
 let cfg = getConfig(); 
 function getConfig(){ try{ let s=JSON.parse(localStorage.getItem(CONFIG_KEY))||{}, m={...DEFAULT_CONFIG}; Object.keys(DEFAULT_CONFIG).forEach(k=>{ if(s[k]) m[k]=typeof s[k]==='object'?{...DEFAULT_CONFIG[k],...s[k]}:s[k] }); return m }catch{ return {...DEFAULT_CONFIG} } }
 function saveConfig(){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)) }
+
+// --- DPI & Conversions ---
+const DPI = 300;
+const PX_TO_CM = 2.54 / DPI;
+const CM_TO_PX = DPI / 2.54;
+
+function pxToCm(px) { return (px * PX_TO_CM).toFixed(2); }
+function cmToPx(cm) { return Math.round(cm * CM_TO_PX); }
+function pxToIn(px) { return (px / DPI).toFixed(2); }
+
+function updateHeaderDimensions() {
+  const wEl = document.getElementById('header-w-display');
+  const hEl = document.getElementById('header-h-display');
+  if (wEl) wEl.textContent = `${pxToCm(cfg.canvasWidth)} cm (${pxToIn(cfg.canvasWidth)}")`;
+  if (hEl) hEl.textContent = `${pxToCm(cfg.canvasHeight)} cm (${pxToIn(cfg.canvasHeight)}")`;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Badges: DOMContentLoaded start')
@@ -147,6 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         applyFilters(); 
         renderTools();
         bindEvents();
+        updateHeaderDimensions();
         if (window.innerWidth <= 640) switchTab('delegates')
     } catch (err) { 
         console.error('Init failed:', err)
@@ -509,17 +527,18 @@ async function drawBadge(canvas, d, preLoadedTemplate = null) {
 function drawText(ctx, t='', f) { 
   if (!t) return
   ctx.save(); 
-  const weight = f.fontWeight==='bold'?700:400, style=f.fontStyle==='italic'?'italic ':''; 
+  const weight = f.fontWeight === 'bold' ? 'bold' : 'normal';
+  const style = f.fontStyle === 'italic' ? 'italic' : 'normal'; 
   let fSize = f.fontSize;
   const maxWidth = f.maxWidth || 850;
   const align = f.textAlign || 'left';
   let effectiveMaxWidth = maxWidth;
   if (align === 'left' && (f.x + effectiveMaxWidth > 1030)) effectiveMaxWidth = 1030 - f.x;
 
-  ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
+  ctx.font = `${style} normal ${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
   while (ctx.measureText(t).width > effectiveMaxWidth && fSize > 8) {
     fSize--;
-    ctx.font = `${style}${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
+    ctx.font = `${style} normal ${weight} ${fSize}px "Public Sans", Arial, sans-serif`;
   }
 
   const tw = ctx.measureText(t).width;
@@ -644,7 +663,7 @@ function renderTools() {
   if(!b.querySelector('.editor-toolbar')){ 
     b.innerHTML=`<div class="editor-toolbar"><div class="editor-sel-wrap" id="f-sel-box"></div><div class="editor-prop-wrap" id="editor-properties-body"></div></div>`; 
     selFieldEditor = createSearchSelect(document.getElementById('f-sel-box'), [
-      {value:'name',label:'Name'}, {value:'role',label:'Role'}, {value:'district',label:'District'}, {value:'church',label:'Church'}, {value:'qr',label:'QR'}, {value:'profile',label:'Photo'}, {value:'templates',label:'Bkgd'}
+      {value:'badge',label:'Badge Size'}, {value:'name',label:'Name'}, {value:'role',label:'Role'}, {value:'district',label:'District'}, {value:'church',label:'Church'}, {value:'qr',label:'QR'}, {value:'profile',label:'Photo'}, {value:'templates',label:'Bkgd'}
     ], 'Select...', (v)=>{ if(v){activeFieldKey=v;renderTools()} }); 
     if(activeFieldKey) selFieldEditor.setValue(activeFieldKey) 
   }
@@ -653,24 +672,35 @@ function renderTools() {
   const p = document.getElementById('editor-properties-body')
   if (!p) return;
   let propsHtml = '';
-  if (activeFieldKey === 'templates') {
+  if (activeFieldKey === 'badge') {
     propsHtml = `
-      <div class="prop-section-title" style="margin-top:0;">Background Templates</div>
-      <div style="margin-bottom:15px;">
-        <button class="btn btn-ghost" style="width:100%; height:36px; border:1px dashed var(--border); font-size:12px;" id="btn-tpl-upload-trigger">
-          <svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Template
-        </button>
-        <input type="file" id="tpl-upload" accept="image/*" style="display:none;" />
-      </div>
-      <div class="tpl-grid">
-        <div class="tpl-card ${cfg.templateUrl === DEFAULT_CONFIG.templateUrl ? 'active' : ''}" data-url="${DEFAULT_CONFIG.templateUrl}">
-           <div class="tpl-thumb" style="background-image:url('${DEFAULT_CONFIG.templateUrl}')"></div>
-           <div class="tpl-footer"><span class="tpl-tag">Default</span></div>
+      <div class="prop-section-title" style="margin-top:0;">Canvas Dimensions</div>
+      <div class="prop-row" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="prop-item">
+          <div class="prop-label">Width (px)</div>
+          <input type="number" id="canvas-w" value="${cfg.canvasWidth}" />
         </div>
+        <div class="prop-item">
+          <div class="prop-label">Width (cm)</div>
+          <input type="number" step="0.01" id="canvas-w-cm" value="${pxToCm(cfg.canvasWidth)}" />
+        </div>
+      </div>
+      <div class="prop-row" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+        <div class="prop-item">
+          <div class="prop-label">Height (px)</div>
+          <input type="number" id="canvas-h" value="${cfg.canvasHeight}" />
+        </div>
+        <div class="prop-item">
+          <div class="prop-label">Height (cm)</div>
+          <input type="number" step="0.01" id="canvas-h-cm" value="${pxToCm(cfg.canvasHeight)}" />
+        </div>
+      </div>
+      <div style="background:var(--bg-shell); padding:10px; border-radius:8px; font-size:11px; color:var(--text-3); margin-top:10px;">
+        Dimensions are based on 300 DPI print quality.
       </div>`;
+  } else if (activeFieldKey === 'templates') {
   } else {
     const f = cfg[activeFieldKey]
-    updateCoordsLabel(f.x, f.y)
     const visibilityHtml = `<div class="prop-item"><div class="prop-label">Visible</div><input type="checkbox" id="field-enabled" ${f.enabled!==false?'checked':''} /></div>`
     if(activeFieldKey==='qr' || activeFieldKey==='profile') {
       propsHtml = visibilityHtml + `
@@ -712,13 +742,50 @@ function bindToolEvents() {
         card.onclick = () => { cfg.templateUrl = card.dataset.url; saveConfig(); renderBadge(); renderTools(); }
     })
 
+    // Canvas Size
+    const elCW = document.getElementById('canvas-w'); 
+    const elCWcm = document.getElementById('canvas-w-cm');
+    const elCH = document.getElementById('canvas-h');
+    const elCHcm = document.getElementById('canvas-h-cm');
+
+    if (elCW && elCWcm) {
+        elCW.oninput = (e) => {
+            const px = +e.target.value;
+            cfg.canvasWidth = px;
+            elCWcm.value = pxToCm(px);
+            saveConfig(); renderBadge(); updateHeaderDimensions();
+        };
+        elCWcm.oninput = (e) => {
+            const cm = +e.target.value;
+            const px = cmToPx(cm);
+            cfg.canvasWidth = px;
+            elCW.value = px;
+            saveConfig(); renderBadge(); updateHeaderDimensions();
+        };
+    }
+    if (elCH && elCHcm) {
+        elCH.oninput = (e) => {
+            const px = +e.target.value;
+            cfg.canvasHeight = px;
+            elCHcm.value = pxToCm(px);
+            saveConfig(); renderBadge(); updateHeaderDimensions();
+        };
+        elCHcm.oninput = (e) => {
+            const cm = +e.target.value;
+            const px = cmToPx(cm);
+            cfg.canvasHeight = px;
+            elCH.value = px;
+            saveConfig(); renderBadge(); updateHeaderDimensions();
+        };
+    }
+
     // Properties
     const f = cfg[activeFieldKey]
     if (!f) return
 
     const elEnabled = document.getElementById('field-enabled'); if (elEnabled) elEnabled.onchange = (e) => { f.enabled = e.target.checked; saveConfig(); renderBadge(); }
-    const elX = document.getElementById('field-x'); if (elX) elX.oninput = (e) => { f.x = +e.target.value; updateCoordsLabel(f.x, f.y); saveConfig(); renderBadge(); }
-    const elY = document.getElementById('field-y'); if (elY) elY.oninput = (e) => { f.y = +e.target.value; updateCoordsLabel(f.x, f.y); saveConfig(); renderBadge(); }
+    const elX = document.getElementById('field-x'); if (elX) elX.oninput = (e) => { f.x = +e.target.value; saveConfig(); renderBadge(); }
+    const elY = document.getElementById('field-y'); if (elY) elY.oninput = (e) => { f.y = +e.target.value; saveConfig(); renderBadge(); }
     const elSize = document.getElementById('field-size'); if (elSize) elSize.oninput = (e) => { f.size = +e.target.value; saveConfig(); renderBadge(); }
     const elFSize = document.getElementById('field-fsize'); if (elFSize) elFSize.oninput = (e) => { f.fontSize = +e.target.value; saveConfig(); renderBadge(); }
     const elMW = document.getElementById('field-mw'); if (elMW) elMW.oninput = (e) => { f.maxWidth = +e.target.value; saveConfig(); renderBadge(); }
@@ -729,29 +796,24 @@ function bindToolEvents() {
 function renderMobileTools() {
     const mob = document.getElementById('mobile-mini-editor'); if (!mob) return
     const FIELDS = [
-        {value:'name',label:'Name'}, {value:'role',label:'Role'}, {value:'district',label:'Dist'}, {value:'church',label:'Chur'}, {value:'qr',label:'QR'}, {value:'profile',label:'Photo'}, {value:'templates',label:'Bkgd'}
+        {value:'badge',label:'Size'}, {value:'name',label:'Name'}, {value:'role',label:'Role'}, {value:'district',label:'Dist'}, {value:'church',label:'Chur'}, {value:'qr',label:'QR'}, {value:'profile',label:'Photo'}, {value:'templates',label:'Bkgd'}
     ]
     const chipBar = FIELDS.map(f => `<button class="qe-chip ${activeFieldKey === f.value ? 'active' : ''}" data-key="${f.value}">${f.label}</button>`).join('')
     
     let bodyHtml = ''
-    if (activeFieldKey === 'templates') {
+    if (activeFieldKey === 'badge') {
        bodyHtml = `
          <div class="qe-body">
-           <div class="qe-templates-note">
-             <button class="btn btn-ghost" id="btn-tpl-upload-trigger-mob" style="width:100%; height:36px; border:1px dashed var(--border); font-size:12px;">
-               <svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-               Upload Background Template
-             </button>
+           <div class="qe-grid" style="grid-template-columns:1fr 1fr;">
+             <div class="qe-cell"><span class="qe-label">Width (px)</span><input type="number" class="qe-input" id="canvas-w-mob" value="${cfg.canvasWidth}" /></div>
+             <div class="qe-cell"><span class="qe-label">Width (cm)</span><input type="number" step="0.01" class="qe-input" id="canvas-w-cm-mob" value="${pxToCm(cfg.canvasWidth)}" /></div>
+             <div class="qe-cell"><span class="qe-label">Height (px)</span><input type="number" class="qe-input" id="canvas-h-mob" value="${cfg.canvasHeight}" /></div>
+             <div class="qe-cell"><span class="qe-label">Height (cm)</span><input type="number" step="0.01" class="qe-input" id="canvas-h-cm-mob" value="${pxToCm(cfg.canvasHeight)}" /></div>
            </div>
-           <div class="tpl-grid" style="margin-top:0;">
-             <div class="tpl-card ${cfg.templateUrl === DEFAULT_CONFIG.templateUrl ? 'active' : ''}" data-url="${DEFAULT_CONFIG.templateUrl}">
-                <div class="tpl-thumb" style="background-image:url('${DEFAULT_CONFIG.templateUrl}')"></div>
-                <div class="tpl-footer"><span class="tpl-tag">Default</span></div>
-             </div>
-           </div>
+           <p style="font-size:10px; color:var(--text-4); margin-top:4px;">Auto-calculated at 300 DPI.</p>
          </div>
        `
-    } else {
+    } else if (activeFieldKey === 'templates') {
        const f = cfg[activeFieldKey]
        bodyHtml = `
          <div class="qe-body">
@@ -810,8 +872,8 @@ function bindMobileToolEvents() {
     if (!f && activeFieldKey !== 'templates') return
 
     const elEnabled = document.getElementById('field-enabled-mob'); if (elEnabled) elEnabled.onchange = (e) => { f.enabled = e.target.checked; saveConfig(); renderBadge(); }
-    const elX = document.getElementById('field-x-mob'); if (elX) elX.oninput = (e) => { f.x = +e.target.value; updateCoordsLabel(f.x, f.y); saveConfig(); renderBadge(); }
-    const elY = document.getElementById('field-y-mob'); if (elY) elY.oninput = (e) => { f.y = +e.target.value; updateCoordsLabel(f.x, f.y); saveConfig(); renderBadge(); }
+    const elX = document.getElementById('field-x-mob'); if (elX) elX.oninput = (e) => { f.x = +e.target.value; saveConfig(); renderBadge(); }
+    const elY = document.getElementById('field-y-mob'); if (elY) elY.oninput = (e) => { f.y = +e.target.value; saveConfig(); renderBadge(); }
     
     const elFsize = document.getElementById('field-fsize-mob'); if (elFsize) elFsize.oninput = (e) => { f.fontSize = +e.target.value; saveConfig(); renderBadge(); }
     const elColor = document.getElementById('field-color-mob'); if (elColor) elColor.oninput = (e) => { f.color = e.target.value; saveConfig(); renderBadge(); }
@@ -828,11 +890,42 @@ function bindMobileToolEvents() {
     document.querySelectorAll('#mobile-mini-editor .tpl-card').forEach(card => {
         card.onclick = () => { cfg.templateUrl = card.dataset.url; saveConfig(); renderBadge(); renderTools(); }
     })
-}
 
-function updateCoordsLabel(x,y) {
-  const el = document.getElementById('coords-label')
-  if(el) el.textContent = `${activeFieldKey.toUpperCase()} X: ${x}, Y: ${y}`
+    const elCWmob = document.getElementById('canvas-w-mob');
+    const elCWcmmob = document.getElementById('canvas-w-cm-mob');
+    const elCHmob = document.getElementById('canvas-h-mob');
+    const elCHcmmob = document.getElementById('canvas-h-cm-mob');
+
+    if (elCWmob && elCWcmmob) {
+        elCWmob.oninput = (e) => {
+            const px = +e.target.value;
+            cfg.canvasWidth = px;
+            elCWcmmob.value = pxToCm(px);
+            saveConfig(); renderBadge(); updateHeaderDimensions();
+        };
+        elCWcmmob.oninput = (e) => {
+            const cm = +e.target.value;
+            const px = cmToPx(cm);
+            cfg.canvasWidth = px;
+            elCWmob.value = px;
+            saveConfig(); renderBadge(); updateHeaderDimensions();
+        };
+    }
+    if (elCHmob && elCHcmmob) {
+        elCHmob.oninput = (e) => {
+            const px = +e.target.value;
+            cfg.canvasHeight = px;
+            elCHcmmob.value = pxToCm(px);
+            saveConfig(); renderBadge(); updateHeaderDimensions();
+        };
+        elCHcmmob.oninput = (e) => {
+            const cm = +e.target.value;
+            const px = cmToPx(cm);
+            cfg.canvasHeight = px;
+            elCHmob.value = px;
+            saveConfig(); renderBadge(); updateHeaderDimensions();
+        };
+    }
 }
 
 function handleTemplateUpload(input) {

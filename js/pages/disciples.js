@@ -7,7 +7,8 @@ import { pastorService } from '../services/pastor.service.js';
 import { discipleService } from '../services/disciple.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, createSearchSelect, downloadCSV, hexToRgba } from '../utils/helper.js';
+import { esc, downloadCSV, hexToRgba } from '../utils/helper.js';
+import { createSearchSelect } from '../../components/search-select/search-select.js';
 
 let allChurches = []
 let allDistricts = []
@@ -210,6 +211,8 @@ function renderTable() {
             churchVal.textContent = d.church_name || '—';
             
             avaWrap.innerHTML = getAvatarHtml(d.disciple_image_url, d.full_name, themeColor);
+            avaWrap.style.cursor = 'pointer';
+            avaWrap.onclick = () => openImageViewer(d.disciple_image_url || '', d.full_name);
 
             const actions = clone.querySelector('.pcm-actions');
             actions.innerHTML = `
@@ -239,6 +242,8 @@ function renderTable() {
             churchEl.textContent = d.church_name || '—';
             distEl.textContent = d.district_name || '—';
             avaContainer.innerHTML = getAvatarHtml(d.disciple_image_url, d.full_name, themeColor);
+            avaContainer.style.cursor = 'pointer';
+            avaContainer.onclick = () => openImageViewer(d.disciple_image_url || '', d.full_name);
 
             const actions = clone.querySelector('.row-actions');
             actions.innerHTML = `
@@ -443,10 +448,15 @@ function bindEvents() {
     
     // Close modal clicks
     document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.onclick = () => {
-            closeModal()
-            closeDeleteModal()
-        }
+        btn.addEventListener('click', (e) => {
+            const modal = e.target.closest('.modal-overlay')
+            if (modal) {
+                if (modal.id === 'modal-form') closeModal()
+                else if (modal.id === 'modal-delete') closeDeleteModal()
+                // image-viewer closes via inline onclick or its own logic anyway,
+                // so we do not call anything else.
+            }
+        })
     })
 
     document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open') }))
@@ -454,17 +464,57 @@ function bindEvents() {
 
 function getAvatarHtml(imageUrl, name, themeColor) {
     if (imageUrl) {
-        return `<img src="${imageUrl}" class="avatar-img" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" />`
+        return `<img src="${imageUrl}" class="avatar-img" style="width:100%;height:100%;object-fit:cover;" />`
     }
     const initials = String(name || '?').charAt(0).toUpperCase()
     if (themeColor && themeColor.startsWith('#')) {
         // hexToRgba function is already imported at the top
         const bg = hexToRgba(themeColor, 0.15)
-        return `<div class="avatar-initials" style="background-color: ${bg}; color: ${themeColor}; border: 1px solid ${themeColor}; width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">${initials}</div>`
+        return `<div class="avatar-initials" style="background-color: ${bg}; color: ${themeColor}; border: 1px solid ${themeColor}; width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;">${initials}</div>`
     }
     
     // Fallback if no theme color exists
     const charCode = initials.charCodeAt(0)
     const bgIndex = (charCode % 5) + 1
-    return `<div class="avatar-initials bg-avatar-${bgIndex}" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;">${initials}</div>`
+    return `<div class="avatar-initials bg-avatar-${bgIndex}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;">${initials}</div>`
 }
+
+function openImageViewer(url, title) {
+  const modal = document.getElementById('modal-image-viewer')
+  if (!modal) return
+  
+  const img = document.getElementById('full-image-display')
+  const initEl = document.getElementById('full-initials-display')
+  const titleEl = document.getElementById('image-viewer-title')
+  
+  titleEl.textContent = title || 'View Profile'
+  
+  if (url) {
+    img.src = url
+    img.style.display = 'block'
+    if (initEl) initEl.style.display = 'none'
+  } else {
+    img.style.display = 'none'
+    if (initEl) {
+      initEl.style.display = 'flex'
+      let nameStr = (title || '?').trim()
+      if (!nameStr) nameStr = '?'
+      initEl.textContent = nameStr.charAt(0).toUpperCase()
+    }
+  }
+  
+  modal.classList.add('open')
+}
+
+function closeImageViewer() {
+  const modal = document.getElementById('modal-image-viewer')
+  if (modal) modal.classList.remove('open')
+  setTimeout(() => {
+    const img = document.getElementById('full-image-display')
+    if (img) img.src = ''
+  }, 300)
+}
+
+// Ensure globally accessible for inline handlers
+window.openImageViewer = openImageViewer;
+window.closeImageViewer = closeImageViewer;

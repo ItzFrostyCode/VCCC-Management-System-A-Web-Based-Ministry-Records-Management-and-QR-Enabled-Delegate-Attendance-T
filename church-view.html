@@ -5,160 +5,22 @@
   <title>Church Profile — VCCC DAVAO MS</title>
   <link rel="stylesheet" href="./css/app.css" />
   <link rel="stylesheet" href="./css/layout.css" />
-  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="css/components.css" /> <!-- Keeping original index -->
+  <link rel="stylesheet" href="components/button/button.css" />
+  <link rel="stylesheet" href="components/form/form.css" />
+  <link rel="stylesheet" href="components/modal/modal.css" />
+  <link rel="stylesheet" href="components/table/table.css" />
+  <link rel="stylesheet" href="components/filter-bar/filter-bar.css" />
+  <link rel="stylesheet" href="components/search-select/search-select.css" />
+  <link rel="stylesheet" href="components/avatar/avatar.css" />
+  <link rel="stylesheet" href="components/stats/stats.css" />
+  <link rel="stylesheet" href="components/tabs/tabs.css" />
+  <link rel="stylesheet" href="components/badge/badge.css" />
+  <link rel="stylesheet" href="components/history/history.css" />
+  <link rel="stylesheet" href="components/password/password.css" />
   <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
-  <style>
-    .church-hero {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-sm);
-      position: relative;
-      overflow: hidden;
-    }
-    .church-hero::after {
-      content: '';
-      position: absolute;
-      top: 0; right: 0;
-      width: 250px; height: 250px;
-      background: radial-gradient(circle, var(--district-theme, var(--red-light)) 0%, transparent 70%);
-      opacity: 0.15;
-      pointer-events: none;
-    }
-    .church-name {
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--text);
-      margin-bottom: 8px;
-      letter-spacing: -0.02em;
-      text-transform: uppercase;
-    }
-    .church-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    
-    /* Current Pastor Section */
-    .pastor-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 24px;
-      transition: transform 0.2s;
-    }
-    .pastor-card.vacant {
-      border: 2px dashed var(--red);
-      background: #fff5f5;
-    }
-    .pastor-info h4 { margin: 0; font-size: 18px; color: var(--text); }
-    .pastor-info p { margin: 4px 0 0; font-size: 14px; color: var(--text-2); }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 20px;
-      border-radius: 12px;
-    }
-    .stat-value { font-size: 24px; font-weight: 700; color: var(--red); }
-    .stat-label { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; }
-
-    .view-section { margin-bottom: 32px; }
-    .section-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .section-title svg { width: 20px; height: 20px; color: var(--red); }
-
-    .history-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .history-table th {
-      text-align: left;
-      padding: 12px 16px;
-      font-size: 12px;
-      text-transform: uppercase;
-      color: var(--text-3);
-      background: var(--bg-body);
-      border-bottom: 1px solid var(--border);
-    }
-    .history-table td {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-    }
-
-    .district-highlight {
-      border-left: 4px solid var(--district-theme, var(--red));
-      padding-left: 16px;
-    }
-
-    /* ─── Lineage Tree Styles ─── */
-    .lineage-section-label {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 11px; font-weight: 700; color: var(--text-3);
-      text-transform: uppercase; letter-spacing: 0.05em;
-      margin-bottom: 12px;
-    }
-    .lineage-node {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 16px; border: 1px solid var(--border);
-      border-radius: 12px; background: var(--surface);
-      text-decoration: none; color: var(--text);
-      transition: all 0.2s; position: relative;
-      margin-bottom: 8px;
-    }
-    .lineage-node:hover { border-color: var(--red); transform: translateX(4px); box-shadow: var(--shadow-sm); }
-    .lineage-node.lineage-parent { border-style: solid; border-color: var(--border); }
-    .lineage-node.lineage-child { border-color: var(--border); }
-    .lineage-empty { border-style: dashed; opacity: 0.6; cursor: default; }
-    .lineage-empty:hover { transform: none; box-shadow: none; border-color: var(--border); }
-    
-    .lineage-avatar {
-      width: 32px; height: 32px; border-radius: 8px;
-      background: var(--red-light); color: var(--red);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 14px; flex-shrink: 0;
-    }
-    .lineage-node-info { flex: 1; min-width: 0; }
-    .lineage-node-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .lineage-node-sub { font-size: 12px; color: var(--text-3); margin-top: 1px; }
-    .lineage-arrow { width: 14px; height: 14px; color: var(--text-3); flex-shrink: 0; }
-
-    .lineage-tree-wrapper { position: relative; padding-left: 20px; margin-top: 10px; }
-    .lineage-tree-line {
-      position: absolute; left: 0; top: -10px; bottom: 20px;
-      width: 2px; background: var(--border);
-    }
-    .lineage-tree-item { position: relative; margin-bottom: 24px; }
-    .lineage-tree-item::before {
-      content: ''; position: absolute; left: -20px; top: 22px;
-      width: 20px; height: 2px; background: var(--border);
-    }
-  </style>
+  <link rel="stylesheet" href="css/pages/church-view.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -182,68 +44,99 @@
         <div class="skeleton" style="width:200px; height:24px; margin: 0 auto;"></div>
       </div>
 
-      <div id="content-area" style="display:none;">
-        <div class="church-hero" id="church-hero">
-          <div id="c-name" class="church-name"></div>
-          <div class="church-meta">
-            <span id="c-scope" class="pill pill-primary"></span>
-            <span id="c-address" class="pill pill-ghost"></span>
-          </div>
-          <div style="font-size:14px; color:var(--text-2); max-width: 800px; margin-top:16px;" id="c-notes"></div>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Status</div>
-            <div id="stat-status" class="stat-value">Occupied</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Pastors Assigned</div>
-            <div id="stat-pastors" class="stat-value">0</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Years Active</div>
-            <div id="stat-years" class="stat-value">0</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">District</div>
-            <div id="stat-district" class="stat-value" style="font-size:18px;">—</div>
-          </div>
-        </div>
-
-        <div class="view-section">
-          <h3 class="section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M18 21v-2a4 4 0 0 0-4-4H10a4 4 0 0 0-4 4v2"/></svg> Current Pastor</h3>
-          <div id="current-pastor-container">
-            <!-- Injected by pastor-view.js -->
-          </div>
-        </div>
-
-        <div class="view-section">
-          <h3 class="section-title"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> District Context</h3>
-          <div class="pastor-card district-highlight" id="district-context">
-            <div class="pastor-info">
-              <h4 id="d-name">—</h4>
-              <p id="d-leader">District Leader: <span>—</span></p>
-              <p id="d-notes" style="margin-top:8px; font-style:italic; font-size:12px;"></p>
+      <div id="content-area" class="profile-container" style="display:none;">
+        
+        <!-- Unified Hero Banner -->
+        <div class="church-hero-banner" id="church-hero">
+          <div class="hero-banner-accent"></div>
+          <div class="hero-banner-content">
+            <div class="hero-top-row">
+              <div class="church-avatar-box" id="c-avatar">C</div>
+              <div class="hero-main-info">
+                <div class="church-name-display" id="c-name">Church Name</div>
+                <div class="church-address-display">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  <span id="c-address">Address Here</span>
+                  <span class="pill pill-primary" id="c-scope" style="margin-left:8px; font-size:10px;">LOCAL</span>
+                </div>
+                
+                <div class="church-mini-stats">
+                  <div class="mini-stat-pill" id="stat-status-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span class="mini-stat-val" id="stat-status">Occupied</span>
+                  </div>
+                  <div class="mini-stat-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span class="mini-stat-lbl">District</span>
+                    <span class="mini-stat-val" id="stat-district">—</span>
+                  </div>
+                  <div class="mini-stat-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span class="mini-stat-lbl">Pastors</span>
+                    <span class="mini-stat-val" id="stat-pastors">0</span>
+                  </div>
+                  <div class="mini-stat-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span class="mini-stat-lbl">Years Active</span>
+                    <span class="mini-stat-val" id="stat-years">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="c-notes-wrap" style="display:none;">
+              <div class="church-notes-box" id="c-notes"></div>
             </div>
           </div>
         </div>
 
-        <div class="view-section">
-          <h3 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Organizational Lineage</h3>
-          <div id="church-lineage-tree">
-             <!-- Injected by church-view.js -->
-          </div>
-        </div>
+        <!-- 2-Column Desktop Grid -->
+        <div class="profile-dual-grid">
+          
+          <!-- LEFT COLUMN: Operations -->
+          <div class="profile-col-main">
+            <div class="view-section">
+              <div class="section-head">
+                <h3 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M18 21v-2a4 4 0 0 0-4-4H10a4 4 0 0 0-4 4v2"/></svg> Current Pastor</h3>
+              </div>
+              <div id="current-pastor-container">
+                <!-- Injected by church-view.js -->
+              </div>
+            </div>
 
-        <div class="view-section">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
-            <h3 class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Ministry Timeline</h3>
-            <button class="btn btn-primary btn-sm" onclick="openHistoricalModal()">+ Historical Record</button>
+            <div class="view-section">
+              <div class="section-head">
+                <h3 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Ministry Timeline</h3>
+                <button class="btn btn-primary btn-sm" onclick="openHistoricalModal()">+ Historical Record</button>
+              </div>
+              <div id="master-timeline" class="history-timeline">
+                <!-- Injected by timeline.service -->
+              </div>
+            </div>
           </div>
-          <div id="master-timeline" class="history-timeline">
-            <!-- Injected by timeline.service -->
+
+          <!-- RIGHT COLUMN: Context & Lineage -->
+          <div class="profile-col-side">
+            <div class="view-section">
+              <div class="section-head">
+                <h3 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> District Context</h3>
+              </div>
+              <div class="context-box" id="district-context">
+                <h4 id="d-name">—</h4>
+                <p id="d-leader">Leader: <span>—</span></p>
+                <p id="d-notes" style="margin-top:6px; font-style:italic; font-size:11px;"></p>
+              </div>
+            </div>
+
+            <div class="view-section">
+              <div class="section-head">
+                <h3 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Organizational Lineage</h3>
+              </div>
+              <div id="church-lineage-tree">
+                 <!-- Injected by church-view.js -->
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
     </main>
@@ -309,6 +202,20 @@
 </div>
 
 <!-- Scripts -->
+<!-- Image Viewer Modal -->
+<div class="modal-overlay" id="modal-image-viewer" onclick="if(event.target===this)closeImageViewer()">
+  <div class="modal-box" style="max-width:800px; background:transparent; border:none; box-shadow:none;">
+    <div class="modal-head" style="border:none; padding:10px 0;">
+      <div class="modal-title" id="image-viewer-title" style="color:#fff;">View Image</div>
+      <button class="modal-close" onclick="closeImageViewer()" style="background:rgba(255,255,255,0.1); color:#fff;">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:0; align-items:center; justify-content:center; display:flex;">
+      <img id="full-image-display" class="modal-img-full" src="" alt="Full size image" style="display:none;" />
+      <div id="full-initials-display" style="display:none; width:150px; height:150px; border-radius:50%; background:var(--red); color:white; font-size:64px; font-weight:800; align-items:center; justify-content:center; margin:40px auto;"></div>
+    </div>
+  </div>
+</div>
+
 <script src="./js/libs/supabase.min.js"></script>
 <script type="module" src="./js/pages/church-view.js"></script>
 </body>

@@ -1,0 +1,74 @@
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal-box {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  width: 100%; max-width: 640px; min-width: 320px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+  display: flex; flex-direction: column;
+  max-height: 90vh;
+  overflow-y: auto; /* Scroll lives HERE, not on modal-body */
+  transform: translateY(15px) scale(.99);
+  transition: transform .3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.modal-box.modal-sm { max-width: 400px; }
+.modal-overlay.open .modal-box { transform: none; }
+
+.modal-head {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; flex-shrink: 0;
+}
+.modal-title { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; }
+
+.modal-close {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: none; background: var(--bg-input);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--text-2); font-size: 18px; line-height: 1;
+  transition: background .15s;
+}
+.modal-close:hover { background: var(--border); color: var(--text); }
+
+.modal-body {
+  padding: 24px;
+  overflow: visible; /* CRITICAL: lets absolute-positioned dropdowns escape */
+  display: flex; flex-direction: column; gap: 18px;
+  flex: 1; /* Expand to fill space and push footer down */
+}
+.modal-foot {
+  padding: 18px 24px;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  display: flex; justify-content: flex-end; gap: 12px;
+  flex-shrink: 0;
+  margin-top: auto; /* Safety push */
+}
+
+@media (max-width: 600px) {
+  .modal-overlay { padding: 0; }
+  .modal-box {
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
+  }
+}
+.modal-img-full {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #000;
+}

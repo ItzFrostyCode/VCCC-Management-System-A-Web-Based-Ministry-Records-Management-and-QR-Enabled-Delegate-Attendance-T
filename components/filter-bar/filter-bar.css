@@ -1,0 +1,128 @@
+/* ── Filter Bar & Search ── */
+.filter-bar, .filter-row {
+  display: flex; gap: 12px; align-items: center; 
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.search-wrap {
+  flex: 1; min-width: 200px;
+  display: flex; align-items: center; gap: 10px;
+  height: 42px; 
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  padding: 0 16px;
+  transition: all 0.2s ease;
+}
+.search-wrap:focus-within {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-light);
+  background: var(--bg-card);
+}
+.search-wrap svg { 
+  width: 18px; height: 18px; 
+  stroke: var(--text-3); fill: none; stroke-width: 2.2; 
+  transition: stroke .2s; flex-shrink: 0;
+}
+.search-wrap:focus-within svg { stroke: var(--red); }
+.search-wrap input {
+  flex: 1; border: none; background: transparent;
+  font-size: 14px; color: var(--text); outline: none;
+  font-weight: 500; height: 100%; width: 100%;
+}
+.search-wrap input::placeholder { color: var(--text-3); font-weight: 400; }
+
+@media (max-width: 1024px) {
+  .filter-bar, .filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 0;
+    margin-bottom: 20px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    align-items: start;
+  }
+  
+  .filter-bar .search-wrap, 
+  .filter-row .search-wrap {
+    grid-column: 1 / -1;
+    height: 46px !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    border: 1.5px solid var(--border) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .filter-bar .search-wrap:focus-within, 
+  .filter-row .search-wrap:focus-within {
+    border-color: var(--primary) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+  }
+  
+  /* Filter Dropdowns container logic */
+  .filter-bar > div:not(.search-wrap):not(.filter-group),
+  .filter-row > div:not(.search-wrap):not(.filter-group) {
+    grid-column: span 1;
+    min-width: 0 !important;
+  }
+  
+  /* If a dropdown is the ONLY sibling to search-wrap (meaning it's the 2nd child and last child), it spans full width */
+  .filter-bar > div:not(.search-wrap):not(.filter-group):nth-child(2):last-child,
+  .filter-row > div:not(.search-wrap):not(.filter-group):nth-child(2):last-child {
+    grid-column: 1 / -1;
+  }
+  
+  /* Filter groups containing selects (like Assignment module) */
+  .filter-bar .filter-group,
+  .filter-row .filter-group {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 100% !important;
+  }
+  
+  .filter-bar .filter-group > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    border: 1.5px solid var(--border) !important;
+    background: var(--bg-input) !important;
+    box-shadow: none !important;
+  }
+
+  .ss-main, .ss-trigger {
+    width: 100% !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    background: var(--bg-input) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
+  }
+
+  /* pastor card specific layout updates */
+  .pastor-mobile-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .filter-bar > div {
+    width: 100% !important;
+  }
+}

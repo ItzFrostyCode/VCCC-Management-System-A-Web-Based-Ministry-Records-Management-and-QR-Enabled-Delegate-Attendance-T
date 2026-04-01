@@ -1,0 +1,341 @@
+/* ── District Page — Card Grid Redesign ──────────────────────── */
+
+/* ── District Tree Container ── */
+.district-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 40px;
+}
+
+/* ── District Card ── */
+.dist-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.dist-card:hover {
+  box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+  border-color: var(--dist-color, var(--border));
+}
+
+/* ── Card Header (clickable toggle) ── */
+.dist-card-header {
+  display: flex;
+  align-items: stretch;
+  cursor: pointer;
+  user-select: none;
+}
+
+
+
+.dist-card-body {
+  flex: 1;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dist-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dist-card-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.dist-card-meta {
+  flex: 1;
+  min-width: 0;
+}
+.dist-card-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dist-card-leader {
+  font-size: 12px;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dist-chevron {
+  width: 18px;
+  height: 18px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+.dist-card.open .dist-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Stats Row ── */
+.dist-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.dist-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+  gap: 2px;
+}
+.dist-stat-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+.dist-stat-warn { color: #e83820 !important; }
+.dist-stat-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.dist-stat-sep {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Action Button Row ── */
+.dist-card-actions {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  background: var(--bg-body);
+}
+.dist-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 36px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  color: var(--text-2);
+  transition: background 0.15s, color 0.15s;
+}
+.dist-action-btn:last-child { border-right: none; }
+.dist-action-btn svg {
+  width: 13px; height: 13px;
+  stroke: currentColor; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.dist-action-btn:hover { background: var(--bg-card); color: var(--text); }
+.btn-view-district:hover { color: var(--red); }
+.btn-add-church-dist:hover { color: #1f7a3c; }
+
+/* ── Church Panel (expandable) ── */
+.dist-church-panel {
+  border-top: 1px solid var(--border);
+  background: var(--bg-body);
+  transition: all 0.25s ease;
+}
+.dist-church-panel.collapsed { display: none; }
+
+.dist-no-churches {
+  padding: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+/* ── Church Chip Grid ── */
+.dist-church-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  padding: 14px;
+}
+
+.dist-church-chip {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.dist-church-chip:hover {
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  transform: translateY(-1px);
+}
+.dist-church-chip.vacant {
+  border-color: rgba(232,56,32,0.2);
+  background: #fff8f7;
+}
+
+.dist-church-chip-dot {
+  width: 4px;
+  flex-shrink: 0;
+  background: var(--border);
+}
+
+.dist-church-chip-body {
+  flex: 1;
+  padding: 10px 10px;
+  min-width: 0;
+}
+.dist-church-chip-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.dist-church-chip-pastor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dist-church-chip-pastor svg {
+  stroke: var(--text-3); fill: none; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.dist-assign-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #e83820;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dist-assign-btn:hover { text-decoration: underline; }
+
+.dist-church-chip-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border-left: 1px solid var(--border);
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.dist-chip-link,
+.dist-chip-unlink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 50%;
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+  padding: 0;
+}
+.dist-chip-link { border-bottom: 1px solid var(--border); }
+.dist-chip-link svg,
+.dist-chip-unlink svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.dist-chip-link:hover { color: var(--red); background: var(--red-light); }
+.dist-chip-unlink:hover { color: #e83820; background: #fff0ee; }
+
+/* ── Legacy classes still used by modal/grid tables ── */
+.cols-district { 
+  grid-template-columns: 60px 1.5fr 1.2fr 100px; 
+  gap: 12px;
+}
+.color-swatch {
+  width: 24px; height: 24px; border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+}
+.church-chip {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; background: var(--bg-input); border-radius: 8px;
+  font-size: 13px; color: var(--text-2); border: 1px solid var(--border);
+}
+.church-chip .remove { color: var(--text-3); cursor: pointer; font-size: 16px; padding: 0 4px; }
+.church-chip .remove:hover { color: var(--red); }
+
+/* Segment Control */
+.segment-control {
+  display: flex; background: var(--bg-input);
+  padding: 4px; border-radius: 8px; border: 1px solid var(--border);
+}
+.segment-item { flex: 1; position: relative; cursor: pointer; text-align: center; }
+.segment-item input { position: absolute; opacity: 0; }
+.segment-item span {
+  display: block; padding: 8px;
+  font-size: 13px; font-weight: 600; color: var(--text-3);
+  border-radius: 6px; transition: all 0.2s;
+}
+.segment-item input:checked + span {
+  background: var(--bg-card); color: var(--red);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .dist-church-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 10px;
+  }
+  .dist-card-stats { gap: 0; }
+  .dist-stat-val { font-size: 16px; }
+  .dist-action-btn { font-size: 10px; }
+  .cols-district { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+  .dist-church-grid { grid-template-columns: 1fr; }
+}

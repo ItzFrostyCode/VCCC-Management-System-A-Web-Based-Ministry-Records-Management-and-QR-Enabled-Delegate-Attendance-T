@@ -8,7 +8,8 @@ import { assignmentService } from '../services/assignment.service.js';
 import { discipleService } from '../services/disciple.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, createSearchSelect } from '../utils/helper.js';
+import { esc } from '../utils/helper.js';
+import { createSearchSelect } from '../../components/search-select/search-select.js';
 
 let allChurches   = []
 let allDistricts  = []

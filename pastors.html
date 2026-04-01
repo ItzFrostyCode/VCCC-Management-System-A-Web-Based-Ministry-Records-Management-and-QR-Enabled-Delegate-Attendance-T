@@ -5,33 +5,22 @@
   <title>Pastors — VCCC DAVAO MS</title>
   <link rel="stylesheet" href="./css/app.css" />
   <link rel="stylesheet" href="./css/layout.css" />
-  <link rel="stylesheet" href="./css/components.css?v=2" />
-   <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
-   <style>
-     /* Modal Responsive Refinements */
-     .rec-status-group { display: flex; gap: 10px; }
-     .rec-status-group label {
-       flex: 1; display: flex; align-items: center; gap: 8px;
-       padding: 10px 14px; border: 1.5px solid var(--border);
-       border-radius: 10px; cursor: pointer; font-size: 13px;
-       font-weight: 600; color: var(--text-2); transition: all 0.2s;
-     }
-     .rec-status-group label:has(input:checked) {
-       border-color: var(--red); background: var(--red-light); color: var(--red);
-     }
-     #rec-status-draft-lbl:has(input:checked) {
-       border-color: var(--text-2); background: var(--bg-input); color: var(--text);
-     }
-
-     .parent-row { display: flex; gap: 10px; align-items: stretch; }
-     
-     @media (max-width: 480px) {
-       .rec-status-group { flex-direction: column; }
-       .parent-row { flex-direction: column; align-items: stretch; }
-       #btn-create-draft-parent { height: 42px !important; width: 100%; border-style: solid !important; }
-       .form-row-2 { grid-template-columns: 1fr !important; gap: 16px !important; }
-     }
-   </style>
+  <link rel="stylesheet" href="css/components.css" /> <!-- Keeping original index -->
+  <link rel="stylesheet" href="components/button/button.css" />
+  <link rel="stylesheet" href="components/form/form.css" />
+  <link rel="stylesheet" href="components/modal/modal.css" />
+  <link rel="stylesheet" href="components/table/table.css" />
+  <link rel="stylesheet" href="components/filter-bar/filter-bar.css" />
+  <link rel="stylesheet" href="components/search-select/search-select.css" />
+  <link rel="stylesheet" href="components/avatar/avatar.css" />
+  <link rel="stylesheet" href="components/stats/stats.css" />
+  <link rel="stylesheet" href="components/tabs/tabs.css" />
+  <link rel="stylesheet" href="components/badge/badge.css" />
+  <link rel="stylesheet" href="components/history/history.css" />
+  <link rel="stylesheet" href="components/password/password.css" />
+  <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
+  <link rel="stylesheet" href="css/pages/pastors.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -272,7 +261,8 @@
       </button>
     </div>
     <div class="modal-body" style="padding: 10px; background: #000; display: flex; align-items: center; justify-content: center; min-height: 300px;">
-      <img id="full-image-display" class="modal-img-full" src="" />
+      <img id="full-image-display" class="modal-img-full" src="" style="display:none;" />
+      <div id="full-initials-display" style="display:none; width:150px; height:150px; border-radius:50%; background:var(--red); color:white; font-size:64px; font-weight:800; align-items:center; justify-content:center;"></div>
     </div>
   </div>
 </div>

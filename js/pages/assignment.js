@@ -5,7 +5,8 @@ import { pastorService } from '../services/pastor.service.js';
 import { assignmentService } from '../services/assignment.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, createSearchSelect, hexToRgba } from '../utils/helper.js';
+import { esc, hexToRgba } from '../utils/helper.js';
+import { createSearchSelect } from '../../components/search-select/search-select.js';
 
 let _lastIsMobile = window.innerWidth <= 1024
 window.addEventListener('resize', () => {

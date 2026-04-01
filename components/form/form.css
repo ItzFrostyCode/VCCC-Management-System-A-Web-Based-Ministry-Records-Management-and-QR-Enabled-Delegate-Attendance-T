@@ -1,0 +1,53 @@
+/* ── Inputs ── */
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-label {
+  font-size: 12px; font-weight: 500; color: var(--text-2);
+}
+.form-label .req  { color: var(--red); margin-left: 2px; }
+.form-label .opt  { font-weight: 400; color: var(--text-3); }
+.form-hint  { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.form-error { font-size: 11px; color: #E24B4A; margin-top: 2px; }
+
+.input, .select-input {
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 14px;
+  padding: 0 14px;
+  width: 100%;
+  transition: all .2s ease;
+  outline: none;
+}
+.input:focus, .select-input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-light);
+  background: var(--bg-card);
+}
+.input::placeholder { color: var(--text-3); }
+input[type="file"].input {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+input[type="file"]::file-selector-button {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-right: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .2s;
+}
+input[type="file"]:hover::file-selector-button {
+  background: var(--bg-input);
+  border-color: var(--text-3);
+}
+
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

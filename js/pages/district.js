@@ -6,7 +6,8 @@ import { pastorService } from '../services/pastor.service.js';
 import { assignmentService } from '../services/assignment.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, createSearchSelect } from '../utils/helper.js';
+import { esc } from '../utils/helper.js';
+import { createSearchSelect } from '../../components/search-select/search-select.js';
 
 let allDistricts = []
 let allChurches  = []
@@ -108,7 +109,7 @@ function toggleDistrict(id) {
   renderDistricts()
 }
 
-// ── Render ─────────────────────────────────────────────────────
+// ── Render ───────────────────────────────────────────────
 function renderDistricts() {
   const tree  = document.getElementById('district-tree')
   const count = document.getElementById('district-count')
@@ -128,80 +129,101 @@ function renderDistricts() {
       const distChurches = allChurches
         .filter(c => c.district_id === d.id)
         .sort((a, b) => a.church_name.localeCompare(b.church_name))
+      const color = d.theme_color || '#e83820'
+      const churchCount = distChurches.length
+      const vacantCount = distChurches.filter(c => !allActiveAssignments[c.id]).length
+      const leaderInitial = leader ? leader.full_name.charAt(0).toUpperCase() : '?'
 
       return `
-        <div class="district-group ${isOpen ? 'open' : ''}" data-id="${d.id}">
-          <div class="district-header">
-            <div class="dist-header-main btn-toggle-dist">
-              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              <div class="dist-info">
-                <div class="dist-color-bar" style="background:${d.theme_color || '#e83820'}"></div>
-                <div class="dist-name">${esc(d.district_name)}</div>
-                <div class="dist-leader-tag">${leader ? esc(leader.full_name) : 'No Leader'}</div>
+        <div class="dist-card ${isOpen ? 'open' : ''}" data-id="${d.id}" style="--dist-color: ${color};">
+          <div class="dist-card-header btn-toggle-dist">
+
+            <div class="dist-card-body">
+              <div class="dist-card-top">
+                <div class="dist-card-avatar" style="background:${color}20; color:${color}; border:1.5px solid ${color}40;">${leaderInitial}</div>
+                <div class="dist-card-meta">
+                  <div class="dist-card-name">${esc(d.district_name)}</div>
+                  <div class="dist-card-leader">${leader ? esc(leader.full_name) : '<span style="opacity:0.5;font-style:italic;">No leader assigned</span>'}</div>
+                </div>
+                <svg class="dist-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <div class="dist-card-stats">
+                <div class="dist-stat"><span class="dist-stat-val" style="color:${color};">${churchCount}</span><span class="dist-stat-lbl">Churches</span></div>
+                <div class="dist-stat-sep"></div>
+                <div class="dist-stat"><span class="dist-stat-val ${vacantCount > 0 ? 'dist-stat-warn' : ''}">${vacantCount}</span><span class="dist-stat-lbl">Vacant</span></div>
+                <div class="dist-stat-sep"></div>
+                <div class="dist-stat"><span class="dist-stat-val">${churchCount - vacantCount}</span><span class="dist-stat-lbl">Occupied</span></div>
               </div>
             </div>
-            <div class="dist-actions">
-              <button class="btn-circle btn-view-district" title="View Detailed Report" style="background:var(--red-light); color:var(--red);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              </button>
-              <button class="btn-circle btn-add-church-dist" title="Add Church">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <button class="btn-circle btn-dist-settings" title="Settings">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-              </button>
-            </div>
           </div>
-          <div class="church-sub-list ${!isOpen ? 'collapsed' : ''}">
-            ${distChurches.length ? distChurches.map(c => {
-              const active = allActiveAssignments[c.id]
-              return `
-                <div class="church-row" style="border-left-color: ${d.theme_color || 'var(--red)'}">
-                  <div class="church-info-wrap">
-                    <div class="church-main-line">
-                      <span class="church-name">${esc(c.church_name)}</span>
-                      <a href="church-view.html?id=${c.id}" class="btn-view-profile">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                        View
-                      </a>
-                    </div>
-                    <div class="church-meta-line">
-                      <div class="meta-item" title="Pastor">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        <span class="active-pastor-wrap">${active ? esc(active.pastor_name) : `<span class="vacant-badge btn-assign-pastor" style="cursor:pointer;" data-id="${c.id}">Assign Pastor</span>`}</span>
-                      </div>
-                      <div class="meta-item" title="Address">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                        <span style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(c.church_address) || 'No address'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button class="btn-unlink-church-action" title="Remove from District" data-church="${c.id}" data-dist="${d.id}" style="opacity: 1; margin-left:10px; background:none; border:none; color:var(--text-3); cursor:pointer;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px;"><path d="M18 6L6 18M6 6l12 12"></path></svg>
-                  </button>
+          <div class="dist-card-actions">
+            <button class="dist-action-btn btn-view-district" title="View Report">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              View
+            </button>
+            <button class="dist-action-btn btn-add-church-dist" title="Add Church">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add Church
+            </button>
+            <button class="dist-action-btn btn-dist-settings" title="Edit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              Edit
+            </button>
+          </div>
+          <div class="dist-church-panel ${!isOpen ? 'collapsed' : ''}">
+            ${churchCount === 0
+              ? `<div class="dist-no-churches">No churches assigned to this district yet.</div>`
+              : `<div class="dist-church-grid">
+                  ${distChurches.map(c => {
+                    const active = allActiveAssignments[c.id]
+                    const isVacant = !active
+                    return `
+                      <div class="dist-church-chip ${isVacant ? 'vacant' : ''}">
+                        <div class="dist-church-chip-dot" style="background:${isVacant ? '#e83820' : color};"></div>
+                        <div class="dist-church-chip-body">
+                          <div class="dist-church-chip-name">${esc(c.church_name)}</div>
+                          <div class="dist-church-chip-pastor">
+                            ${active
+                              ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>${esc(active.pastor_name)}`
+                              : `<button class="dist-assign-btn btn-assign-pastor" data-id="${c.id}">+ Assign</button>`
+                            }
+                          </div>
+                        </div>
+                        <div class="dist-church-chip-foot">
+                          <a href="church-view.html?id=${c.id}" class="dist-chip-link" title="View">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                          </a>
+                          <button class="dist-chip-unlink btn-unlink-church-action" title="Remove" data-church="${c.id}" data-dist="${d.id}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          </button>
+                        </div>
+                      </div>`
+                  }).join('')}
                 </div>`
-            }).join('') : '<div style="font-size:12px; color:var(--text-3); text-align:center; padding:15px;">No churches assigned</div>'}
+            }
           </div>
         </div>`
     }).join('')
 
   if (count) count.textContent = `${allDistricts.length} total`
 
-  tree.querySelectorAll('.district-group').forEach(group => {
-    const id = group.dataset.id
-    group.querySelector('.btn-toggle-dist').onclick = () => toggleDistrict(id)
-    group.querySelector('.btn-view-district').onclick = () => window.location.href = `district-view.html?id=${id}`
-    group.querySelector('.btn-add-church-dist').onclick = () => openChurchModal(id)
-    group.querySelector('.btn-dist-settings').onclick = () => openDistrictSettings(id)
+  tree.querySelectorAll('.dist-card').forEach(card => {
+    const id = card.dataset.id
+    card.querySelector('.btn-toggle-dist').onclick = () => toggleDistrict(id)
+    card.querySelector('.btn-view-district').onclick = (e) => { e.stopPropagation(); window.location.href = `district-view.html?id=${id}` }
+    card.querySelector('.btn-add-church-dist').onclick = (e) => { e.stopPropagation(); openChurchModal(id) }
+    card.querySelector('.btn-dist-settings').onclick = (e) => { e.stopPropagation(); openDistrictSettings(id) }
 
-    group.querySelectorAll('.btn-assign-pastor').forEach(btn => {
-      btn.onclick = () => openAssignModal(btn.dataset.id)
+    card.querySelectorAll('.btn-assign-pastor').forEach(btn => {
+      btn.onclick = (e) => { e.stopPropagation(); openAssignModal(btn.dataset.id) }
     })
-    group.querySelectorAll('.btn-unlink-church-action').forEach(btn => {
-      btn.onclick = () => removeFromDistrict(btn.dataset.church, btn.dataset.dist)
+    card.querySelectorAll('.btn-unlink-church-action').forEach(btn => {
+      btn.onclick = (e) => { e.stopPropagation(); removeFromDistrict(btn.dataset.church, btn.dataset.dist) }
     })
   })
 }
+
+
 
 // ── District Modal ─────────────────────────────────────────────
 function openDistrictSettings(id) {

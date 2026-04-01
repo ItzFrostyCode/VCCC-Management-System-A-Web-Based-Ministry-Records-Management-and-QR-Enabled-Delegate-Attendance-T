@@ -69,19 +69,15 @@ function renderProfile(p) {
   document.getElementById('p-name').textContent = p.full_name
   const mainAvatarEl = document.getElementById('p-avatar-main')
   mainAvatarEl.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name)
-  if (p.pastor_image_url) {
-    mainAvatarEl.style.cursor = 'pointer'
-    mainAvatarEl.onclick = () => openImageViewer(p.pastor_image_url, 'Pastor ' + p.full_name)
-  }
+  mainAvatarEl.style.cursor = 'pointer'
+  mainAvatarEl.onclick = () => openImageViewer(p.pastor_image_url || '', 'Pastor ' + p.full_name)
 
   const wifeAvatarEl = document.getElementById('p-avatar-wife')
   if (p.wife_name) {
     wifeAvatarEl.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name)
     wifeAvatarEl.style.display = 'block'
-    if (p.wife_image_url) {
-      wifeAvatarEl.style.cursor = 'pointer'
-      wifeAvatarEl.onclick = () => openImageViewer(p.wife_image_url, 'Wife ' + p.wife_name)
-    }
+    wifeAvatarEl.style.cursor = 'pointer'
+    wifeAvatarEl.onclick = () => openImageViewer(p.wife_image_url || '', 'Wife ' + p.wife_name)
   } else {
     wifeAvatarEl.style.display = 'none'
   }
@@ -421,7 +417,7 @@ function renderDisciples(disciples) {
 
   container.innerHTML = disciples.map(d => `
     <div class="disciple-chip">
-      <div style="width:24px; height:24px; border-radius:50%; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800;">
+      <div onclick="openImageViewer('${d.disciple_image_url || ''}', '${esc(d.full_name)}')" style="width:24px; height:24px; border-radius:50%; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; cursor:pointer;">
         ${d.full_name.charAt(0)}
       </div>
       ${esc(d.full_name)}
@@ -475,7 +471,7 @@ function renderLineage(pastor, children) {
   if (pastor.parent_id && pastor.parent_name) {
     html += `
       <a href="pastor-view.html?id=${esc(String(pastor.parent_id))}" class="lineage-node lineage-parent">
-        <div class="lineage-avatar">${pastor.parent_name.charAt(0)}</div>
+        <div class="lineage-avatar" onclick="event.preventDefault(); event.stopPropagation(); openImageViewer('${pastor.parent_image_url || ''}', '${esc(pastor.parent_name)}')" style="cursor:pointer;">${pastor.parent_name.charAt(0)}</div>
         <div class="lineage-node-info">
           <div class="lineage-node-name">${esc(pastor.parent_name)}</div>
           <div class="lineage-node-sub">Source of Mentorship</div>
@@ -497,7 +493,7 @@ function renderLineage(pastor, children) {
   html += `
     <div class="lineage-section-label" style="margin-top:24px;">Current Profile</div>
     <div class="lineage-node" style="border-color:var(--red); background:#fff5f5; cursor:default;">
-      <div class="lineage-avatar" style="background:var(--red); color:white;">${pastor.full_name.charAt(0)}</div>
+      <div class="lineage-avatar" onclick="openImageViewer('${pastor.pastor_image_url || ''}', '${esc(pastor.full_name)}')" style="background:var(--red); color:white; cursor:pointer;">${pastor.full_name.charAt(0)}</div>
       <div class="lineage-node-info">
         <div class="lineage-node-name" style="color:var(--red); font-weight:800;">${esc(pastor.full_name)}</div>
         <div class="lineage-node-sub">${esc(pastor.current_church || 'Unassigned')} · ${esc(pastor.rank_code || 'No Rank')}</div>
@@ -529,7 +525,7 @@ function renderLineage(pastor, children) {
           return `
             <div class="lineage-tree-item">
               <a href="pastor-view.html?id=${esc(String(ch.id))}" class="lineage-node lineage-child${chDraft ? ' lineage-draft' : ''}">
-                <div class="lineage-avatar" style="${chDraft ? 'opacity:0.5;' : ''}">${ch.full_name.charAt(0)}</div>
+                <div class="lineage-avatar" onclick="event.preventDefault(); event.stopPropagation(); openImageViewer('${ch.pastor_image_url || ''}', '${esc(ch.full_name)}')" style="${chDraft ? 'opacity:0.5;' : ''} cursor:pointer;">${ch.full_name.charAt(0)}</div>
                 <div class="lineage-node-info">
                   <div class="lineage-node-name">
                     ${esc(ch.full_name)}
@@ -557,13 +553,29 @@ function renderLineage(pastor, children) {
 }
 
 function openImageViewer(url, title) {
-  if (!url) return
   const modal = document.getElementById('modal-image-viewer')
+  if (!modal) return
+  
   const img = document.getElementById('full-image-display')
+  const initEl = document.getElementById('full-initials-display')
   const titleEl = document.getElementById('image-viewer-title')
   
-  img.src = url
-  titleEl.textContent = title || 'View Image'
+  titleEl.textContent = title || 'View Profile'
+  
+  if (url) {
+    img.src = url
+    img.style.display = 'block'
+    if (initEl) initEl.style.display = 'none'
+  } else {
+    img.style.display = 'none'
+    if (initEl) {
+      initEl.style.display = 'flex'
+      let nameStr = (title || '?').replace('Pastor ', '').replace('Wife ', '').trim()
+      if (!nameStr) nameStr = '?'
+      initEl.textContent = nameStr.charAt(0).toUpperCase()
+    }
+  }
+  
   modal.classList.add('open')
 }
 

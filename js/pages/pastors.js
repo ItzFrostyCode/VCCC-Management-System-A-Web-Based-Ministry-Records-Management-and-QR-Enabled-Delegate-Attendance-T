@@ -5,7 +5,8 @@ import { churchService } from '../services/church.service.js';
 import { pastorService } from '../services/pastor.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, calculateAge, createSearchSelect, downloadCSV, hexToRgba } from '../utils/helper.js';
+import { esc, calculateAge, downloadCSV, hexToRgba } from '../utils/helper.js';
+import { createSearchSelect } from '../../components/search-select/search-select.js';
 
 let allPastors = []
 let filteredPastors = []
@@ -698,13 +699,29 @@ function getAvatarHtml(imageUrl, name, themeColor) {
 
 /* Image Viewer Functions */
 function openImageViewer(url, title) {
-  if (!url) return
   const modal = document.getElementById('modal-image-viewer')
+  if (!modal) return
+  
   const img = document.getElementById('full-image-display')
+  const initEl = document.getElementById('full-initials-display')
   const titleEl = document.getElementById('image-viewer-title')
   
-  img.src = url
-  titleEl.textContent = title || 'View Image'
+  titleEl.textContent = title || 'View Profile'
+  
+  if (url) {
+    img.src = url
+    img.style.display = 'block'
+    if (initEl) initEl.style.display = 'none'
+  } else {
+    img.style.display = 'none'
+    if (initEl) {
+      initEl.style.display = 'flex'
+      let nameStr = (title || '?').replace('Pastor ', '').replace('Wife ', '').trim()
+      if (!nameStr) nameStr = '?'
+      initEl.textContent = nameStr.charAt(0).toUpperCase()
+    }
+  }
+  
   modal.classList.add('open')
 }
 

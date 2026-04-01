@@ -385,7 +385,7 @@ body.badges-page {
   max-width: 100%;
   aspect-ratio: 1050 / 750;
   background: var(--bg-canvas-frame);
-  border-radius: 8px;
+  border-radius: 0;
   box-shadow: 0 12px 48px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
   overflow: hidden;
   min-height: 200px;

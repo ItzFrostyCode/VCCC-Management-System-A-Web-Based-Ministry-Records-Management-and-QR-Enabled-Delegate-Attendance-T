@@ -5,8 +5,21 @@
   <title>Disciples — VCCC DAVAO MS</title>
   <link rel="stylesheet" href="css/app.css" />
   <link rel="stylesheet" href="css/layout.css" />
-  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/components.css" /> <!-- Keeping original index -->
+  <link rel="stylesheet" href="components/button/button.css" />
+  <link rel="stylesheet" href="components/form/form.css" />
+  <link rel="stylesheet" href="components/modal/modal.css" />
+  <link rel="stylesheet" href="components/table/table.css" />
+  <link rel="stylesheet" href="components/filter-bar/filter-bar.css" />
+  <link rel="stylesheet" href="components/search-select/search-select.css" />
+  <link rel="stylesheet" href="components/avatar/avatar.css" />
+  <link rel="stylesheet" href="components/stats/stats.css" />
+  <link rel="stylesheet" href="components/tabs/tabs.css" />
+  <link rel="stylesheet" href="components/badge/badge.css" />
+  <link rel="stylesheet" href="components/history/history.css" />
+  <link rel="stylesheet" href="components/password/password.css" />
   <link rel="icon" type="image/png" href="assets/VCCC-Logo.png">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -141,6 +154,20 @@
     <div class="modal-foot"><button class="btn btn-ghost" onclick="document.getElementById('modal-delete').classList.remove('open')">Cancel</button><button class="btn btn-danger" id="btn-delete-confirm">Remove</button></div>
   </div>
 </div>
+<!-- Image Viewer Modal -->
+<div class="modal-overlay" id="modal-image-viewer" onclick="if(event.target===this)closeImageViewer()">
+  <div class="modal-box" style="max-width:800px; background:transparent; border:none; box-shadow:none;">
+    <div class="modal-head" style="border:none; padding:10px 0;">
+      <div class="modal-title" id="image-viewer-title" style="color:#fff;">View Image</div>
+      <button class="modal-close" onclick="closeImageViewer()" style="background:rgba(255,255,255,0.1); color:#fff;">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:0; align-items:center; justify-content:center; display:flex;">
+      <img id="full-image-display" class="modal-img-full" src="" alt="Full size image" style="display:none;" />
+      <div id="full-initials-display" style="display:none; width:150px; height:150px; border-radius:50%; background:var(--red); color:white; font-size:64px; font-weight:800; align-items:center; justify-content:center; margin:40px auto;"></div>
+    </div>
+  </div>
+</div>
+
 <script src="./js/libs/supabase.min.js"></script>
 <script type="module" src="./js/pages/disciples.js"></script>
 </body>
