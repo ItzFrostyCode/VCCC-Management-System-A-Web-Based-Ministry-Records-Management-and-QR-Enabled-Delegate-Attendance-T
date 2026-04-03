@@ -163,9 +163,26 @@
   stroke: currentColor; fill: none;
   stroke-linecap: round; stroke-linejoin: round;
 }
-.dist-action-btn:hover { background: var(--bg-card); color: var(--text); }
-.btn-view-district:hover { color: var(--red); }
-.btn-add-church-dist:hover { color: #1f7a3c; }
+.dist-action-btn:hover { background: var(--bg-card); opacity: 0.85; }
+
+/* ── Specific Button Colors ── */
+.btn-view-district { 
+  background: hsla(150, 100%, 98%, 1); 
+  color: hsl(150, 80%, 35%); 
+}
+.btn-view-district:hover { background: hsla(150, 100%, 95%, 1); color: hsl(150, 80%, 30%); }
+
+.btn-add-church-dist {
+  background: hsla(215, 100%, 98%, 1);
+  color: hsl(215, 80%, 45%);
+}
+.btn-add-church-dist:hover { background: hsla(215, 100%, 95%, 1); color: hsl(215, 80%, 40%); }
+
+.btn-dist-settings { 
+  background: hsla(215, 100%, 98%, 1);
+  color: hsl(215, 80%, 45%);
+}
+.btn-dist-settings:hover { background: hsla(215, 100%, 95%, 1); color: hsl(215, 80%, 40%); }
 
 /* ── Church Panel (expandable) ── */
 .dist-church-panel {
@@ -247,16 +264,21 @@
 }
 
 .dist-assign-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 11px;
+  background: hsla(215, 100%, 97%, 1);
+  border: 1px solid hsla(215, 100%, 90%, 1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
   font-weight: 700;
-  color: #e83820;
+  color: hsl(215, 80%, 45%);
   cursor: pointer;
   white-space: nowrap;
+  transition: all 0.2s;
 }
-.dist-assign-btn:hover { text-decoration: underline; }
+.dist-assign-btn:hover { 
+  background: hsl(215, 100%, 94%);
+  color: hsl(215, 80%, 40%);
+}
 
 .dist-church-chip-foot {
   display: flex;
@@ -287,7 +309,7 @@
 .dist-chip-link { border-bottom: 1px solid var(--border); }
 .dist-chip-link svg,
 .dist-chip-unlink svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.dist-chip-link:hover { color: var(--red); background: var(--red-light); }
+.dist-chip-link:hover { color: hsl(150, 80%, 35%); background: hsla(150, 100%, 95%, 1); }
 .dist-chip-unlink:hover { color: #e83820; background: #fff0ee; }
 
 /* ── Legacy classes still used by modal/grid tables ── */

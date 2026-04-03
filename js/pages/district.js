@@ -8,10 +8,12 @@ import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
 import { esc } from '../utils/helper.js';
 import { createSearchSelect } from '../../components/search-select/search-select.js';
+import { exportChurches } from '../utils/export/church/export-church.js';
 
 let allDistricts = []
 let allChurches  = []
 let allPastors   = []
+let allAssignments = [] // Raw assignments for export
 let allActiveAssignments = {} // church_id -> { pastor_id, pastor_name }
 let openDistrictIds = new Set()
 let selLeader = null
@@ -65,9 +67,10 @@ async function initData() {
     allDistricts = districts  || []
     allChurches  = churches   || []
     allPastors   = pastors    || []
+    allAssignments = assignments || []
 
     allActiveAssignments = {}
-    ;(assignments || []).forEach(a => {
+    allAssignments.forEach(a => {
       if (a.status_code === 'active' && !a.end_date) {
         allActiveAssignments[a.church_id] = { pastor_id: a.pastor_id, pastor_name: a.pastor_name, assignment_id: a.id }
       }
@@ -327,6 +330,13 @@ function bindEvents() {
       const delBtn = document.getElementById('btn-delete-district')
       if (delBtn) delBtn.style.display = 'none'
       document.getElementById('district-modal-overlay').classList.add('open')
+    }
+  }
+
+  const btnExport = document.getElementById('btn-export-district')
+  if (btnExport) {
+    btnExport.onclick = async () => {
+      await exportChurches('district', allDistricts, allChurches, allPastors, allAssignments)
     }
   }
 

@@ -55,6 +55,7 @@ export function hexToRgba(hex, alpha = 0.15) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+
 // ── QR Payload ────────────────────────────────────────────
 // Format: {"t":"PASTOR","id":"uuid"}
 // t = delegate type, id = uuid (for WIFE, id = pastor's uuid)
@@ -72,30 +73,4 @@ export function decodeQR(raw) {
   } catch {
     return null
   }
-}
-
-// ── CSV Export ────────────────────────────────────────────
-export function arrayToCSV(rows) {
-  if (!rows.length) return ''
-  const headers = Object.keys(rows[0])
-  const escape  = v => {
-    const s = String(v ?? '')
-    return s.includes(',') || s.includes('"') || s.includes('\n')
-      ? `"${s.replace(/"/g, '""')}"` : s
-  }
-  return [
-    headers.join(','),
-    ...rows.map(r => headers.map(h => escape(r[h])).join(','))
-  ].join('\n')
-}
-
-export function downloadCSV(filename, rows) {
-  const csv  = arrayToCSV(rows)
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href     = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }

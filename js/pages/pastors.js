@@ -1,15 +1,17 @@
 import { db, requireAuth } from '../supabase.js';
 import { authService } from '../services/auth.service.js';
 import { districtService } from '../services/district.service.js';
+import { exportPastorInfo } from '../utils/export/pastors/pastor-export.js';
 import { churchService } from '../services/church.service.js';
 import { pastorService } from '../services/pastor.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, calculateAge, downloadCSV, hexToRgba } from '../utils/helper.js';
+import { esc, calculateAge, hexToRgba } from '../utils/helper.js';
 import { createSearchSelect } from '../../components/search-select/search-select.js';
 
 let allPastors = []
 let filteredPastors = []
+let selectedPastors = new Set()
 let editingId = null
 let currentPage = 1
 const ITEMS_PER_PAGE = 10
@@ -208,15 +210,73 @@ function initEventListeners() {
   const user = authService.getCurrentUser()
   const isStaff = user && user.role === 'Staff'
 
-  if (isStaff) {
-    const btnExport = document.getElementById('btn-export')
-    if (btnExport) btnExport.style.display = 'none'
-  }
-
   document.getElementById('search-input').addEventListener('input', applyFilters)
   document.getElementById('btn-add').addEventListener('click', () => { openModal() })
-  document.getElementById('btn-save').addEventListener('click', saveItem)
-  document.getElementById('btn-export').addEventListener('click', () => { if (!isStaff) exportCSV() })
+  
+  // Export Logic
+  const btnExportMenu = document.getElementById('btn-export-menu')
+  if (btnExportMenu) {
+    btnExportMenu.addEventListener('click', () => {
+      const modal = document.getElementById('modal-export')
+      const label = document.getElementById('export-mode-label')
+      
+      if (selectedPastors.size > 0) {
+        label.textContent = `SELECTED (${selectedPastors.size})`
+        label.style.color = 'var(--red)'
+      } else {
+        label.textContent = 'ALL FILTERED'
+        label.style.color = 'var(--text-3)'
+      }
+      modal.classList.add('open')
+    })
+  }
+
+  document.getElementById('btn-export-confirm').addEventListener('click', async () => {
+    const toExport = selectedPastors.size > 0 
+      ? allPastors.filter(p => selectedPastors.has(p.id))
+      : filteredPastors
+
+    if (!toExport.length) {
+      alert('No pastors to export.')
+      return
+    }
+
+    const options = {
+      includePastorImage: document.getElementById('exp-pastor-img').checked,
+      includeWifeImage: document.getElementById('exp-wife-img').checked,
+      includeBirthdates: document.getElementById('exp-bdays').checked
+    }
+
+    document.getElementById('modal-export').classList.remove('open')
+    try {
+      await exportPastorInfo(toExport, options)
+    } catch (err) {
+      alert('Export failed: ' + err.message)
+    }
+  })
+
+  // Check All
+  const checkAll = document.getElementById('check-all')
+  const checkAllMobile = document.getElementById('check-all-mobile')
+
+  const handleCheckAll = (e) => {
+    const isChecked = e.target.checked
+    const paginatedIds = getPaginatedItems().map(p => p.id)
+    
+    if (isChecked) {
+      paginatedIds.forEach(id => selectedPastors.add(id))
+    } else {
+      paginatedIds.forEach(id => selectedPastors.delete(id))
+    }
+
+    if (checkAll) checkAll.checked = isChecked
+    if (checkAllMobile) checkAllMobile.checked = isChecked
+    
+    renderTable()
+  }
+
+  if (checkAll) checkAll.addEventListener('change', handleCheckAll)
+  if (checkAllMobile) checkAllMobile.addEventListener('change', handleCheckAll)
 
   // Pagination Events
   document.getElementById('btn-prev').addEventListener('click', prevPage)
@@ -286,6 +346,14 @@ function renderTable() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedItems = filteredPastors.slice(startIndex, endIndex)
+
+  // Update check-all state
+  const checkAll = document.getElementById('check-all')
+  const checkAllMobile = document.getElementById('check-all-mobile')
+  const allChecked = paginatedItems.length > 0 && paginatedItems.every(p => selectedPastors.has(p.id))
+  
+  if (checkAll) checkAll.checked = allChecked
+  if (checkAllMobile) checkAllMobile.checked = allChecked
 
   const user = authService.getCurrentUser()
   const isStaff = user && user.role === 'Staff'
@@ -366,6 +434,31 @@ function renderTable() {
       actions.querySelector('.pcm-edit').addEventListener('click', () => openModal(p.id));
       if (!isStaff) actions.querySelector('.pcm-delete').addEventListener('click', () => confirmDelete(p.id));
 
+      // Row Selection
+      const card = clone.querySelector('.pastor-card-mobile');
+      const rowCheck = clone.querySelector('.row-check-mobile');
+      if (rowCheck) {
+        const isSelected = selectedPastors.has(p.id);
+        rowCheck.checked = isSelected;
+        if (isSelected) card.classList.add('selected');
+        
+        rowCheck.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            selectedPastors.add(p.id);
+            card.classList.add('selected');
+          } else {
+            selectedPastors.delete(p.id);
+            card.classList.remove('selected');
+          }
+          
+          // Update both check-alls
+          const currentPaginated = getPaginatedItems();
+          const allCheckedMsg = currentPaginated.length > 0 && currentPaginated.every(px => selectedPastors.has(px.id));
+          if (checkAll) checkAll.checked = allCheckedMsg;
+          if (checkAllMobile) checkAllMobile.checked = allCheckedMsg;
+        });
+      }
+
       body.appendChild(clone);
 
     } else {
@@ -409,7 +502,24 @@ function renderTable() {
 
       actions.querySelector('button[title="View Profile"]').addEventListener('click', () => window.location.href = `pastor-view.html?id=${p.id}`);
       actions.querySelector('.btn-edit').addEventListener('click', () => openModal(p.id));
-      if (!isStaff) actions.querySelector('.btn-delete').addEventListener('click', () => confirmDelete(p.id));
+      // Checkbox logic
+      const rowCheck = clone.querySelector('.row-check')
+      if (rowCheck) {
+        rowCheck.checked = selectedPastors.has(p.id)
+        rowCheck.addEventListener('change', (e) => {
+          if (e.target.checked) selectedPastors.add(p.id)
+          else selectedPastors.delete(p.id)
+          
+          // Update both check-alls if needed
+          const currentPaginated = getPaginatedItems()
+          const allCheck = document.getElementById('check-all')
+          const allCheckM = document.getElementById('check-all-mobile')
+          const isAllChecked = currentPaginated.length > 0 && currentPaginated.every(px => selectedPastors.has(px.id))
+          
+          if (allCheck) allCheck.checked = isAllChecked
+          if (allCheckM) allCheckM.checked = isAllChecked
+        })
+      }
 
       body.appendChild(clone);
     }
@@ -428,6 +538,12 @@ function renderTable() {
   if (currentPage === totalPages) { btnNext.disabled = true; btnNext.style.opacity = '0.5' } else { btnNext.disabled = false; btnNext.style.opacity = '1' }
 }
 
+
+function getPaginatedItems() {
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  return filteredPastors.slice(startIndex, endIndex)
+}
 
 function prevPage() {
   if (currentPage > 1) {
@@ -672,17 +788,6 @@ function confirmDelete(id) {
       alert(err.message)
     }
   }
-}
-
-function exportCSV() {
-  downloadCSV('pastors.csv', filteredPastors.map(p => ({
-    Name: p.full_name,
-    Wife: p.wife_name,
-    Contact: p.contact_number,
-    Status: p.current_status_code,
-    Birthdate: p.birthdate,
-    Since: p.pastoring_start_date
-  })))
 }
 
 function getAvatarHtml(imageUrl, name, themeColor) {

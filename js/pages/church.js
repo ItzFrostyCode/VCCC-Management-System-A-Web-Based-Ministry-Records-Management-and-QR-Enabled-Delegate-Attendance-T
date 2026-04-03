@@ -10,10 +10,12 @@ import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
 import { esc } from '../utils/helper.js';
 import { createSearchSelect } from '../../components/search-select/search-select.js';
+import { exportChurches } from '../utils/export/church/export-church.js';
 
 let allChurches   = []
 let allDistricts  = []
 let allPastors    = []
+let allAssignments = []
 let allPastorAssignments = {} // church_id -> pastor_name  (active only)
 let editingId     = null
 let currentPage   = 1
@@ -85,6 +87,7 @@ async function initData() {
     allChurches  = churches  || []
     allDistricts = districts || []
     allPastors   = pastors   || []
+    allAssignments = assignments || []
 
     // Build active pastor lookup keyed by church_id
     allPastorAssignments = {}
@@ -539,4 +542,35 @@ function bindEvents() {
   
   const overlayQD = document.getElementById('quick-disciple-overlay')
   if (overlayQD) overlayQD.addEventListener('click', e => { if (e.target === overlayQD) closeQuickAdd() })
+
+  // --- Export Events ---
+  const btnExport = document.getElementById('btn-export-church')
+  if (btnExport) {
+    btnExport.onclick = () => document.getElementById('export-modal-overlay').classList.add('open')
+  }
+
+  const closeExport = () => document.getElementById('export-modal-overlay').classList.remove('open')
+  const btnCloseEx = document.getElementById('btn-close-export')
+  const btnCancelEx = document.getElementById('btn-cancel-export')
+  if (btnCloseEx) btnCloseEx.onclick = closeExport
+  if (btnCancelEx) btnCancelEx.onclick = closeExport
+
+  const btnExAll = document.getElementById('btn-export-all')
+  if (btnExAll) {
+    btnExAll.onclick = async () => {
+      closeExport()
+      await exportChurches('all', allDistricts, allChurches, allPastors, allAssignments)
+    }
+  }
+
+  const btnExInfo = document.getElementById('btn-export-info')
+  if (btnExInfo) {
+    btnExInfo.onclick = async () => {
+      closeExport()
+      await exportChurches('info', allDistricts, allChurches, allPastors, allAssignments)
+    }
+  }
+
+  const overlayEx = document.getElementById('export-modal-overlay')
+  if (overlayEx) overlayEx.onclick = (e) => { if (e.target === overlayEx) closeExport() }
 }

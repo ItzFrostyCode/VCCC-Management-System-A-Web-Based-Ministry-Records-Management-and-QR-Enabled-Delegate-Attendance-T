@@ -7,8 +7,9 @@ import { pastorService } from '../services/pastor.service.js';
 import { discipleService } from '../services/disciple.service.js';
 import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
-import { esc, downloadCSV, hexToRgba } from '../utils/helper.js';
+import { esc, hexToRgba } from '../utils/helper.js';
 import { createSearchSelect } from '../../components/search-select/search-select.js';
+import { exportDisciplesHierarchical } from '../utils/export/disciples/export-disciple.js';
 
 let allChurches = []
 let allDistricts = []
@@ -413,14 +414,6 @@ async function deleteItem() {
     }
 }
 
-function exportCSV() {
-    downloadCSV('disciples.csv', allDisciples.map(d => ({
-        'Full Name': d.full_name,
-        'Church': d.church_name,
-        'District': d.district_name
-    })))
-}
-
 function bindEvents() {
     const btnLogout = document.getElementById('btn-logout')
     if (btnLogout) {
@@ -432,19 +425,25 @@ function bindEvents() {
 
     const user = authService.getCurrentUser();
     const isStaff = user && user.role === 'Staff';
-    const btnExport = document.getElementById('btn-export');
-    if (isStaff && btnExport) btnExport.style.display = 'none';
-
-    document.getElementById('btn-add').onclick = () => { openCreate() }
-    const expBtn = document.getElementById('btn-export')
-    if (expBtn) expBtn.onclick = () => { if(!isStaff) exportCSV() }
     
+    document.getElementById('btn-add').onclick = openCreate
     document.getElementById('btn-save').onclick = saveItem
     document.getElementById('btn-delete-confirm').onclick = deleteItem
     document.getElementById('btn-prev').onclick = prevPage
     document.getElementById('btn-next').onclick = nextPage
     
     document.getElementById('search-input').addEventListener('input', () => { currentPage = 1; renderTable(); })
+    
+    const btnExport = document.getElementById('btn-export')
+    if (btnExport) {
+        btnExport.onclick = async () => {
+            try {
+                await exportDisciplesHierarchical(allDistricts, allChurches, allPastors, allDisciples)
+            } catch (err) {
+                alert('Export failed: ' + err.message)
+            }
+        }
+    }
     
     // Close modal clicks
     document.querySelectorAll('.modal-close').forEach(btn => {
