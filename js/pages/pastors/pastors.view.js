@@ -222,11 +222,12 @@ export class PastorsView {
             actions.dataset.id = p.id;
             actions.appendChild(ui.createActionBtn('view', null, false));
             actions.appendChild(ui.createActionBtn('edit', null, false));
+            
             // Secretary lifecycle actions (icon-only for mobile)
+            // Color mapping integrated into CSS for better maintenance, passing through here for initialization
             actions.appendChild(this._createLifecycleBtn('assign', `<svg viewBox="0 0 24 24"><path d="M12 2L3 9h3v11h12V9h3L12 2zm0 2.8L18.2 9H5.8L12 4.8zm-2 14.2v-6h4v6h-4z"/></svg>`, 'Assign', p.current_status_code));
             actions.appendChild(this._createLifecycleBtn('transfer', `<svg viewBox="0 0 24 24"><path d="M19 12l-7 7-1.41-1.41L15.17 13H5v-2h10.17l-4.58-4.59L12 5l7 7z"/></svg>`, 'Transfer', p.current_status_code));
-            actions.appendChild(this._createLifecycleBtn('transition', `<svg viewBox="0 0 24 24"><path d="M12 2A10 10 0 1 0 22 12 10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>`, 'Movement / Status', p.current_status_code));
-            actions.appendChild(this._createLifecycleBtn('deceased', `<svg viewBox="0 0 24 24"><path d="M13 3v4h4v2h-4v12h-2V9H7V7h4V3h2z"/></svg>`, 'Deceased', p.current_status_code));
+            actions.appendChild(this._createLifecycleBtn('transition', `<svg viewBox="0 0 24 24"><path d="M12 2A10 10 0 1 0 22 12 10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>`, 'Movement', p.current_status_code));
             
             if (!isStaff) actions.appendChild(ui.createActionBtn('delete', null, false));
         }

@@ -123,12 +123,12 @@ class ChurchViewController {
                         </div>
                     </div>
                     <div class="pastor-c-foot">
-                        <button class="pastor-c-btn" id="btn-assign-now" style="color:var(--red);">+ Assign Pastor</button>
+                        <button class="pastor-c-btn" id="btn-assign-new" style="color:var(--red);">+ Assign Pastor</button>
                     </div>
                 </div>
             `;
-            const btn = document.getElementById('btn-assign-now');
-            if (btn) btn.onclick = () => window.router.push(`assignment.html?church_id=${this.currentChurchId}`);
+            const btn = document.getElementById('btn-assign-new');
+            if (btn) btn.onclick = () => window.router.push(`/pastors.html`);
             return;
         }
 

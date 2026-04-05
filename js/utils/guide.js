@@ -27,18 +27,19 @@ function getGuideContent() {
       `
     },
     'pastors.html': {
-      title: 'Pastor Directory',
+      title: 'Pastor Directory (2026 Workflow)',
       content: `
         <p><strong>What is this page for?</strong><br>
-        This page holds the master list of all pastors/ministers in the database.</p>
-        <p><strong>What to click:</strong><br>
-        - <strong>"Add Pastor"</strong>: Registers a brand new person into the system.<br>
-        - <strong>"Edit Icon" (Pencil)</strong>: Updates typos in their name, birthdate, or contact info.<br>
-        - <strong>"View Profile" (Clicking a row)</strong>: Opens the Pastor's Ministry Timeline.</p>
-        <p><strong>What happens after clicking:</strong><br>
-        Adding a pastor creates a permanent record. Editing a pastor updates their static bio info instantly.</p>
-        <p><strong>⚠️ Do NOT edit assignments here:</strong><br>
-        You cannot change a pastor's church assignment from their "Edit" button. Assignments belong on the Ministry Timeline (found by clicking into their Profile).</p>
+        This is the master list of all ministers. It now uses a <strong>Sequential Workflow</strong> to prevent orphaned records.</p>
+        <p><strong>The "Add -> Deploy" Sequence:</strong><br>
+        1. <strong>Click "Add Pastor"</strong>: Enter their name, wife's name, and photo.<br>
+        2. <strong>Save</strong>: This creates the ministerial record.<br>
+        3. <strong>Deployment Wizard (Auto-pop)</strong>: You will be asked if they are Pioneering, Taking over a church, or going International.</p>
+        <p><strong>Key Terms:</strong><br>
+        - <strong style="color:var(--red);">Effective Date</strong>: The official handover date. The system uses this to close old assignments and open new ones perfectly.<br>
+        - <strong>"Setup Later"</strong>: If you aren't ready to deploy yet, click this to keep them as a "Draft."</p>
+        <p><strong>⚠️ Do NOT edit assignments via "Edit":</strong><br>
+        Use the <strong>"Movement/Status"</strong> button in the table to start a transition. The "Edit" pencil is only for fixing typos in names or numbers.</p>
       `
     },
     'pastor-view.html': {

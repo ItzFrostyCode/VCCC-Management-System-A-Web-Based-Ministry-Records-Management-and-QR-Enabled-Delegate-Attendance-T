@@ -438,7 +438,7 @@
 <div class="modal-overlay" id="modal-transition">
   <div class="modal-box modal-md">
     <div class="modal-head">
-      <span class="modal-title">Pastor Transition Wizard</span>
+      <span class="modal-title" id="modal-transition-title">Pastor Transition Wizard</span>
       <button type="button" class="modal-close" id="btn-close-transition">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -486,7 +486,7 @@
                    <span>Foreign mission</span>
                 </div>
              </label>
-             <label class="tr-choice">
+             <label class="tr-choice" id="tr-choice-undeploy">
                 <input type="radio" name="tr-type" value="undeploy" />
                 <div class="tr-choice-card">
                    <div class="tr-icon">🛑</div>
@@ -548,6 +548,7 @@
         </div>
       </div>
       <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="btn-skip-transition" style="display:none; margin-right:auto;">Setup Later</button>
         <button type="button" class="btn btn-ghost" id="btn-cancel-transition">Cancel</button>
         <button type="submit" class="btn btn-primary" id="btn-save-transition">Execute Transition</button>
       </div>

@@ -11,9 +11,6 @@ import { events } from './utils/events.js';
 const SIDEBAR_TEMPLATE = `
   <aside class="sidebar" id="app-sidebar">
     <div class="sidebar-top">
-      <button class="sidebar-collapse-btn" id="sidebar-collapse-toggle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
       <a href="/index.html" class="sidebar-logo">
         <img src="assets/VCCC-Logo.png" class="sidebar-logo-img" alt="VCCC Logo" />
       </a>
@@ -29,7 +26,6 @@ const SIDEBAR_TEMPLATE = `
       
       <!-- Church Org -->
       <div class="sidebar-divider"></div>
-      <a href="/assignment.html"  class="nav-item" data-page="assignment"  data-tip="Assignment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><polyline points="9 9 9 9"/></svg></a>
       <a href="/church.html"      class="nav-item" data-page="church"      data-tip="Churches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
       <a href="/district.html"    class="nav-item" data-page="district"    data-tip="Districts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>
       
@@ -55,11 +51,7 @@ const SIDEBAR_TEMPLATE = `
 const TOPBAR_TEMPLATE = (title) => `
   <div class="topbar-hamburger-mount"></div>
   <div class="topbar-title">${title}</div>
-  <div class="topbar-search" style="margin-left: auto; margin-right: 16px; transition: border-color 0.2s;">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" id="global-search-input" placeholder="Search..." onfocus="this.parentElement.style.borderColor='var(--text)'" onblur="this.parentElement.style.borderColor='var(--border)'">
-  </div>
-  <div class="topbar-actions-mount"></div>
+  <div class="topbar-actions-mount" style="margin-left: auto;"></div>
 `;
 
 const MOBILE_DRAWER_TEMPLATE = `
@@ -111,8 +103,8 @@ export function initLayout(title) {
 
   // Restore original sidebar logic without auto-collapse forcing
   if (shell) {
-    const isCollapsed = localStorage.getItem('vccc_sidebar_collapsed') === 'true';
-    shell.classList.toggle('sidebar-collapsed', isCollapsed);
+    shell.classList.remove('sidebar-collapsed');
+    localStorage.removeItem('vccc_sidebar_collapsed');
   }
 
   const user = authService.getCurrentUser();
@@ -175,28 +167,10 @@ export function initLayout(title) {
 
 
 
-  // 9. Bind Toggle Desktop (Sidebar internal toggle)
-  const collapseBtn = document.getElementById('sidebar-collapse-toggle');
-  if (collapseBtn) {
-    collapseBtn.onclick = () => {
-      const isCollapsed = shell.classList.toggle('sidebar-collapsed');
-      localStorage.setItem('vccc_sidebar_collapsed', isCollapsed);
-    };
-  }
 
   // 10. Bind Logout
   bindLogout();
 
-  // 11. Bind Global Search
-  const globalSearch = document.getElementById('global-search-input');
-  if (globalSearch) {
-    globalSearch.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && globalSearch.value.trim() !== '') {
-        // We know the user wants to search pastors via global search
-        window.location.href = `/pastors.html?search=${encodeURIComponent(globalSearch.value.trim())}`;
-      }
-    });
-  }
 }
 
 

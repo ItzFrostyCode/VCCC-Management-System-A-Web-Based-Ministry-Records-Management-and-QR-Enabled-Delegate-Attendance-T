@@ -248,8 +248,9 @@ class PastorsController {
             ['btn-cancel-assign',     'modal-assign'],
             ['btn-close-transfer',    'modal-transfer'],
             ['btn-cancel-transfer',   'modal-transfer'],
-            ['btn-close-undeployed',  'modal-undeployed'],
-            ['btn-cancel-undeployed', 'modal-undeployed']
+            ['btn-close-transition',  'modal-transition'],
+            ['btn-cancel-transition', 'modal-transition'],
+            ['btn-skip-transition',   'modal-transition']
         ];
         closers.forEach(([btnId, modalId]) => {
             const btn = document.getElementById(btnId);
@@ -526,10 +527,20 @@ class PastorsController {
         document.getElementById('modal-transfer')?.classList.add('open');
     }
 
-    async openTransitionWizard(pastor) {
+    async openTransitionWizard(pastor, isNewFlow = false) {
         if (!pastor) return;
 
-        // Populate basic info
+        // 1. Reset Modal Header & Skip Button
+        const titleEl = document.getElementById('modal-transition-title');
+        if (titleEl) titleEl.textContent = isNewFlow ? '🚀 Initial Deployment Wizard' : 'Pastor Transition Wizard';
+        
+        const skipBtn = document.getElementById('btn-skip-transition');
+        if (skipBtn) skipBtn.style.display = isNewFlow ? 'inline-block' : 'none';
+        
+        const undeployBtn = document.getElementById('tr-choice-undeploy');
+        if (undeployBtn) undeployBtn.style.display = isNewFlow ? 'none' : 'flex';
+
+        // 2. Populate basic info
         document.getElementById('tr-pastor-id').value = pastor.id;
         document.getElementById('tr-pastor-name').textContent = pastor.full_name;
         document.getElementById('tr-date').value = new Date().toISOString().split('T')[0];
@@ -542,15 +553,15 @@ class PastorsController {
         if (currentStatus) {
             currentStatus.textContent = pastor.church_name 
                 ? `Active at ${pastor.church_name}` 
-                : 'No active primary assignment';
+                : (isNewFlow ? 'New Record — Unassigned' : 'No active primary assignment');
         }
 
-        // Reset fields
+        // 3. Reset Fields & Radios
         this.toggleTransitionFields('pioneer');
         const defaultRadio = document.querySelector('input[name="tr-type"][value="pioneer"]');
         if (defaultRadio) defaultRadio.checked = true;
 
-        // Init SearchSelects for the wizard
+        // 4. Init SearchSelects for the wizard
         const distWrap = document.getElementById('tr-new-church-dist-sel');
         if (distWrap) {
             distWrap.innerHTML = '';
@@ -569,12 +580,6 @@ class PastorsController {
         document.getElementById('modal-transition')?.classList.add('open');
     }
 
-    toggleTransitionFields(type) {
-        const panels = document.querySelectorAll('.tr-panel');
-        panels.forEach(p => {
-            p.style.display = (p.dataset.type === type) ? 'block' : 'none';
-        });
-    }
 
     _getDistrictOptions() {
         return [
@@ -719,6 +724,58 @@ class PastorsController {
             btn.textContent = 'Confirm Transfer';
         }
     }
+    async handleSaveTransition() {
+        const btn = document.getElementById('btn-save-transition');
+        if (!btn) return;
+        
+        btn.disabled = true;
+        btn.textContent = 'Executing...';
+
+        try {
+            const pastorId = document.getElementById('tr-pastor-id').value;
+            const date = document.getElementById('tr-date').value;
+            const type = document.querySelector('input[name="tr-type"]:checked')?.value;
+            const notes = document.getElementById('tr-notes').value;
+
+            if (!pastorId || !date || !type) throw new Error('Missing vital transition data');
+
+            const payload = {
+                pastor_id: pastorId,
+                transition_date: date,
+                transition_type: type,
+                notes: notes
+            };
+
+            // Gather context-specific data based on choice
+            if (type === 'pioneer') {
+                payload.new_church_name = document.getElementById('tr-new-church-name').value;
+                payload.district_id = this.selPioneerDist?.getValue();
+                if (!payload.new_church_name || !payload.district_id) throw new Error('New church details are required for Pioneering');
+            } else if (type === 'takeover') {
+                payload.target_church_id = this.selTakeoverChurch?.getValue();
+                if (!payload.target_church_id) throw new Error('You must select a station to take over');
+            } else if (type === 'international') {
+                payload.mission_details = document.getElementById('tr-intl-details').value;
+                if (!payload.mission_details) throw new Error('Mission details are required');
+            } else if (type === 'undeploy') {
+                payload.reason = document.getElementById('tr-undeploy-reason').value;
+            }
+
+            const result = await pastoralLifecycleDomain.executeTransition(payload);
+            
+            ui.toast(result.message);
+            document.getElementById('modal-transition')?.classList.remove('open');
+            await this.reloadData();
+
+        } catch (err) {
+            console.error('Transition failed:', err);
+            ui.toast(err.message || 'Transition execution failed', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Execute Transition';
+        }
+    }
+
 
     handleMarkDeceased(pastor) {
         ui.confirm(
@@ -815,7 +872,9 @@ class PastorsController {
             await this.reloadData();
 
             if (result.action === 'created') {
-                ui.showPastorCreatedWizard(result.data);
+                // SEQUENTIAL WORKFLOW (Phase 14): Add -> Deploy
+                ui.toast(`Pastor created. Now choose deployment...`, 'info');
+                setTimeout(() => this.openTransitionWizard(result.data, true), 300);
             } else {
                 ui.toast(result.message);
             }

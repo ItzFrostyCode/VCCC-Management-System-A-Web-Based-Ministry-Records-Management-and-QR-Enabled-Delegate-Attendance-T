@@ -13,7 +13,6 @@ const ASSETS = [
     '/pastor-view.html',
     '/church.html',
     '/church-view.html',
-    '/assignment.html',
     '/district.html',
     '/district-view.html',
     '/disciples.html',
