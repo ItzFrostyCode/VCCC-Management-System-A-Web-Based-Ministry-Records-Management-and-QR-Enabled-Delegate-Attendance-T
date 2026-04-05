@@ -51,3 +51,23 @@ input[type="file"]:hover::file-selector-button {
 }
 
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Progressive Disclosure Styles */
+.field-hidden {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    pointer-events: none;
+}
+.field-visible {
+    max-height: 400px; /* Safe upper bound for a typical field */
+    opacity: 1;
+    overflow: visible;
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    pointer-events: auto;
+}

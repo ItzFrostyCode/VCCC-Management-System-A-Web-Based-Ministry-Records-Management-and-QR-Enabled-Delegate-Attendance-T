@@ -1,3 +1,4 @@
+import { initLayout } from '../layout.js';
 import { requireAuth } from '../supabase.js';
 import { districtService } from '../services/district.service.js';
 import { churchService } from '../services/church.service.js';
@@ -12,6 +13,7 @@ let currentDistrict = null
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        initLayout('District'); // Restore global sidebar
         await requireAuth()
         const urlParams = new URLSearchParams(window.location.search)
         const id = urlParams.get('id')

@@ -1,10 +1,11 @@
+import { initLayout } from '../layout.js';
 import { requireAuth } from '../supabase.js';
+import { ui } from '../utils/ui.js';
 import { authService } from '../services/auth.service.js';
 import { districtService } from '../services/district.service.js';
 import { churchService } from '../services/church.service.js';
 import { pastorService } from '../services/pastor.service.js';
 import { assignmentService } from '../services/assignment.service.js';
-import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
 import { esc } from '../utils/helper.js';
 import { createSearchSelect } from '../../components/search-select/search-select.js';
@@ -29,11 +30,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
+    initLayout('District'); // Restore global sidebar
     console.log('District: auth check...')
     await requireAuth()
-    console.log('District: nav/guide init...')
-    highlightNav()
-    injectMobileNav()
+    console.log('District: guide init...')
     initGuide()
 
     console.log('District: fetching data...')
@@ -248,13 +248,14 @@ async function deleteDistrict() {
   const id   = document.getElementById('district-id').value
   const dist = allDistricts.find(d => d.id === id)
   if (!dist) return
-  if (!confirm(`Delete "${dist.district_name}"? Churches will be unassigned.`)) return
-  try {
-    await districtService.remove(id)
-    closeAllModals()
-    await initData()
-    renderDistricts()
-  } catch (err) { alert('Error deleting district: ' + err.message) }
+  ui.confirm(`Delete "${dist.district_name}"? Churches will be unassigned.`, async () => {
+    try {
+      await districtService.remove(id)
+      closeAllModals()
+      await initData()
+      renderDistricts()
+    } catch (err) { ui.toast('Error deleting district: ' + err.message, 'error') }
+  }, { title: 'Delete District', confirmText: 'Delete' })
 }
 
 // ── Church Assign Modal ────────────────────────────────────────
@@ -293,12 +294,13 @@ async function removeFromDistrict(churchId, distId) {
   const ch   = allChurches.find(c => c.id === churchId)
   const dist = allDistricts.find(d => d.id === distId)
   if (!ch || !dist) return
-  if (!confirm(`Remove "${ch.church_name}" from "${dist.district_name}"?`)) return
-  try {
-    await churchService.update(churchId, { ...ch, district_id: null })
-    await initData()
-    renderDistricts()
-  } catch (err) { alert('Error: ' + err.message) }
+  ui.confirm(`Remove "${ch.church_name}" from "${dist.district_name}"?`, async () => {
+    try {
+      await churchService.update(churchId, { ...ch, district_id: null })
+      await initData()
+      renderDistricts()
+    } catch (err) { ui.toast('Error: ' + err.message, 'error') }
+  }, { title: 'Unlink Church', confirmText: 'Remove' })
 }
 
 // ── Close Modals ───────────────────────────────────────────────
@@ -311,14 +313,6 @@ function closeAllModals() {
 
 // ── Bind Events ────────────────────────────────────────────────
 function bindEvents() {
-  const btnLogout = document.getElementById('btn-logout')
-  if (btnLogout) {
-    btnLogout.addEventListener('click', async () => {
-      await authService.signOut()
-      window.location.href = '/login.html'
-    })
-  }
-
   const btnAddDist = document.getElementById('btn-add-district')
   if (btnAddDist) {
     btnAddDist.onclick = () => {
@@ -333,7 +327,7 @@ function bindEvents() {
     }
   }
 
-  const btnExport = document.getElementById('btn-export-district')
+  const btnExport = document.getElementById('btn-export')
   if (btnExport) {
     btnExport.onclick = async () => {
       await exportChurches('district', allDistricts, allChurches, allPastors, allAssignments)

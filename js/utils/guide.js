@@ -104,7 +104,7 @@ function getGuideContent() {
       `
     },
     'assignment.html': {
-      title: 'Assignment Records (Legacy)',
+      title: 'Assignment Records',
       content: `
         <p><strong>What is this page for?</strong><br>
         This is the raw, master list of every single assignment movement in the system.</p>

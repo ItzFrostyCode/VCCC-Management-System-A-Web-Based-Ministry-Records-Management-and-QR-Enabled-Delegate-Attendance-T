@@ -24,13 +24,7 @@
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar">
-    <a href="/" class="sidebar-logo"><img src="assets/VCCC-Logo.png" class="sidebar-logo-img" alt="Logo" /></a>
-    <nav class="sidebar-nav">
-       <a href="/index.html" class="nav-item" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>
-       <a href="/church.html" class="nav-item active" data-page="church"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
-    </nav>
-  </aside>
+  <div id="sidebar-container"></div>
   <div class="app-main">
     <header class="topbar">
       <button class="btn-icon" id="btn-back" style="margin-right:12px;">
@@ -38,7 +32,7 @@
       </button>
       <div class="topbar-title">Church Profile</div>
     </header>
-    <main class="page-content">
+    <main class="page-content" id="main-content">
       <div id="loading-state" style="padding:100px; text-align:center;">
         <div class="skeleton" style="width:300px; height:40px; margin: 0 auto 16px;"></div>
         <div class="skeleton" style="width:200px; height:24px; margin: 0 auto;"></div>
@@ -216,7 +210,7 @@
   </div>
 </div>
 
-<script src="./js/libs/supabase.min.js"></script>
-<script type="module" src="./js/pages/church-view.js"></script>
+<script src="js/libs/supabase.min.js"></script>
+<script type="module" src="js/pages/church-view.controller.js"></script>
 </body>
 </html>

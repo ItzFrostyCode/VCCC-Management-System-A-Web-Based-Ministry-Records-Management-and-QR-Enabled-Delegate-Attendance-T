@@ -24,39 +24,9 @@
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar">
-    <a href="/" class="sidebar-logo">
-      <img src="assets/VCCC-Logo.png" class="sidebar-logo-img" alt="VCCC Logo" />
-    </a>
-    <nav class="sidebar-nav">
-      <!-- People -->
-      <a href="/index.html"       class="nav-item" data-page="dashboard"   data-tip="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>
-      <a href="/pastors.html"     class="nav-item" data-page="pastors"     data-tip="Pastors"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg></a>
-      <a href="/disciples.html"   class="nav-item" data-page="disciples"   data-tip="Disciples"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a8 8 0 0 1 16 0v2"/></svg></a>
-      <!-- Church Org -->
-      <div class="sidebar-divider"></div>
-      <a href="/church.html"      class="nav-item" data-page="church"      data-tip="Church"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
-      <a href="/assignment.html"  class="nav-item" data-page="assignment"  data-tip="Assignment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><polyline points="9 9 9 9"/></svg></a>
-      <a href="/district.html"    class="nav-item" data-page="district"    data-tip="District"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>
-      <!-- Events -->
-      <div class="sidebar-divider"></div>
-      <a href="/conferences.html" class="nav-item" data-page="conferences" data-tip="Conferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></a>
-      <a href="/badges.html"      class="nav-item" data-page="badges"      data-tip="Badges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></a>
-      <a href="/scanner.html"     class="nav-item" data-page="scanner"     data-tip="Scanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg></a>
-      <div class="sidebar-divider"></div>
-      <a href="/admin_logs.html"  class="nav-item admin-only" data-page="logs" data-tip="Activity Logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></a>
-    </nav>
-    <div class="sidebar-bottom">
-      <div class="sidebar-divider"></div>
-      <button class="nav-item" id="btn-logout" data-tip="Sign Out" style="cursor:pointer;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      </button>
-    </div>
-  </aside>
-
+  <div id="sidebar-container"></div>
   <div class="app-main">
-    <header class="topbar"><div class="topbar-title">Assignment History</div></header>
-    <main class="page-content">
+    <main class="page-content" id="main-content">
       <!-- Header -->
       <div class="page-header">
         <div class="page-header-info">
@@ -64,6 +34,10 @@
           <span class="page-header-count" id="assignment-count">0 total records</span>
         </div>
         <div class="page-header-actions">
+          <button class="btn btn-ghost" id="btn-export">
+            <svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+            Export Data
+          </button>
           <button class="btn btn-primary" id="btn-add-assignment">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Add Record
@@ -85,17 +59,18 @@
       <div class="data-table">
         <div class="data-table-head cols-assign">
           <div>Pastor / Church</div>
-          <div>Type</div>
+          <div>Role (Event)</div>
           <div>Status</div>
           <div>Duration</div>
           <div style="text-align:right">Actions</div>
         </div>
-        <div id="assignment-list" class="data-table-body">
+        <div id="assignment-table-body" class="data-table-body">
           <div class="empty-state">
             <div class="skeleton skel-row" style="width:100%"></div>
             <div class="skeleton skel-row" style="width:100%"></div>
           </div>
         </div>
+      </div>
         <div id="pagination" style="display:none; justify-content:space-between; align-items:center; padding: 12px 16px; border-top: 1px solid var(--border);">
           <div style="font-size:13px; color:var(--text-3); font-weight:500;" id="page-info">Showing 1-10 of 0</div>
           <div style="display:flex; gap:6px;">
@@ -131,82 +106,105 @@
       </div>
     </template>
 
-    <!-- Modal -->
-    <div class="modal-overlay" id="assign-modal-overlay">
+    <!-- Edit / Add Modal (Correction) -->
+    <div class="modal-overlay" id="modal-edit">
       <div class="modal-box">
         <div class="modal-head">
-          <h2 class="modal-title" id="modal-title">New Assignment Record</h2>
-          <button class="modal-close" id="btn-close-modal">&times;</button>
+          <h2 class="modal-title" id="modal-title-edit">Assignment Record</h2>
+          <button class="modal-close" id="btn-close-edit">&times;</button>
         </div>
-        <form id="assign-form">
+        <form id="assignment-form-edit">
           <div class="modal-body">
-            <input type="hidden" id="f-id" />
+            <input type="hidden" id="fe-id" name="id" />
             
             <div class="form-row-2">
               <div class="form-field">
                 <label class="form-label">Pastor <span class="req">*</span></label>
-                <div id="f-pastor-sel"></div>
+                <div id="fe-pastor-sel"></div>
               </div>
               <div class="form-field">
                 <label class="form-label">Church <span class="req">*</span></label>
-                <div id="f-church-sel"></div>
+                <div id="fe-church-sel"></div>
               </div>
             </div>
 
             <div class="form-row-2">
               <div class="form-field">
-                <label class="form-label">Role</label>
-                <select id="f-type" class="input">
-                  <option value="Lead Pastor">Lead Pastor</option>
-                  <option value="Assistant Pastor">Assistant Pastor</option>
-                  <option value="District Presbyter">District Presbyter</option>
-                  <option value="Interim Setup">Interim Setup</option>
+                <label class="form-label">Assignment Type <span class="req">*</span></label>
+                <select id="fe-assignment-type" name="assignment_type" class="input" required>
+                  <option value="takeover">Takeover — Assuming an existing pastorate</option>
+                  <option value="pioneering">Pioneering — Starting a new church</option>
+                  <option value="legacy">Legacy — Imported historical record</option>
                 </select>
               </div>
-               <div class="form-field">
-                <label class="form-label">Event Type</label>
-                <select id="f-event" class="input">
-                  <option value="Transfer">Transfer</option>
-                  <option value="Pioneering">Pioneering</option>
-                  <option value="Takeover">Takeover</option>
-                  <option value="Legacy Assignment">Legacy Assignment</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row-2">
-               <div class="form-field">
-                <label class="form-label">Status</label>
-                <select id="f-status" class="input">
-                  <option value="active">Active</option>
-                  <option value="ended">Ended</option>
-                  <option value="transferred">Transferred</option>
-                  <option value="redirection">Redirection</option>
-                  <option value="pullout">Pullout</option>
-                  <option value="undeployed">Undeployed</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row-2">
               <div class="form-field">
                 <label class="form-label">Start Date <span class="req">*</span></label>
-                <input type="date" id="f-start" class="input" required />
-              </div>
-              <div class="form-field">
-                <label class="form-label">End Date <span class="opt">(Optional)</span></label>
-                <input type="date" id="f-end" class="input" />
+                <input type="date" id="fe-start" name="start_date" class="input" required />
               </div>
             </div>
 
             <div class="form-field">
               <label class="form-label">Notes</label>
-              <textarea id="f-notes" class="input" style="height:80px; padding-top:10px; resize:none;" placeholder="Background context for this assignment..."></textarea>
+              <textarea id="fe-notes" name="notes" class="input" style="height:60px; padding-top:10px; resize:none;" placeholder="Background context for this assignment..."></textarea>
             </div>
           </div>
           <div class="modal-foot">
-            <button type="button" class="btn btn-ghost" id="btn-cancel-modal">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-save">Save Record</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel-edit">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-edit">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Update Modal (Lifecycle Progression) -->
+    <div class="modal-overlay" id="modal-update">
+      <div class="modal-box modal-sm">
+        <div class="modal-head">
+          <h2 class="modal-title">Update Status</h2>
+          <button class="modal-close" id="btn-close-update">&times;</button>
+        </div>
+        <form id="assignment-form-update">
+          <div class="modal-body">
+            <input type="hidden" id="fu-id" name="id" />
+            
+            <div id="fu-context-info" style="margin-bottom:16px; padding:10px 14px; background:var(--bg-input); border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-weight:600; color:var(--text);">
+              Loading...
+            </div>
+
+            <div class="form-field">
+              <label class="form-label">New Status <span class="req">*</span></label>
+              <!-- Hidden or read-only status since it's forced to ended when updating? Let's just lock it to ended for clarity -->
+              <div style="font-weight:700; color:var(--text); padding:10px; background:#f1f5f9; border-radius:8px; border:1px solid #cbd5e1;">
+                ⬛ Ended
+              </div>
+              <input type="hidden" name="status_code" value="ended" />
+            </div>
+
+            <div class="form-field">
+              <label class="form-label">End Date <span class="req">*</span></label>
+              <input type="date" id="fu-end" name="end_date" class="input" required />
+            </div>
+
+            <div class="form-field">
+              <label class="form-label">End Reason <span class="req">*</span></label>
+              <select id="fu-end-reason" name="end_reason" class="input" required>
+                <option value="">-- Select Reason --</option>
+                <option value="transferred">Transferred</option>
+                <option value="pullout">Pullout</option>
+                <option value="redirection">Redirection</option>
+                <option value="ended">Ended</option>
+                <option value="deceased">Deceased</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label">Closing Notes</label>
+              <textarea id="fu-notes" name="notes" class="input" style="height:60px; padding-top:10px; resize:none;" placeholder="Optional context..."></textarea>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-update">Cancel</button>
+            <button type="submit" class="btn btn-warning" id="btn-save-update">Close Assignment</button>
           </div>
         </form>
       </div>
@@ -217,6 +215,6 @@
 </div>
 
 <script src="./js/libs/supabase.min.js"></script>
-<script type="module" src="./js/pages/assignment.js"></script>
+<script type="module" src="./js/pages/assignments/assignments.controller.js?v=3"></script>
 </body>
 </html>

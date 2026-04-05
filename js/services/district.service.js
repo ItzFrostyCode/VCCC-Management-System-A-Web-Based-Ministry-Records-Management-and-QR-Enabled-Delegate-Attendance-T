@@ -1,76 +1,40 @@
+import { BaseService } from './base.service.js';
 import { db } from '../db.js';
-import { authService } from './auth.service.js';
 
-export const districtService = {
+class DistrictService extends BaseService {
+  constructor() {
+    super('districts', '*', true);
+  }
+
   async fetchAll() {
-    const { data, error } = await db.rpc('get_districts_v3')
-    if (error) throw error
-    return data || []
-  },
+    const { data, error } = await db.rpc('get_districts_v3');
+    if (error) throw error;
+    return data || [];
+  }
 
   async fetchById(id) {
-    const { data, error } = await db.rpc('get_districts_v3')
-    if (error) throw error
-    const match = (data || []).find(d => d.id === id)
-    return match || null
-  },
+    const data = await this.fetchAll();
+    const match = (data || []).find(d => d.id === id);
+    return match || null;
+  }
 
   async create(districtData) {
-    const { district_name, theme_color, leader_pastor_id, notes } = districtData
-    const { data, error } = await db
-      .from('districts')
-      .insert({
-        district_name: district_name.trim().toUpperCase(),
-        theme_color: theme_color || null,
-        leader_pastor_id: leader_pastor_id || null,
-        notes: notes || null
-      })
-      .select('id, district_name, theme_color, leader_pastor_id, notes, created_at')
-      .single()
-    if (error) throw error
-
-    const user = authService.getCurrentUser()
-    if (user) {
-      await authService.logAudit(user.id, 'CREATE_DISTRICT', `Added District: ${data.district_name}`)
-    }
-
-    return data
-  },
+    const auditAction = 'CREATE_DISTRICT';
+    const auditDetails = `Added District: ${districtData.district_name.trim().toUpperCase()}`;
+    return super.create(districtData, auditAction, auditDetails);
+  }
 
   async update(id, districtData) {
-    const { district_name, theme_color, leader_pastor_id, notes } = districtData
-    const { data, error } = await db
-      .from('districts')
-      .update({
-        district_name: district_name.trim().toUpperCase(),
-        theme_color: theme_color || null,
-        leader_pastor_id: leader_pastor_id || null,
-        notes: notes || null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select('id, district_name, theme_color, leader_pastor_id, notes, created_at')
-      .single()
-    if (error) throw error
-
-    const user = authService.getCurrentUser()
-    if (user) {
-      await authService.logAudit(user.id, 'UPDATE_DISTRICT', `Updated District: ${data.district_name}`)
-    }
-
-    return data
-  },
+    const auditAction = 'UPDATE_DISTRICT';
+    const auditDetails = `Updated District: ${districtData.district_name?.trim().toUpperCase() || id}`;
+    return super.update(id, districtData, auditAction, auditDetails);
+  }
 
   async remove(id) {
-    const { error } = await db
-      .from('districts')
-      .update({ is_deleted: true, updated_at: new Date().toISOString() })
-      .eq('id', id)
-    if (error) throw error
-
-    const user = authService.getCurrentUser()
-    if (user) {
-      await authService.logAudit(user.id, 'DELETE_DISTRICT', `Removed District ID: ${id}`)
-    }
+    const auditAction = 'DELETE_DISTRICT';
+    const auditDetails = `Removed District ID: ${id}`;
+    return super.remove(id, auditAction, auditDetails);
   }
 }
+
+export const districtService = new DistrictService();

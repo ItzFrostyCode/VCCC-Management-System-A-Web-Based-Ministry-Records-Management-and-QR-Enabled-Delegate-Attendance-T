@@ -1,4 +1,5 @@
-import { requireAuth } from '../supabase.js';
+import { ui } from '../utils/ui.js';
+import { db, requireAuth } from '../supabase.js';
 import { pastorService } from '../services/pastor.service.js';
 import { timelineService } from '../services/timeline.service.js';
 import { discipleService } from '../services/disciple.service.js';
@@ -6,613 +7,645 @@ import { rankService } from '../services/rank.service.js';
 import { trainingService } from '../services/training.service.js';
 import { assignmentService } from '../services/assignment.service.js';
 import { churchService } from '../services/church.service.js';
-import { esc, calculateAge, formatDate } from '../utils/helper.js';
+import { esc, formatDate } from '../utils/helper.js';
+import { exportPastorHistoryPDF } from '../utils/export/pastors/pastor-history-pdf.js';
 
-// pastor-view.js
-let globalPastorId = null;
-
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await requireAuth()
-    const urlParams = new URLSearchParams(window.location.search)
-    const pastorId = urlParams.get('id')
-
-    if (!pastorId) {
-      window.location.href = 'pastors.html'
-      return
+/**
+ * Profile Presenter Utility
+ * Centralizes all semantic labeling and display logic (Thin Presentation Layer)
+ */
+const ProfilePresenter = {
+    getMetricLabel(type, value) {
+        if (type === 'disciples') return value === 0 ? "Starting Ministry Journey" : `${value} Disciples`;
+        if (type === 'years') return value < 1 ? "Newly Ordained" : `${value} Years in Ministry`;
+        if (type === 'churches') return value === 1 ? `1 Church Pioneered` : `${value} Churches Pioneered`;
+        return '';
+    },
+    getCoverGradient(themeColor) {
+        // Generates the Social Profile dynamic cover
+        const color = themeColor || '#475569'; // Default to a sophisticated slate if no district color
+        return `linear-gradient(135deg, ${color} 0%, #111827 100%)`;
+    },
+    formatDateLong(dateStr) {
+        if (!dateStr) return 'Joined Recently';
+        const d = new Date(dateStr);
+        // Prevent "Invalid Date" UI errors
+        return isNaN(d.getTime()) ? 'Joined Recently' : d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    },
+    getInitialsAvatar(name, themeColor) {
+        const firstLetter = (name || 'P').charAt(0).toUpperCase();
+        if (themeColor && themeColor.length === 7) {
+            // Using hex alpha channels (88 = ~53%, CC = 80%) over the white card background creates a 'lighter' premium theme color.
+            return `<div class="avatar-initials local-theme-avatar" style="background: linear-gradient(135deg, ${themeColor}88, ${themeColor}CC);">${firstLetter}</div>`;
+        }
+        // Hash length to grab a preset color 1-8
+        const colorIndex = ((name || '').length % 8) + 1;
+        return `<div class="avatar-initials bg-avatar-${colorIndex}">${firstLetter}</div>`;
     }
+};
 
-    globalPastorId = pastorId;
+let globalPastorId = null;
+let pageData = {
+  pastor: null,
+  history: [],
+  disciples: [],
+  ranks: [],
+  trainings: [],
+  pioneered: [],
+  assignmentHistory: [] // ← NEW: church term history
+};
 
-    await loadData(pastorId)
-  } catch (err) {
-    console.error('Pastor View init failed:', err)
-    alert('Failed to initialize page: ' + err.message)
-  }
-})
+// ─── Initialization ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await requireAuth();
+        const { initLayout } = await import('../layout.js');
+        initLayout('Pastors');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const pastorId = urlParams.get('id');
+        
+        if (!pastorId) { 
+            window.location.href = 'pastors.html'; 
+            return; 
+        }
+
+        globalPastorId = pastorId;
+        await loadData(pastorId);
+        
+        initGlobalHooks();
+        initTabSystem();
+        initQuickEdit();
+        initCommandBar();
+    } catch (err) {
+        console.error('Pastor View init failed:', err);
+        ui.toast('Failed to load profile. Please refresh.', 'error');
+    }
+});
+
+function initGlobalHooks() {
+    // Attach to window object for inline HTML onclick handlers
+    window.handleEditProfile = handleEditProfile;
+    window.openImageViewer = openImageViewer;
+    window.switchTab = switchTab;
+    window.openModal = (id) => document.getElementById(id)?.classList.add('open');
+    window.closeModal = (id) => document.getElementById(id)?.classList.remove('open');
+
+    // Secretary lifecycle quick-actions from pastor profile
+    window.handleProfileAssign = () => {
+        if (!pageData.pastor) return;
+        window.location.href = `pastors.html?add=1&pastor_id=${pageData.pastor.id}`;
+    };
+    window.handleProfileTransfer = () => {
+        if (!pageData.pastor) return;
+        window.location.href = `pastors.html?transfer=${pageData.pastor.id}`;
+    };
+
+    // Credentials logic
+    window.handleAddRank = () => {
+        const form = document.getElementById('rank-form');
+        if (form) {
+            form.reset();
+            document.getElementById('fr-effective-date').value = new Date().toISOString().split('T')[0];
+        }
+        window.openModal('modal-rank');
+    };
+}
 
 async function loadData(id) {
-  try {
-    const [pastor, history, disciples, ranks, trainings, children, pioneered] = await Promise.all([
-      pastorService.fetchById(id),
-      timelineService.fetchPastorTimeline(id),
-      discipleService.fetchByPastor(id),
-      rankService.fetchByPastor(id),
-      trainingService.fetchByPastor(id),
-      pastorService.getChildren(id),
-      pastorService.fetchPioneeredChurches(id)
-    ])
+    try {
+        // Parallel data fetching for performance
+        const [pastor, history, disciples, ranks, trainings, pioneered, assignmentHistory] = await Promise.all([
+            pastorService.fetchById(id),
+            timelineService.fetchPastorTimeline(id),
+            discipleService.fetchByPastor(id),
+            rankService.fetchByPastor(id),
+            trainingService.fetchByPastor(id),
+            pastorService.fetchPioneeredChurches(id),
+            assignmentService.fetchByPastor(id)  // ← fetch full assignment history
+        ]);
 
-    renderProfile(pastor)
-    renderStats(pastor, history, disciples, ranks, trainings, pioneered)
-    renderMasterTimeline(history)
-    renderDisciples(disciples)
-    renderLineage(pastor, children)
-    renderFoundations(pioneered)
+        pageData = { pastor, history, disciples, ranks, trainings, pioneered, assignmentHistory };
 
-    document.getElementById('loading-state').style.display = 'none'
-    document.getElementById('content-area').style.display = 'block'
-
-  } catch (err) {
-    console.error('Data load failed:', err)
-    document.getElementById('loading-state').innerHTML = `
-      <div style="color:var(--red); padding:40px;">
-        <h3>Error Loading Data</h3>
-        <p>${esc(err.message)}</p>
-        <button class="btn btn-ghost" onclick="location.reload()">Retry</button>
-      </div>
-    `
-  }
+        renderProfile(pastor);
+        renderMasterTimeline(history);
+        renderDisciples(disciples);
+        renderAssignmentHistory(assignmentHistory);
+        renderCredentials(ranks); // Render the new history section
+        
+    } catch (err) {
+        console.error('Data load failed:', err);
+        ui.toast('Error fetching profile data.', 'error');
+    }
 }
+
+// ─────────────────────────────────────────────────────────────
+// RENDERING ENGINES
+// ─────────────────────────────────────────────────────────────
 
 function renderProfile(p) {
-  document.getElementById('p-name').textContent = p.full_name
-  const mainAvatarEl = document.getElementById('p-avatar-main')
-  mainAvatarEl.innerHTML = getAvatarHtml(p.pastor_image_url, p.full_name)
-  mainAvatarEl.style.cursor = 'pointer'
-  mainAvatarEl.onclick = () => openImageViewer(p.pastor_image_url || '', 'Pastor ' + p.full_name)
+    if (!p) return;
 
-  const wifeAvatarEl = document.getElementById('p-avatar-wife')
-  if (p.wife_name) {
-    wifeAvatarEl.innerHTML = getAvatarHtml(p.wife_image_url, p.wife_name)
-    wifeAvatarEl.style.display = 'block'
-    wifeAvatarEl.style.cursor = 'pointer'
-    wifeAvatarEl.onclick = () => openImageViewer(p.wife_image_url || '', 'Wife ' + p.wife_name)
-  } else {
-    wifeAvatarEl.style.display = 'none'
-  }
+    if (document.getElementById('p-name')) document.getElementById('p-name').textContent = p.full_name;
+    // Rank: derive from pageData.ranks history (senior rank by most recent date), fallback to 'Pastor'
+    const rankLabel = document.getElementById('p-rank-label');
+    if (rankLabel) {
+        const latestRank = (pageData.ranks && pageData.ranks.length > 0)
+            ? [...pageData.ranks].sort((a, b) => new Date(b.effective_date) - new Date(a.effective_date))[0].rank_code
+            : null;
+        rankLabel.textContent = latestRank || p.rank_code || 'Pastor';
+    }
+    
+    const coverEl = document.getElementById('profile-cover');
+    if (coverEl) coverEl.style.background = ProfilePresenter.getCoverGradient(p.district_theme_color);
 
-  const statusMap = {
-    active: { label: 'Active', color: '#2e7d32', bg: '#e8f5e9' },
-    undeployed: { label: 'Undeployed', color: '#757575', bg: '#f5f5f5' },
-    transferred: { label: 'Transferred', color: '#1565c0', bg: '#e3f2fd' },
-    redirection: { label: 'Redirection', color: '#ef6c00', bg: '#fff3e0' },
-    pullout: { label: 'Pullout', color: '#c62828', bg: '#ffebee' }
-  }
-  
-  const st = statusMap[p.current_status_code] || { label: p.current_status_code, color: '#757575', bg: '#f5f5f5' }
-  document.getElementById('p-status').innerHTML = `<span class="status-badge" style="background:${st.bg}; color:${st.color}; font-size:12px; font-weight:700;">${st.label}</span>`
-  
-  // Append text node after the SVG icon in the pill spans
-  const phoneEl = document.getElementById('p-phone')
-  phoneEl.appendChild(document.createTextNode(p.contact_number || 'No contact'))
-  
-  const pAge = p.birthdate ? ` (${calculateAge(p.birthdate)} yrs)` : ''
-  const bdayEl = document.getElementById('p-bday')
-  bdayEl.appendChild(document.createTextNode(p.birthdate ? formatDate(p.birthdate) + pAge : 'Birthdate unknown'))
-  
-  let notesHtml = p.notes || ''
-  if (p.wife_name) {
-    const wAge = p.wife_birthdate ? ` (${calculateAge(p.wife_birthdate)} yrs)` : ''
-    const wBday = p.wife_birthdate ? formatDate(p.wife_birthdate) : 'unknown'
-    notesHtml = `<strong>Wife:</strong> ${p.wife_name} (Born ${wBday}${wAge})<br><br>${notesHtml}`
-  }
-  document.getElementById('p-notes').innerHTML = notesHtml
+    const avatarEl = document.getElementById('p-avatar-main');
+    if (avatarEl) {
+        if (p.pastor_image_url) {
+            avatarEl.innerHTML = `<img src="${p.pastor_image_url}" alt="${esc(p.full_name)}">`;
+            avatarEl.onclick = () => window.openImageViewer(p.pastor_image_url, 'Pastor ' + p.full_name);
+            avatarEl.style.cursor = 'pointer';
+        } else {
+            avatarEl.innerHTML = ProfilePresenter.getInitialsAvatar(p.full_name, p.district_theme_color);
+            avatarEl.onclick = null;
+            avatarEl.style.cursor = 'default';
+        }
+    }
+
+    // District + Church + Contact
+    const churchEl = document.getElementById('p-church-val');
+    const districtEl = document.getElementById('p-district-val');
+    const joinedEl = document.getElementById('p-joined-val');
+    const phoneEl = document.getElementById('p-phone-val');
+    const phoneAboutEl = document.getElementById('p-phone-about');
+
+    // church_name and district_name are now mapped to top-level by pastorService.fetchById()
+    if (churchEl)   churchEl.textContent   = p.church_name   || p.current_church || 'No church assigned';
+    if (districtEl) districtEl.textContent = p.district_name || 'No district assigned';
+    if (joinedEl) joinedEl.textContent = ProfilePresenter.formatDateLong(p.created_at);
+    if (phoneEl) phoneEl.textContent = p.contact_number || 'No contact provided';
+    if (phoneAboutEl) phoneAboutEl.textContent = p.contact_number || 'No contact provided';
+
+    renderMetrics(p);
+    renderSpouseCard(p);
+    renderAboutSection(p);
 }
 
-function renderStats(p, history, disciples, ranks, trainings, pioneered) {
-  // Years of Service
-  if (p.pastoring_start_date) {
-    const start = new Date(p.pastoring_start_date)
-    const now = new Date()
-    let diff = now.getFullYear() - start.getFullYear()
-    if (diff < 0) diff = 0
-    document.getElementById('stat-years').textContent = diff + (diff === 1 ? ' Year' : ' Years')
-  }
+function renderMetrics(p) {
+    const mount = document.getElementById('metrics-mount');
+    if (!mount) return;
 
-  // Churches served
-  const churchCount = new Set(history.filter(h => h.church_id).map(h => h.church_id)).size
-  document.getElementById('stat-churches').textContent = churchCount
+    const years = calculateYears(p.pastoring_start_date || p.created_at);
+    const metrics = [
+        { type: 'disciples', val: p.disciple_count || 0 },
+        { type: 'churches',  val: p.pioneered_count || 0 },
+        { type: 'years',     val: years }
+    ];
 
-  // Disciples
-  document.getElementById('stat-disciples').textContent = disciples.length
-
-  // Pioneered
-  if (document.getElementById('stat-pioneered')) {
-    document.getElementById('stat-pioneered').textContent = (pioneered ? pioneered.length : 0)
-  }
-
-  // Current Rank
-  if (ranks && ranks.length > 0) {
-      document.getElementById('stat-rank').textContent = ranks[0].rank_code;
-  } else {
-      document.getElementById('stat-rank').textContent = 'Worker';
-  }
-
-  // Training
-  document.getElementById('stat-training').textContent = (trainings ? trainings.length : 0) + ' Courses';
-
-  // Current Role from Timeline (First ASSIGNMENT_START that is active)
-  const active = history.find(h => h.type === 'ASSIGNMENT_START' && h.raw_data.status_code === 'active' && !h.raw_data.end_date)
-  if (active) {
-    document.getElementById('stat-role').textContent = active.raw_data.churches?.church_name || 'Assigned'
-  } else {
-    document.getElementById('stat-role').textContent = 'Unassigned'
-  }
+    mount.innerHTML = metrics
+        .filter(m => !(m.type === 'churches' && m.val === 0))
+        .map(m => `
+            <div class="fb-metric">
+                <span class="val">${m.val || '0'}</span>
+                <span class="lbl">${ProfilePresenter.getMetricLabel(m.type, m.val)}</span>
+            </div>
+        `).join('');
 }
 
-function switchTab(tabId) {
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.classList.remove('active');
-    b.style.borderBottom = 'none';
-    b.style.color = 'var(--text-2)';
-  });
-  const activeBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`);
-  if(activeBtn) {
-    activeBtn.classList.add('active');
-    activeBtn.style.borderBottom = '2px solid var(--red)';
-    activeBtn.style.color = 'var(--red)';
-  }
+function calculateYears(date) {
+    if (!date) return 0;
+    const startTime = new Date(date).getTime();
+    if (isNaN(startTime)) return 0; // Prevent NaN calculations on bad dates
+    
+    const diffMs = Date.now() - startTime;
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365.25))); // .25 accounts for leap years
+}
 
-  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-  const target = document.getElementById('tab-' + tabId);
-  if(target) target.style.display = 'block';
+function renderSpouseCard(p) {
+    const container = document.getElementById('spouse-container');
+    if (!container) return;
+
+    if (!p.wife_name) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="fb-spouse-card">
+            <h3 class="fb-card-title">Ministry Partner</h3>
+            <div class="fb-spouse-inner">
+                <div class="fb-spouse-avatar" ${p.wife_image_url ? `onclick="window.openImageViewer('${esc(p.wife_image_url)}')" style="cursor:pointer;"` : ''}>
+                    ${p.wife_image_url 
+                        ? `<img src="${esc(p.wife_image_url)}" alt="${esc(p.wife_name)}">`
+                        : ProfilePresenter.getInitialsAvatar(p.wife_name, p.district_theme_color)
+                    }
+                </div>
+                <div class="fb-spouse-info">
+                    <h4>${esc(p.wife_name)}</h4>
+                    <p>Support & Ministry Partner</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderAboutSection(p) {
+    const content = document.getElementById('about-details-content');
+    if (!content) return;
+
+    // Derive rank from pageData.ranks history (most recent) — p.rank_code does not exist on the pastors table
+    const latestRankCode = (pageData.ranks && pageData.ranks.length > 0)
+        ? [...pageData.ranks].sort((a, b) => new Date(b.effective_date) - new Date(a.effective_date))[0].rank_code
+        : null;
+    const rank    = latestRankCode || 'Pastor';
+    const church  = p.church_name  || p.current_church || 'No church assigned';
+    const district = p.district_name || 'No district';
+    const joined = ProfilePresenter.formatDateLong(p.created_at);
+    const startDate = p.pastoring_start_date ? ProfilePresenter.formatDateLong(p.pastoring_start_date) : null;
+    const status = (p.current_status_code || 'active').charAt(0).toUpperCase() + (p.current_status_code || 'active').slice(1);
+
+    content.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display:flex; gap:10px; align-items:center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#65676B" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                <span><strong>Rank:</strong> ${esc(rank)}</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#65676B" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span><strong>Church:</strong> ${esc(church)}</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#65676B" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
+                <span><strong>District:</strong> ${esc(district)}</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#65676B" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span><strong>Member since:</strong> ${joined}</span>
+            </div>
+            ${startDate ? `<div style="display:flex; gap:10px; align-items:center;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#65676B" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Pastoring since:</strong> ${startDate}</span></div>` : ''}
+            <div style="display:flex; gap:10px; align-items:center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#65676B" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span><strong>Status:</strong> ${esc(status)}</span>
+            </div>
+        </div>
+    `;
 }
 
 function renderMasterTimeline(timeline) {
-  const container = document.getElementById('master-timeline')
-  if (!timeline || !timeline.length) {
-    container.innerHTML = '<div class="empty-state">No ministry history recorded yet.</div>'
-    return
-  }
+    const container = document.getElementById('master-timeline');
+    if (!container) return;
 
-  container.innerHTML = timeline.map(event => {
-    const isBlocker = event.type === 'TRAINING_FAILED';
-    const isActiveAss = event.type === 'ASSIGNMENT_START' && event.raw_data.status_code === 'active' && !event.raw_data.end_date;
-    
-    let dotColor = 'var(--surface)';
-    let dotBorder = 'var(--red)';
-    if (isActiveAss) dotColor = 'var(--red)';
-    if (isBlocker) dotBorder = 'var(--red-dark)';
+    if (!timeline || timeline.length === 0) {
+        container.innerHTML = `<div class="fb-event-card fb-empty-state">No timeline records yet.</div>`;
+        return;
+    }
 
-    let typePill = '';
-    if (event.type === 'ASSIGNMENT_START') typePill = `<span class="pill" style="font-size:11px; background:var(--red-light); color:var(--red); border:none;">Assignment</span>`;
-    else if (event.type === 'RANK_CHANGE') typePill = `<span class="pill" style="font-size:11px; background:#e3f2fd; color:#1565c0; border:none;">Promotion</span>`;
-    else if (event.type === 'TRAINING_LOG') typePill = `<span class="pill" style="font-size:11px; background:#e8f5e9; color:#2e7d32; border:none;">Training</span>`;
-    else if (event.type === 'TRAINING_FAILED') typePill = `<span class="pill" style="font-size:11px; background:#ffebee; color:#c62828; border:none;">Blocker</span>`;
-    else if (event.type === 'ASSIGNMENT_END') typePill = `<span class="pill" style="font-size:11px; background:#f5f5f5; color:#757575; border:none;">Conclusion</span>`;
-    else if (event.type === 'PIONEERED_CHURCH') typePill = `<span class="pill" style="font-size:11px; background:#e0f2f1; color:#00796b; border:none;">Foundation</span>`;
+    container.innerHTML = timeline.map(event => {
+        const isSystem = event.category !== 'manual';
+        const iconClass = isSystem ? '' : 'manual';
+        const svgIcon = isSystem 
+            ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`
+            : `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.27 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
 
-    if (event.type === 'PIONEERED_CHURCH') { dotColor = '#00796b'; dotBorder = '#00796b'; }
-
-    return `
-      <div class="timeline-item ${isActiveAss ? 'active' : ''}">
-        <div class="timeline-dot" style="background:${dotColor}; border-color:${dotBorder};"></div>
-        <div class="timeline-content" style="${isBlocker ? 'border-color:var(--red-dark);' : ''}">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-            <div style="font-weight:700; color:${isBlocker ? 'var(--red-dark)' : 'var(--text)'};">${esc(event.title)}</div>
-            <span class="pill pill-ghost" style="font-size:11px;">${timelineService.formatPrecisionDate(event.date, event.precision)}</span>
-          </div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            ${typePill}
-            <span style="font-size:12px; color:var(--text-3); font-weight:500;">${esc(event.subtitle)}</span>
-          </div>
-          ${event.notes ? `<div style="margin-top:10px; font-size:12px; color:var(--text-2); border-top:1px solid var(--border); padding-top:8px;">${esc(event.notes)}</div>` : ''}
-        </div>
-      </div>
-    `
-  }).join('')
+        return `
+            <div class="fb-event-card">
+                <div class="fb-event-header">
+                    <div class="fb-event-icon ${iconClass}">${svgIcon}</div>
+                    <div class="fb-event-meta">
+                        <h4>${esc(event.title)}</h4>
+                        <span class="fb-event-date">${timelineService.formatPrecisionDate(event.date, event.precision)}</span>
+                    </div>
+                </div>
+                ${(event.subtitle || event.description) ? `
+                <div class="fb-event-body">
+                    ${event.subtitle ? `<p style="font-weight:600; margin-bottom:4px;">${esc(event.subtitle)}</p>` : ''}
+                    ${event.description ? `<p>${esc(event.description)}</p>` : ''}
+                </div>` : ''}
+            </div>
+        `;
+    }).join('');
 }
 
-// --- Modal Handling & Actions ---
+// ─────────────────────────────────────────────────────────────
+// ASSIGNMENT HISTORY TIMELINE
+// ─────────────────────────────────────────────────────────────
+const TYPE_CONFIG = {
+    pioneering: { label: '🌱 Pioneering', color: '#1b5e20', bg: '#e8f5e9', border: '#81c784' },
+    takeover:   { label: '🤝 Takeover',   color: '#1a237e', bg: '#e8eaf6', border: '#9fa8da' },
+    legacy:     { label: '📜 Legacy',     color: '#4e342e', bg: '#efebe9', border: '#bcaaa4' }
+};
+const REASON_CONFIG = {
+    transferred: { label: 'Transferred', color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
+    pullout:     { label: 'Pullout',     color: '#b71c1c', bg: '#ffebee', border: '#ef9a9a' },
+    redirection: { label: 'Redirection', color: '#4a148c', bg: '#f3e5f5', border: '#ce93d8' },
+    ended:       { label: 'Ended',       color: '#37474f', bg: '#eceff1', border: '#b0bec5' },
+    deceased:    { label: 'Deceased',    color: '#212121', bg: '#f5f5f5', border: '#bdbdbd' }
+};
 
-function openModal(modalId) {
-  document.getElementById(modalId).classList.add('open');
-}
+function renderAssignmentHistory(assignments) {
+    const container = document.getElementById('assignment-history-list');
+    if (!container) return;
 
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.classList.remove('open');
-    const form = modal.querySelector('form');
-    if (form) form.reset();
-  }
-}
+    if (!assignments || assignments.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; color:var(--text-3);">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px; opacity:.4;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <div style="font-weight:600; margin-bottom:4px;">No assignment records yet</div>
+                <div style="font-size:13px;">Use the Assign button to record a church assignment.</div>
+            </div>`;
+        return;
+    }
 
-function handleModalClickOutside(e, modalId) {
-  if (e.target.id === modalId) closeModal(modalId);
-}
-
-// 1. Promote Rank
-function openPromoteModal() {
-  document.getElementById('promote-date').value = new Date().toISOString().split('T')[0];
-  openModal('modal-promote');
-}
-
-async function submitPromote(e) {
-  e.preventDefault();
-  const btn = document.getElementById('btn-submit-promote');
-  btn.textContent = 'Saving...';
-  btn.disabled = true;
-
-  try {
-    const data = {
-      pastor_id: globalPastorId,
-      rank_code: document.getElementById('promote-rank').value,
-      effective_date: document.getElementById('promote-date').value,
-      precision_flag: document.getElementById('promote-precision').value,
-      source: document.getElementById('promote-source').value
-    };
-    
-    await rankService.addRank(data);
-    closeModal('modal-promote');
-    loadData(globalPastorId); // Refresh timeline
-  } catch (err) {
-    console.error('Promotion failed:', err);
-    alert('Failed to save rank: ' + err.message);
-  } finally {
-    btn.textContent = 'Save Rank';
-    btn.disabled = false;
-  }
-}
-
-// 2. Log Training
-function openTrainingModal() {
-  document.getElementById('training-date').value = new Date().toISOString().split('T')[0];
-  openModal('modal-training');
-}
-
-function toggleBlockerFlag() {
-  const status = document.getElementById('training-status').value;
-  const blocker = document.getElementById('training-blocker');
-  if (status === 'Failed') {
-    blocker.disabled = false;
-    blocker.checked = true;
-  } else {
-    blocker.disabled = true;
-    blocker.checked = false;
-  }
-}
-
-async function submitTraining(e) {
-  e.preventDefault();
-  const btn = document.getElementById('btn-submit-training');
-  btn.textContent = 'Logging...';
-  btn.disabled = true;
-
-  try {
-    const data = {
-      pastor_id: globalPastorId,
-      course_name: document.getElementById('training-course').value,
-      status_code: document.getElementById('training-status').value,
-      completion_date: document.getElementById('training-date').value,
-      precision_flag: document.getElementById('training-precision').value,
-      blocker_flag: document.getElementById('training-blocker').checked,
-      notes: document.getElementById('training-notes').value
-    };
-    
-    await trainingService.addTrainingLog(data);
-    closeModal('modal-training');
-    loadData(globalPastorId); // Refresh timeline
-  } catch (err) {
-    console.error('Training log failed:', err);
-    alert('Failed to log training: ' + err.message);
-  } finally {
-    btn.textContent = 'Log Training';
-    btn.disabled = false;
-  }
-}
-
-// 3. Transfer Pastor
-async function openTransferModal() {
-  try {
-    // Populate dropdown with active churches
-    const churches = await churchService.fetchAll();
-    const select = document.getElementById('transfer-church');
-    select.innerHTML = '<option value="" disabled selected>Select new assignment...</option>';
-    churches.forEach(c => {
-      select.innerHTML += `<option value="${c.id}">${c.church_name}</option>`;
+    // Sort: active first, then by start_date desc
+    const sorted = [...assignments].sort((a, b) => {
+        if (a.status_code === 'active' && b.status_code !== 'active') return -1;
+        if (b.status_code === 'active' && a.status_code !== 'active') return 1;
+        return new Date(b.start_date) - new Date(a.start_date);
     });
 
-    document.getElementById('transfer-date').value = new Date().toISOString().split('T')[0];
-    openModal('modal-transfer');
-  } catch (e) {
-    alert("Could not load churches: " + e.message);
-  }
-}
+    container.innerHTML = sorted.map((a, i) => {
+        const isActive = a.status_code === 'active';
+        const typeCfg = TYPE_CONFIG[a.assignment_type] || TYPE_CONFIG.legacy;
+        const reasonCfg = a.end_reason ? REASON_CONFIG[a.end_reason] : null;
 
-async function submitTransfer(e) {
-  e.preventDefault();
-  const btn = document.getElementById('btn-submit-transfer');
-  btn.textContent = 'Transferring...';
-  btn.disabled = true;
+        const durationStr = (() => {
+            const start = a.start_date ? new Date(a.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Unknown';
+            const end   = a.end_date   ? new Date(a.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : null;
+            return end ? `${start} – ${end}` : `${start} – <strong style="color:var(--red);">Present</strong>`;
+        })();
 
-  try {
-    const isPrimary = document.getElementById('transfer-is-primary').checked;
-    // Confirm hard block warning
-    if (isPrimary) {
-      if (!confirm("This will close the current Primary assignment (if any) and open a new one. Proceed?")) {
-        btn.textContent = 'Confirm Transfer';
-        btn.disabled = false;
-        return;
-      }
-    }
+        return `
+            <div style="
+                display:flex; gap:16px; padding:16px;
+                border-radius:14px; margin-bottom:12px;
+                background:${isActive ? 'linear-gradient(135deg,#fff8f8,#fff)' : 'var(--bg-card)'};
+                border:2px solid ${isActive ? 'var(--red)' : 'var(--border)'};
+                position:relative; transition: all .2s;
+            ">
+                <!-- Timeline connector dot -->
+                <div style="
+                    width:36px; flex-shrink:0; display:flex; flex-direction:column; align-items:center;
+                ">
+                    <div style="
+                        width:14px; height:14px; border-radius:50%;
+                        background:${isActive ? 'var(--red)' : 'var(--border)'};
+                        border:3px solid ${isActive ? '#fca5a5' : '#e2e8f0'};
+                        margin-top:4px;
+                    "></div>
+                    ${i < sorted.length - 1 ? `<div style="flex:1; width:2px; background:var(--border); margin-top:4px; min-height:20px;"></div>` : ''}
+                </div>
+                <!-- Content -->
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+                        ${isActive ? `<span style="background:var(--red); color:#fff; font-size:10px; font-weight:800; padding:2px 8px; border-radius:20px; letter-spacing:.05em;">NOW</span>` : ''}
+                        <span style="
+                            font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;
+                            background:${typeCfg.bg}; color:${typeCfg.color}; border:1px solid ${typeCfg.border};
+                        ">${typeCfg.label}</span>
+                        ${reasonCfg ? `<span style="
+                            font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;
+                            background:${reasonCfg.bg}; color:${reasonCfg.color}; border:1px solid ${reasonCfg.border};
+                        ">${reasonCfg.label}</span>` : ''}
+                    </div>
+                    <div style="font-size:16px; font-weight:800; color:var(--text); margin-bottom:2px;">
+                        ${esc(a.church_name) || 'Unknown Church'}
+                    </div>
+                    <div style="font-size:12px; color:var(--text-3); font-weight:500;">${durationStr}</div>
+                    ${a.notes ? `<div style="margin-top:6px; font-size:12px; color:var(--text-2); font-style:italic;">${esc(a.notes)}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
 
-    const data = {
-      pastor_id: globalPastorId,
-      church_id: document.getElementById('transfer-church').value,
-      transfer_date: document.getElementById('transfer-date').value,
-      role_code: document.getElementById('transfer-role').value,
-      event_type: document.getElementById('transfer-event').value,
-      precision_flag: document.getElementById('transfer-precision').value,
-      is_primary: isPrimary,
-      notes: document.getElementById('transfer-notes').value
-    };
-    
-    await assignmentService.transferPastor(data);
-    closeModal('modal-transfer');
-    loadData(globalPastorId); // Refresh timeline
-  } catch (err) {
-    console.error('Transfer failed:', err);
-    alert('Failed to transfer pastor: ' + err.message);
-  } finally {
-    btn.textContent = 'Confirm Transfer';
-    btn.disabled = false;
-  }
-}
-
-// 4. Pullout Pastor
-function openPulloutModal() {
-  document.getElementById('pullout-date').value = new Date().toISOString().split('T')[0];
-  openModal('modal-pullout');
-}
-
-async function submitPullout(e) {
-  e.preventDefault();
-  const btn = document.getElementById('btn-submit-pullout');
-  btn.textContent = 'Pulling out...';
-  btn.disabled = true;
-
-  try {
-    if (!confirm("This will close the active Primary assignment immediately and leave the pastor Undeployed. Proceed?")) {
-      btn.textContent = 'Confirm Pullout';
-      btn.disabled = false;
-      return;
-    }
-
-    const data = {
-      pastor_id: globalPastorId,
-      pullout_date: document.getElementById('pullout-date').value,
-      notes: document.getElementById('pullout-notes').value
-    };
-
-    await assignmentService.pulloutPastor(data);
-    closeModal('modal-pullout');
-    loadData(globalPastorId); // Refresh timeline
-  } catch (err) {
-    console.error('Pullout failed:', err);
-    alert('Failed to pull out pastor: ' + err.message);
-  } finally {
-    btn.textContent = 'Confirm Pullout';
-    btn.disabled = false;
-  }
+    // Update summary badge
+    const badge = document.getElementById('assignment-count-badge');
+    if (badge) badge.textContent = `(${assignments.length})`;
 }
 
 function renderDisciples(disciples) {
-  const container = document.getElementById('disciple-list')
-  if (!disciples.length) {
-    container.innerHTML = '<div class="empty-state">No disciples recorded yet.</div>'
-    return
-  }
+    const mainContainer = document.getElementById('disciple-list');
+    const previewContainer = document.getElementById('disciple-preview-list');
+    const badge = document.getElementById('family-count-badge');
 
-  container.innerHTML = disciples.map(d => `
-    <div class="disciple-chip">
-      <div onclick="openImageViewer('${d.disciple_image_url || ''}', '${esc(d.full_name)}')" style="width:24px; height:24px; border-radius:50%; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; cursor:pointer;">
-        ${d.full_name.charAt(0)}
-      </div>
-      ${esc(d.full_name)}
-    </div>
-  `).join('')
-}
+    if (badge && disciples) badge.textContent = `(${disciples.length})`;
 
-// ─── Zone 3: Foundations ───────────────────────────────────────────────────
-function renderFoundations(churches) {
-  const section = document.getElementById('foundations-section')
-  const container = document.getElementById('foundations-list')
-  if (!section || !container) return
-
-  if (!churches || churches.length === 0) {
-    section.style.display = 'none'
-    return
-  }
-
-  section.style.display = 'block'
-  container.innerHTML = churches.map(c => `
-    <a href="church-view.html?id=${esc(String(c.id))}" class="foundation-card">
-      <div class="foundation-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:14px; font-weight:600; color:var(--text);">${esc(c.church_name)}</div>
-        <div style="font-size:12px; color:var(--text-3);">${esc(c.district_name || 'No District')}</div>
-      </div>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--text-3);"><polyline points="9 18 15 12 9 6"/></svg>
-    </a>
-  `).join('')
-}
-
-// ─── Zone 3: Ministry Lineage ─────────────────────────────────────────────────
-function renderLineage(pastor, children) {
-  const container = document.getElementById('lineage-tree')
-  if (!container) return
-
-  const isDraft = (pastor.record_status || 'active') === 'draft'
-
-  let html = ''
-
-  // 1. Mentor (Parent)
-  html += `
-    <div class="lineage-section-label">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Mentor / Spiritual Father
-    </div>
-  `
-
-  if (pastor.parent_id && pastor.parent_name) {
-    html += `
-      <a href="pastor-view.html?id=${esc(String(pastor.parent_id))}" class="lineage-node lineage-parent">
-        <div class="lineage-avatar" onclick="event.preventDefault(); event.stopPropagation(); openImageViewer('${pastor.parent_image_url || ''}', '${esc(pastor.parent_name)}')" style="cursor:pointer;">${pastor.parent_name.charAt(0)}</div>
-        <div class="lineage-node-info">
-          <div class="lineage-node-name">${esc(pastor.parent_name)}</div>
-          <div class="lineage-node-sub">Source of Mentorship</div>
-        </div>
-        <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>`
-  } else {
-    html += `
-      <div class="lineage-node lineage-empty">
-        <div class="lineage-avatar" style="background:var(--bg-body); color:var(--text-3);"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2v20M2 12h20"/></svg></div>
-        <div class="lineage-node-info">
-          <div class="lineage-node-name" style="color:var(--text-3);">Origin Unknown</div>
-          <div class="lineage-node-sub">No recorded mentor</div>
-        </div>
-      </div>`
-  }
-
-  // 2. Current Profile
-  html += `
-    <div class="lineage-section-label" style="margin-top:24px;">Current Profile</div>
-    <div class="lineage-node" style="border-color:var(--red); background:#fff5f5; cursor:default;">
-      <div class="lineage-avatar" onclick="openImageViewer('${pastor.pastor_image_url || ''}', '${esc(pastor.full_name)}')" style="background:var(--red); color:white; cursor:pointer;">${pastor.full_name.charAt(0)}</div>
-      <div class="lineage-node-info">
-        <div class="lineage-node-name" style="color:var(--red); font-weight:800;">${esc(pastor.full_name)}</div>
-        <div class="lineage-node-sub">${esc(pastor.current_church || 'Unassigned')} · ${esc(pastor.rank_code || 'No Rank')}</div>
-      </div>
-      ${isDraft ? '<span class="lineage-draft-badge" style="margin-left:auto;">Draft</span>' : ''}
-    </div>
-  `
-
-  // 3. Fruits (Children)
-  html += `
-    <div class="lineage-section-label" style="margin-top:24px; justify-content:space-between;">
-      <div style="display:flex; align-items:center; gap:6px;">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
-        Spiritual Fruit / Disciples (${children ? children.length : 0})
-      </div>
-      <a href="pastors.html?add=1&parent_id=${esc(String(pastor.id))}&parent_name=${encodeURIComponent(pastor.full_name)}" 
-         class="btn" style="height:26px; padding:0 10px; font-size:11px; font-weight:700; background:var(--bg-body); color:var(--text); border:1px solid var(--border);">
-        + Add Fruit
-      </a>
-    </div>
-  `
-
-  if (children && children.length > 0) {
-    html += `
-      <div class="lineage-tree-wrapper">
-        <div class="lineage-tree-line"></div>
-        ${children.map(ch => {
-          const chDraft = (ch.record_status || 'active') === 'draft'
-          return `
-            <div class="lineage-tree-item">
-              <a href="pastor-view.html?id=${esc(String(ch.id))}" class="lineage-node lineage-child${chDraft ? ' lineage-draft' : ''}">
-                <div class="lineage-avatar" onclick="event.preventDefault(); event.stopPropagation(); openImageViewer('${ch.pastor_image_url || ''}', '${esc(ch.full_name)}')" style="${chDraft ? 'opacity:0.5;' : ''} cursor:pointer;">${ch.full_name.charAt(0)}</div>
-                <div class="lineage-node-info">
-                  <div class="lineage-node-name">
-                    ${esc(ch.full_name)}
-                    ${chDraft ? '<span class="lineage-draft-badge">Draft</span>' : ''}
-                  </div>
-                  <div class="lineage-node-sub">${esc(ch.church_name || 'Unassigned')}</div>
-                </div>
-                <svg class="lineage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-              </a>
-            </div>`
-        }).join('')}
-      </div>`
-  } else {
-    html += `
-      <div class="lineage-node lineage-empty">
-        <div class="lineage-avatar" style="background:var(--bg-body); color:var(--text-3);"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
-        <div class="lineage-node-info">
-          <div class="lineage-node-name" style="color:var(--text-3);">No disciples yet</div>
-          <div class="lineage-node-sub">This pastor has no recorded spiritual fruit</div>
-        </div>
-      </div>`
-  }
-
-  container.innerHTML = html
-}
-
-function openImageViewer(url, title) {
-  const modal = document.getElementById('modal-image-viewer')
-  if (!modal) return
-  
-  const img = document.getElementById('full-image-display')
-  const initEl = document.getElementById('full-initials-display')
-  const titleEl = document.getElementById('image-viewer-title')
-  
-  titleEl.textContent = title || 'View Profile'
-  
-  if (url) {
-    img.src = url
-    img.style.display = 'block'
-    if (initEl) initEl.style.display = 'none'
-  } else {
-    img.style.display = 'none'
-    if (initEl) {
-      initEl.style.display = 'flex'
-      let nameStr = (title || '?').replace('Pastor ', '').replace('Wife ', '').trim()
-      if (!nameStr) nameStr = '?'
-      initEl.textContent = nameStr.charAt(0).toUpperCase()
+    if (!disciples || disciples.length === 0) {
+        const emptyMsg = `<div class="fb-empty-state">No spiritual family yet.</div>`;
+        if (mainContainer) mainContainer.innerHTML = emptyMsg;
+        if (previewContainer) previewContainer.innerHTML = emptyMsg;
+        return;
     }
-  }
-  
-  modal.classList.add('open')
+
+    // 9-grid preview for sidebar
+    const previewFn = (list) => list.map(d => `
+        <a href="pastor-view.html?id=${d.id}" class="fb-friend-item" title="${esc(d.full_name)}">
+            ${d.pastor_image_url 
+                ? `<img src="${esc(d.pastor_image_url)}" alt="${esc(d.full_name)}">`
+                : ProfilePresenter.getInitialsAvatar(d.full_name)
+            }
+            <div class="fb-friend-name">${esc(d.full_name.split(' ')[0])}</div>
+        </a>
+    `).join('');
+
+    // Full grid for Family tab
+    const fullFn = (list) => list.map(d => `
+        <a href="pastor-view.html?id=${d.id}" class="fb-family-item" title="${esc(d.full_name)}">
+            ${d.pastor_image_url 
+                ? `<img src="${esc(d.pastor_image_url)}" alt="${esc(d.full_name)}">`
+                : ProfilePresenter.getInitialsAvatar(d.full_name)
+            }
+            <div class="fb-family-label">${esc(d.full_name)}</div>
+        </a>
+    `).join('');
+
+    if (mainContainer) mainContainer.innerHTML = fullFn(disciples);
+    if (previewContainer) previewContainer.innerHTML = previewFn(disciples.slice(0, 9));
 }
 
-function closeImageViewer() {
-  const modal = document.getElementById('modal-image-viewer')
-  modal.classList.remove('open')
-  setTimeout(() => {
-    document.getElementById('full-image-display').src = ''
-  }, 300)
+function renderCredentials(ranks) {
+    const container = document.getElementById('credentials-history-list');
+    if (!container) return;
+
+    if (!ranks || ranks.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; color:var(--text-3);">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px; opacity:.4;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>
+                <div style="font-weight:600; margin-bottom:4px;">No credentials logged yet</div>
+                <div style="font-size:13px;">Use the Log Status button to document official classifications.</div>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = ranks.map((r, i) => {
+        return `
+            <div style="
+                display:flex; gap:16px; padding:16px;
+                border-radius:14px; margin-bottom:12px;
+                background:${i === 0 ? 'linear-gradient(135deg,#f0f9ff,#fff)' : 'var(--bg-card)'};
+                border:2px solid ${i === 0 ? '#bae6fd' : 'var(--border)'};
+                position:relative; transition: all .2s;
+            ">
+                <!-- Timeline dot -->
+                <div style="width:36px; flex-shrink:0; display:flex; flex-direction:column; align-items:center;">
+                    <div style="
+                        width:14px; height:14px; border-radius:50%;
+                        background:${i === 0 ? '#0284c7' : 'var(--border)'};
+                        border:3px solid ${i === 0 ? '#e0f2fe' : '#e2e8f0'};
+                        margin-top:4px;
+                    "></div>
+                    ${i < ranks.length - 1 ? `<div style="flex:1; width:2px; background:var(--border); margin-top:4px; min-height:20px;"></div>` : ''}
+                </div>
+                <!-- Content -->
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                        ${i === 0 ? `<span style="background:#0284c7; color:#fff; font-size:10px; font-weight:800; padding:2px 8px; border-radius:20px;">CURRENT</span>` : ''}
+                        <span style="font-size:12px; color:var(--text-3); font-weight:500;">
+                            ${ProfilePresenter.formatDateLong(r.effective_date)}
+                        </span>
+                    </div>
+                    <div style="font-size:16px; font-weight:800; color:var(--text);">
+                        ${esc(r.rank_code)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
-function formatTimelineDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+// ─────────────────────────────────────────────────────────────
+// UI SYSTEMS
+// ─────────────────────────────────────────────────────────────
+
+function initTabSystem() {
+    document.querySelectorAll('.fb-tab').forEach(btn => {
+        btn.onclick = () => switchTab(btn.getAttribute('data-tab'));
+    });
 }
 
-function getAvatarHtml(imageUrl, name) {
-  if (imageUrl) {
-    return `<img src="${imageUrl}" style="width:100%; height:100%; object-fit:cover;" />`
-  }
-  const initials = String(name || '?').charAt(0).toUpperCase()
-  return `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:var(--red-light); color:var(--red); font-weight:800; font-size:1.5em;">${initials}</div>`
+function switchTab(tabId) {
+    document.querySelectorAll('.fb-tab').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.fb-tab[data-tab="${tabId}"]`)?.classList.add('active');
+    
+    document.querySelectorAll('.fb-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + tabId)?.classList.add('active');
 }
 
-// Global exposure for HTML onclick handlers
-window.switchTab = switchTab;
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.handleModalClickOutside = handleModalClickOutside;
-window.openPromoteModal = openPromoteModal;
-window.submitPromote = submitPromote;
-window.openTrainingModal = openTrainingModal;
-window.toggleBlockerFlag = toggleBlockerFlag;
-window.submitTraining = submitTraining;
-window.openTransferModal = openTransferModal;
-window.submitTransfer = submitTransfer;
-window.openPulloutModal = openPulloutModal;
-window.submitPullout = submitPullout;
-window.openImageViewer = openImageViewer;
-window.closeImageViewer = closeImageViewer;
+function initQuickEdit() {
+    const form = document.getElementById('pastor-form');
+    if (!form) return;
+    
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const getValue = (id) => document.getElementById(id)?.value || null;
+
+            const updates = {
+                full_name:           getValue('f-name'),
+                wife_name:           getValue('f-wife-name'),
+                contact_number:      getValue('f-contact-number'),
+                birthdate:           getValue('f-birthdate')       || null,
+                wife_birthdate:      getValue('f-wife-birthdate')  || null,
+                pastoring_start_date:getValue('f-pastoring-start') || null,
+                current_status_code: getValue('f-status-code')
+            };
+
+            // Remove null-string values so we don't accidentally blank out optional fields
+            Object.keys(updates).forEach(k => { if (updates[k] === '') updates[k] = null; });
+            
+            await pastorService.update(globalPastorId, updates);
+            ui.toast('Profile updated successfully');
+            window.closeModal('modal-form');
+            
+            // Reload data to reflect changes
+            await loadData(globalPastorId);
+        } catch (err) { 
+            console.error('Update failed:', err);
+            ui.toast(err.message || 'Failed to update profile', 'error'); 
+        }
+    };
+
+    // Rank History logic
+    const rankForm = document.getElementById('rank-form');
+    if (rankForm) {
+        rankForm.onsubmit = async (e) => {
+            e.preventDefault();
+            try {
+                const rankCode = document.getElementById('fr-rank-code')?.value;
+                const effDate  = document.getElementById('fr-effective-date')?.value;
+                
+                if (!rankCode || !effDate) throw new Error('Missing required fields');
+
+                // rankService is imported at the top of the file
+                const btn = rankForm.querySelector('[type="submit"]');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                await rankService.addRank({
+                    pastor_id: globalPastorId,
+                    rank_code: rankCode,
+                    effective_date: effDate
+                });
+
+                ui.toast('Status logged successfully!');
+                window.closeModal('modal-rank');
+                await loadData(globalPastorId); // refresh
+                btn.disabled = false;
+                btn.textContent = 'Save Record';
+                
+            } catch (err) {
+                console.error('Failed to log rank:', err);
+                ui.toast(err.message || 'Error saving status record', 'error');
+                const btn = rankForm.querySelector('[type="submit"]');
+                if (btn) { btn.disabled = false; btn.textContent = 'Save Record'; }
+            }
+        };
+    }
+}
+
+function handleEditProfile() {
+    const p = pageData.pastor;
+    if (!p) return;
+    
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || '';
+    };
+
+    setVal('f-name',           p.full_name);
+    setVal('f-wife-name',      p.wife_name);
+    setVal('f-contact-number', p.contact_number);
+    setVal('f-status-code',    p.current_status_code || 'active');
+
+    // Properly format date fields so they pre-fill in the <input type="date"> format
+    const toDateInput = (val) => val ? new Date(val).toISOString().split('T')[0] : '';
+    setVal('f-birthdate',       toDateInput(p.birthdate));
+    setVal('f-wife-birthdate',  toDateInput(p.wife_birthdate));
+    setVal('f-pastoring-start', toDateInput(p.pastoring_start_date));
+
+    window.openModal('modal-form');
+}
+
+function initCommandBar() {
+    // Hooks up the imported PDF export function to a UI button if it exists
+    const exportBtn = document.getElementById('btn-export-pdf');
+    if (exportBtn) {
+        exportBtn.onclick = () => {
+            if (pageData.pastor && pageData.history) {
+                exportPastorHistoryPDF(pageData.pastor, pageData.history);
+            } else {
+                ui.toast('Data not ready for export', 'warning');
+            }
+        };
+    }
+}
+
+function openImageViewer(url) {
+    const img = document.getElementById('full-image-display');
+    const modal = document.getElementById('modal-image-viewer');
+    
+    if (img && url && modal) {
+        img.src = url;
+        img.style.display = 'block';
+        modal.classList.add('open');
+    }
+}

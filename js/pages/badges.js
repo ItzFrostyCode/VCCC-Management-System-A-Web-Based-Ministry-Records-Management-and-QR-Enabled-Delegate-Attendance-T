@@ -4,7 +4,6 @@ import { districtService } from '../services/district.service.js';
 import { churchService } from '../services/church.service.js';
 import { pastorService } from '../services/pastor.service.js';
 import { discipleService } from '../services/disciple.service.js';
-import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
 import { esc, encodeQR } from '../utils/helper.js';
 import { createSearchSelect } from '../../components/search-select/search-select.js';
@@ -69,9 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('Badges: auth check...')
         await requireAuth()
-        console.log('Badges: nav/guide init...')
-        highlightNav()
-        injectMobileNav()
+        console.log('Badges: guide init...')
         initGuide()
 
         console.log('Badges: fetching data...')
@@ -177,14 +174,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ── UI Events ──────────────────────────────────────────────
 function bindEvents() {
-    const btnLogout = document.getElementById('btn-logout')
-    if (btnLogout) {
-        btnLogout.onclick = async () => {
-            await authService.signOut()
-            window.location.href = '/login.html'
-        }
-    }
-
     document.getElementById('search-delegate').oninput = applyFilters
     
     document.getElementById('chip-pastor').onclick = (e) => toggleRole(e.currentTarget)

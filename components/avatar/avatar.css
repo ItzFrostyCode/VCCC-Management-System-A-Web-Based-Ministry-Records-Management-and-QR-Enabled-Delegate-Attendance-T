@@ -82,6 +82,9 @@
 .bg-avatar-3 { background: linear-gradient(135deg, #6AB04C, #BADC58); }
 .bg-avatar-4 { background: linear-gradient(135deg, #F093FB, #F5576C); }
 .bg-avatar-5 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.bg-avatar-6 { background: linear-gradient(135deg, #7d5fff, #7158e2); }
+.bg-avatar-7 { background: linear-gradient(135deg, #32ff7e, #3ae374); }
+.bg-avatar-8 { background: linear-gradient(135deg, #ffaf40, #ff9f1a); }
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -237,24 +240,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  height: 40px;
+  gap: 8px;
+  height: 46px;
   border: none;
   border-right: 1px solid var(--border);
-  background: transparent;
-  font-size: 12px;
-  font-weight: 600;
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   color: var(--text-2);
-  transition: background 0.15s, color 0.15s;
+  transition: all 0.15s;
 }
 .pcm-action-btn:last-child { border-right: none; }
 .pcm-action-btn svg {
-  width: 14px; height: 14px;
+  width: 16px; height: 16px;
   stroke: currentColor; fill: none;
-  stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+  stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
 }
-.pcm-action-btn:active { background: var(--border); }
+.pcm-action-btn:active { background: #e0e7ff; color: #4338ca; }
+
+/* Action specific colors on active/hover for premium feel */
+.pcm-action-btn.pcm-view:active { color: #10b981; background: #ecfdf5; }
+.pcm-action-btn.pcm-edit:active { color: #3b82f6; background: #eff6ff; }
+.pcm-action-btn.pcm-delete:active { color: #ef4444; background: #fef2f2; }
 
 .pcm-view:active  { color: hsl(150, 75%, 30%); background: hsla(150, 100%, 95%, 1); }
 .pcm-edit:active  { color: hsl(215, 72%, 38%); background: hsla(215, 100%, 96%, 1); }

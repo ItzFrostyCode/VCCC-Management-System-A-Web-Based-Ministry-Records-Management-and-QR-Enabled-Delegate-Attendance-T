@@ -24,14 +24,7 @@
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar">
-    <a href="/index.html" class="sidebar-logo">
-      <img src="assets/VCCC-Logo.png" class="sidebar-logo-img" alt="VCCC Logo" />
-    </a>
-    <nav class="sidebar-nav" id="sidebar-nav">
-      <!-- Side navigation injected or hardcoded -->
-    </nav>
-  </aside>
+  <div id="sidebar-container"></div>
 
   <div class="app-main">
     <header class="topbar">
@@ -46,7 +39,7 @@
       <p style="margin-top:16px;">Loading District Dashboard...</p>
     </div>
 
-    <main class="page-content" id="content-area" style="display:none;">
+    <main class="page-content" id="main-content" style="display:none;">
       <!-- District Header -->
       <div class="district-header">
         <div class="district-hero" id="district-hero">
@@ -103,7 +96,7 @@
 </div>
 
 <script src="js/libs/supabase.min.js"></script>
-<script type="module" src="js/pages/district-view.js"></script>
+<script type="module" src="js/pages/district-view.controller.js"></script>
 <script type="module" src="./js/utils/guide.js"></script>
 </body>
 </html>

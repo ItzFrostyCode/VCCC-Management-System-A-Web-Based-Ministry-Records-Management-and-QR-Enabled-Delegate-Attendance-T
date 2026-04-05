@@ -1,21 +1,18 @@
+import { initLayout } from '../layout.js';
 import { requireAuth } from '../supabase.js';
 import { districtService } from '../services/district.service.js';
 import { churchService } from '../services/church.service.js';
 import { pastorService } from '../services/pastor.service.js';
 import { assignmentService } from '../services/assignment.service.js';
 import { timelineService } from '../services/timeline.service.js';
-import { highlightNav, injectMobileNav } from '../router.js';
-import { initGuide } from '../utils/guide.js';
 import { esc, formatDate } from '../utils/helper.js';
 
 let currentChurchId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    initLayout('Churches'); // Restore global sidebar
     await requireAuth()
-    highlightNav()
-    injectMobileNav()
-    initGuide()
 
     const urlParams = new URLSearchParams(window.location.search)
     currentChurchId = urlParams.get('id')
@@ -120,7 +117,7 @@ function renderCurrentPastor(history) {
       </div>
     `
     const btn = document.getElementById('btn-assign-now')
-    if (btn) btn.onclick = () => window.location.href = 'assignment.html'
+    if (btn) btn.onclick = () => window.location.href = `assignment.html?church_id=${currentChurchId}`
     return
   }
 

@@ -87,6 +87,15 @@
   }
 }
 
+/* Charts Section */
+.dash-row-charts .dash-panel {
+  min-height: 320px;
+}
+.dash-row-charts canvas {
+  max-width: 100% !important;
+  max-height: 240px !important;
+}
+
 /* Panels shared rules */
 .dash-panel {
   background: var(--bg-card);

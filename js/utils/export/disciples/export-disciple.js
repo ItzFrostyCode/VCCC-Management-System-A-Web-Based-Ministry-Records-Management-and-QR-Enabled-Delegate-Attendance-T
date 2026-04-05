@@ -178,3 +178,56 @@ export async function exportDisciplesHierarchical(districts, churches, pastors, 
   showExportProgress('Export complete!')
   hideExportProgress(3000)
 }
+/**
+ * Simple A-Z export of all disciples
+ */
+export async function exportDisciplesAll(disciples) {
+  showExportProgress('Preparing All Disciples export...')
+  await ensureExcelJS()
+
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet('All Disciples')
+
+  worksheet.columns = [
+    { header: 'Full Name', key: 'name', width: 40 },
+    { header: 'Church', key: 'church', width: 30 },
+    { header: 'District', key: 'district', width: 25 }
+  ]
+
+  // Header Style
+  const headRow = worksheet.getRow(1)
+  headRow.height = 24
+  headRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  headRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
+  headRow.alignment = { vertical: 'middle', horizontal: 'center' }
+
+  const sorted = [...disciples].sort((a, b) => a.full_name.localeCompare(b.full_name))
+  
+  sorted.forEach(d => {
+    worksheet.addRow({
+      name: (d.full_name || '').toUpperCase(),
+      church: (d.church_name || '').toUpperCase(),
+      district: (d.district_name || '').toUpperCase()
+    })
+  })
+
+  // Borders
+  worksheet.eachRow((row, i) => {
+    row.eachCell(cell => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      }
+      if (i > 1) cell.alignment = { vertical: 'middle' }
+    })
+  })
+
+  showExportProgress('Generating file...')
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  saveAs(blob, `All_Disciples_${new Date().toISOString().split('T')[0]}.xlsx`)
+  showExportProgress('Export complete!')
+  hideExportProgress(2000)
+}

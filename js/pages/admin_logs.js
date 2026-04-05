@@ -1,9 +1,8 @@
-import { db } from '../db.js';
-import { requireAuth } from '../supabase.js';
+import { db, requireAuth } from '../supabase.js';
 import { authService } from '../services/auth.service.js';
-import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
 import { esc } from '../utils/helper.js';
+import { exportAuditLogs } from '../utils/export/admin_logs/export-logs.js';
 
 let allLogs = []
 let currentPage = 1
@@ -17,28 +16,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             return
         }
 
-        highlightNav()
-        injectMobileNav()
-        initGuide()
+        // Initialize Layout
+        const { initLayout } = await import('../layout.js');
+        initLayout('Activity Logs');
 
+        initGuide()
         initEventListeners()
         await loadLogs()
     } catch (err) { console.error('Logs init failed:', err) }
 })
 
 function initEventListeners() {
-    const btnLogout = document.getElementById('btn-logout')
-    if (btnLogout) {
-        btnLogout.addEventListener('click', async () => {
-            await authService.signOut()
-            window.location.href = '/login.html'
-        })
-    }
-
     document.getElementById('btn-refresh').onclick = loadLogs
     document.getElementById('btn-prev').onclick = prevPage
     document.getElementById('btn-next').onclick = nextPage
+    document.getElementById('btn-export-logs').onclick = handleExportLogs
+}
 
+async function handleExportLogs() {
+  if (!allLogs.length) {
+    alert('No logs to export. Please load logs first.');
+    return;
+  }
+  const mapped = allLogs.map(log => ({
+    actor:   log.full_name || 'System',
+    action:  log.action   || '—',
+    details: log.details  || '—',
+    time:    log.timestamp
+  }));
+  await exportAuditLogs(mapped);
 }
 async function loadLogs() {
   const body = document.getElementById('table-body')

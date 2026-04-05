@@ -1,234 +1,203 @@
+import { BaseService } from './base.service.js';
 import { db } from '../db.js';
-import { authService } from './auth.service.js';
 
-/**
- * Walks UP the parent chain to detect circular references.
- * Returns true if `candidateParentId` is already a descendant of `pastorId`.
- */
-async function wouldCreateCycle(pastorId, candidateParentId) {
-  if (!candidateParentId || !pastorId) return false
-  if (String(pastorId) === String(candidateParentId)) return true
+class PastorService extends BaseService {
+  constructor() {
+    super('pastors', '*', true);
+  }
 
-  let current = candidateParentId
-  const visited = new Set()
+  /**
+   * Walks UP the parent chain to detect circular references.
+   */
+  async wouldCreateCycle(pastorId, candidateParentId) {
+    if (!candidateParentId || !pastorId) return false;
+    if (String(pastorId) === String(candidateParentId)) return true;
 
-  while (current) {
-    if (visited.has(current)) return true   // loop in existing data
-    if (String(current) === String(pastorId)) return true
-    visited.add(current)
+    let current = candidateParentId;
+    const visited = new Set();
 
+    while (current) {
+      if (visited.has(current)) return true;
+      if (String(current) === String(pastorId)) return true;
+      visited.add(current);
+
+      const { data, error } = await db
+        .from('pastors')
+        .select('parent_id')
+        .eq('id', current)
+        .eq('is_deleted', false)
+        .single();
+
+      if (error || !data) break;
+      current = data.parent_id;
+    }
+    return false;
+  }
+
+  async fetchAll() {
+    // Enhanced fetch for global cache including current assignment's church and district info
     const { data, error } = await db
       .from('pastors')
-      .select('parent_id')
-      .eq('id', current)
+      .select(`
+        *,
+        parent_name:parent_id(full_name),
+        assignments (
+          id,
+          status_code,
+          end_date,
+          church_id,
+          churches (
+            id,
+            church_name,
+            district_id,
+            districts (
+              id,
+              theme_color
+            )
+          )
+        )
+      `)
       .eq('is_deleted', false)
-      .single()
+      .order('full_name');
+      
+    if (error) throw error;
 
-    if (error || !data) break
-    current = data.parent_id
+    // Flatten for easy UI access in the list
+    return (data || []).map(p => {
+      const current = p.assignments?.find(a => a.status_code === 'active' && !a.end_date);
+      return {
+        ...p,
+        church_name: current?.churches?.church_name || null,
+        district_id: current?.churches?.district_id || null, // Critical for UI lookup
+        district_theme_color: current?.churches?.districts?.theme_color || null
+      };
+    });
   }
-  return false
-}
-
-export const pastorService = {
-
-  // Returns pastors with their active assignment's church/district info
-  async fetchAll() {
-    const { data, error } = await db.rpc('get_pastors_v3')
-    if (error) throw error
-    return data || []
-  },
 
   async fetchById(id) {
-    const { data, error } = await db.rpc('get_pastors_v3')
-    if (error) throw error
-    return (data || []).find(p => String(p.id) === String(id)) || null
-  },
+    // Single fetch for pastor details including current assignment's church & district
+    const { data, error } = await db
+      .from('pastors')
+      .select(`
+        *,
+        parent_name:parent_id(full_name),
+        assignments (
+          id,
+          status_code,
+          end_date,
+          church_id,
+          churches (
+            id,
+            church_name,
+            district_id,
+            districts (
+              id,
+              district_name,
+              theme_color
+            )
+          )
+        )
+      `)
+      .eq('id', id)
+      .eq('is_deleted', false)
+      .single();
 
-  // Fetch all children (fruits/disciples) of a pastor
+    if (error) throw error;
+
+    // Flatten active assignment's church & district info to top-level for easy template access
+    const currentAssignment = data.assignments?.find(a => a.status_code === 'active' && !a.end_date);
+    data.church_name          = currentAssignment?.churches?.church_name      || null;
+    data.current_church       = data.church_name; // alias used by pastor-view.js
+    data.church_id            = currentAssignment?.churches?.id               || null;
+    data.district_id          = currentAssignment?.churches?.district_id      || null;
+    data.district_name        = currentAssignment?.churches?.districts?.district_name || null;
+    data.district_theme_color = currentAssignment?.churches?.districts?.theme_color  || null;
+
+    return data;
+  }
+
   async getChildren(pastorId) {
-    const { data, error } = await db.rpc('get_pastor_children', { p_pastor_id: pastorId })
-    if (error) throw error
-    return data || []
-  },
+    const { data, error } = await db
+      .from('pastors')
+      .select('*')
+      .eq('parent_id', pastorId)
+      .eq('is_deleted', false)
+      .order('full_name');
+      
+    if (error) throw error;
+    return data || [];
+  }
 
-  // Fetch all churches pioneered by this pastor
   async fetchPioneeredChurches(pastorId) {
     const { data, error } = await db
       .from('churches')
-      .select(`
-        id, church_name, church_address, district_id,
-        districts ( id, district_name )
-      `)
+      .select(`id, church_name, church_address, district_id, districts ( id, district_name )`)
       .eq('pioneer_pastor_id', pastorId)
       .eq('is_deleted', false)
-      .order('church_name', { ascending: true })
+      .order('church_name', { ascending: true });
     
-    if (error) throw error
+    if (error) throw error;
     return (data || []).map(c => ({
       ...c,
       district_name: c.districts?.district_name || ''
-    }))
-  },
+    }));
+  }
 
-  // Create a minimal draft pastor (placeholder for unknown lineage)
   async createDraft(name) {
-    if (!name || !name.trim()) throw new Error('Name is required even for draft.')
-    const { data, error } = await db
-      .from('pastors')
-      .insert({
-        full_name: name.trim().toUpperCase(),
-        record_status: 'draft',
-        current_status_code: 'undeployed'
-      })
-      .select('id, full_name, record_status')
-    if (error) throw error
-    const result = data?.[0]
-    const user = authService.getCurrentUser()
-    if (user && result) await authService.logAudit(user.id, 'CREATE_PASTOR', `Added Draft Pastor: ${result.full_name}`)
-    return result
-  },
+    if (!name || !name.trim()) throw new Error('Name is required even for draft.');
+    return super.create({
+      full_name: name.trim().toUpperCase(),
+      record_status: 'draft',
+      current_status_code: 'undeployed'
+    }, 'CREATE_PASTOR', `Added Draft Pastor: ${name.trim().toUpperCase()}`);
+  }
 
   async create(data) {
-    const {
-      full_name, wife_name, wife_birthdate, contact_number,
-      birthdate, pastoring_start_date, pastor_image_url, wife_image_url,
-      notes, current_status_code, record_status, parent_id
-    } = data
-
-    if (!full_name || typeof full_name !== 'string' || !full_name.trim()) {
-      throw new Error('full_name is required and must be a valid non-empty string.')
+    if (!data.full_name || typeof data.full_name !== 'string' || !data.full_name.trim()) {
+      throw new Error('full_name is required.');
     }
 
-    // Circular reference guard
-    if (parent_id) {
-      const cycle = await wouldCreateCycle(null, parent_id)
-      // Can't cycle on new record; safe to skip
+    if (data.parent_id) {
+      const cycle = await this.wouldCreateCycle(null, data.parent_id);
+      if (cycle) throw new Error('Circular reference detected in parent lineage.');
     }
 
-    const { data: results, error } = await db
-      .from('pastors')
-      .insert({
-        full_name: full_name.trim().toUpperCase(),
-        wife_name: wife_name && typeof wife_name === 'string' && wife_name.trim() ? wife_name.trim().toUpperCase() : null,
-        wife_birthdate: wife_birthdate || null,
-        contact_number: contact_number && typeof contact_number === 'string' ? contact_number.trim() : null,
-        birthdate: birthdate || null,
-        pastoring_start_date: pastoring_start_date || null,
-        pastor_image_url: pastor_image_url || null,
-        wife_image_url: wife_image_url || null,
-        notes: notes && typeof notes === 'string' ? notes.trim() : null,
-        current_status_code: current_status_code || 'undeployed',
-        record_status: record_status || 'active',
-        parent_id: parent_id || null
-      })
-      .select('id, full_name, wife_name, contact_number, current_status_code, record_status, parent_id')
-
-    if (error) throw error
-    if (!results || results.length === 0) throw new Error('Failed to create pastor record.')
-    const result = results[0]
-
-    if (result) {
-      const user = authService.getCurrentUser()
-      if (user) {
-        await authService.logAudit(user.id, 'CREATE_PASTOR', `Added Pastor: ${result.full_name}`)
-      }
-    }
-
-    return result
-  },
+    const auditAction = 'CREATE_PASTOR';
+    const auditDetails = `Added Pastor: ${data.full_name.trim().toUpperCase()}`;
+    return super.create(data, auditAction, auditDetails);
+  }
 
   async update(id, data) {
-    const updatePayload = {
-      updated_at: new Date().toISOString()
+    if (data.full_name !== undefined && (!data.full_name || !data.full_name.trim())) {
+      throw new Error('full_name cannot be empty.');
     }
 
-    if (data.full_name !== undefined) {
-      if (!data.full_name || typeof data.full_name !== 'string' || !data.full_name.trim()) {
-        throw new Error('full_name cannot be empty.')
-      }
-      updatePayload.full_name = data.full_name.trim().toUpperCase()
+    if (data.parent_id !== undefined && data.parent_id) {
+      const cycle = await this.wouldCreateCycle(id, data.parent_id);
+      if (cycle) throw new Error('Circular reference detected.');
     }
 
-    if (data.wife_name !== undefined) {
-      updatePayload.wife_name = data.wife_name && typeof data.wife_name === 'string' && data.wife_name.trim() ? data.wife_name.trim().toUpperCase() : null
-    }
-
-    if (data.wife_birthdate !== undefined) updatePayload.wife_birthdate = data.wife_birthdate || null
-    
-    if (data.contact_number !== undefined) {
-      updatePayload.contact_number = data.contact_number && typeof data.contact_number === 'string' ? data.contact_number.trim() : null
-    }
-
-    if (data.birthdate !== undefined) updatePayload.birthdate = data.birthdate || null
-    if (data.pastoring_start_date !== undefined) updatePayload.pastoring_start_date = data.pastoring_start_date || null
-    if (data.pastor_image_url !== undefined) updatePayload.pastor_image_url = data.pastor_image_url || null
-    if (data.wife_image_url !== undefined) updatePayload.wife_image_url = data.wife_image_url || null
-    
-    if (data.notes !== undefined) {
-      updatePayload.notes = data.notes && typeof data.notes === 'string' ? data.notes.trim() : null
-    }
-
-    if (data.current_status_code !== undefined) updatePayload.current_status_code = data.current_status_code || 'undeployed'
-    if (data.record_status !== undefined) updatePayload.record_status = data.record_status || 'active'
-    
-    // Parent linkage with circular reference guard
-    if (data.parent_id !== undefined) {
-      const newParent = data.parent_id || null
-      if (newParent) {
-        const cycle = await wouldCreateCycle(id, newParent)
-        if (cycle) throw new Error('Circular reference detected: this pastor is already a descendant of the selected parent.')
-      }
-      updatePayload.parent_id = newParent
-    }
-
-    if (Object.keys(updatePayload).length === 1) {
-      throw new Error('No valid fields provided for update.')
-    }
-
-    const { data: results, error } = await db
-      .from('pastors')
-      .update(updatePayload)
-      .eq('id', id)
-      .select('id, full_name, wife_name, contact_number, current_status_code')
-
-    if (error) throw error
-    if (!results || results.length === 0) throw new Error('Record not found or update unauthorized.')
-    const result = results[0]
-
-    if (result) {
-      const user = authService.getCurrentUser()
-      if (user) {
-        await authService.logAudit(user.id, 'UPDATE_PASTOR', `Updated Pastor: ${result.full_name}`)
-      }
-    }
-
-    return result
-  },
+    const auditAction = 'UPDATE_PASTOR';
+    const auditDetails = `Updated Pastor: ${data.full_name?.trim().toUpperCase() || id}`;
+    return super.update(id, data, auditAction, auditDetails);
+  }
 
   async remove(id) {
-    const { data: pastors, error: fetchErr } = await db.rpc('get_pastors_v3')
-    if (fetchErr) throw fetchErr
-    const p = (pastors || []).find(x => String(x.id) === String(id))
-
-    const { error: rpcErr } = await db.rpc('delete_pastor', { p_pastor_id: id })
+    // We use a specialized RPC for pastor deletion due to lineage logic
+    const pastor = await this.fetchById(id);
+    const { error: rpcErr } = await db.rpc('delete_pastor', { p_pastor_id: id });
 
     if (rpcErr) {
-      // Surface the lineage block as a clean user-readable message
-      const msg = rpcErr.message || ''
+      const msg = rpcErr.message || '';
       if (msg.includes('LINEAGE_CHILDREN_EXIST')) {
-        const clean = msg.replace('ERROR: ', '').replace(/^.*LINEAGE_CHILDREN_EXIST: /, '')
-        throw new Error(clean)
+        throw new Error(msg.replace('ERROR: ', '').replace(/^.*LINEAGE_CHILDREN_EXIST: /, ''));
       }
-      throw new Error(`Failed to delete pastor: ${msg || 'Server error'}`)
+      throw new Error(`Failed to delete pastor: ${msg || 'Server error'}`);
     }
 
-    // 3. Log Audit
-    const user = authService.getCurrentUser()
-    if (user && p) {
-      await authService.logAudit(user.id, 'DELETE_PASTOR', `Removed Pastor: ${p.full_name}`)
-    }
-
-    return true
+    await this.logAuditByCurrent('DELETE_PASTOR', `Removed Pastor: ${pastor?.full_name || id}`);
+    return true;
   }
 }
+
+export const pastorService = new PastorService();

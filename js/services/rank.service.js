@@ -1,40 +1,23 @@
+import { BaseService } from './base.service.js';
 import { db } from '../db.js';
-import { authService } from './auth.service.js';
 
-export const rankService = {
-  // Add a new rank entry
+class RankService extends BaseService {
+  constructor() {
+    super('rank_history', '*', false);
+  }
+
+  /**
+   * Add a new rank entry
+   */
   async addRank(data) {
-    const { pastor_id, rank_code, effective_date, notes, source, precision_flag } = data;
+    const auditAction = 'ADD_RANK';
+    const auditDetails = `Promoted / Assigned Pastor ID ${data.pastor_id} to Rank: ${data.rank_code}`;
+    return super.create(data, auditAction, auditDetails);
+  }
 
-    const { data: newRank, error } = await db
-      .from('rank_history')
-      .insert({
-        pastor_id,
-        rank_code: rank_code.trim(),
-        effective_date: effective_date || null,
-        precision_flag: precision_flag || 'exact',
-        notes: notes ? notes.trim() : null,
-        source: source ? source.trim() : null
-      })
-      .select('id, rank_code')
-      .single();
-
-    if (error) throw error;
-
-    // Log the audit
-    const user = authService.getCurrentUser();
-    if (user) {
-      await authService.logAudit(
-        user.id,
-        'ADD_RANK',
-        `Promoted / Assigned Pastor ID ${pastor_id} to Rank: ${rank_code}`
-      );
-    }
-
-    return newRank;
-  },
-
-  // Fetch rank history for a specific pastor
+  /**
+   * Fetch rank history for a specific pastor
+   */
   async fetchByPastor(pastorId) {
     const { data, error } = await db
       .from('rank_history')
@@ -45,4 +28,6 @@ export const rankService = {
     if (error) throw error;
     return data || [];
   }
-};
+}
+
+export const rankService = new RankService();

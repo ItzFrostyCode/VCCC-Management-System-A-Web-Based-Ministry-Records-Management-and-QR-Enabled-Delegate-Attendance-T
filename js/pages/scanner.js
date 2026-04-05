@@ -1,3 +1,4 @@
+import { ui } from '../utils/ui.js';
 import { requireAuth } from '../supabase.js';
 import { authService } from '../services/auth.service.js';
 import { conferenceService } from '../services/conference.service.js';
@@ -5,7 +6,6 @@ import { pastorService } from '../services/pastor.service.js';
 import { discipleService } from '../services/disciple.service.js';
 import { attendanceService } from '../services/attendance.service.js';
 import { scanLogService } from '../services/scan_log.service.js';
-import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
 import { esc, decodeQR } from '../utils/helper.js';
 
@@ -41,8 +41,6 @@ const SLOT_EMOJI = { MORNING: '🌅', AFTERNOON: '☀️', EVENING: '🌙' }
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await requireAuth()
-        highlightNav()
-        injectMobileNav()
         initGuide()
 
         // Navigation restriction
@@ -575,15 +573,6 @@ function closeScanner() {
 //  CAMERA ENGINE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function bindEvents() {
-    const btnLogoutDesk = document.getElementById('btn-logout-desk')
-    if (btnLogoutDesk) btnLogoutDesk.onclick = () => authService.signOut().then(() => window.location.href='/login.html')
-    
-    const btnLogoutMob = document.getElementById('btn-logout-mob')
-    if (btnLogoutMob) btnLogoutMob.onclick = () => authService.signOut().then(() => window.location.href='/login.html')
-
-    const btnLogoutNav = document.getElementById('btn-logout-nav')
-    if (btnLogoutNav) btnLogoutNav.onclick = () => authService.signOut().then(() => window.location.href='/login.html')
-
     document.getElementById('mobile-logs-btn').onclick = toggleMobileLogs
     document.getElementById('mob-hamburger').onclick = toggleMobileNav
     document.getElementById('mob-backdrop').onclick = () => { closeMobileLogs(); closeMobileNav(); }
@@ -1125,25 +1114,28 @@ function closeMobileNav() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function clearLogs() {
   if (!activeConf) return
-  if (!confirm('Are you sure you want to CLEAR ALL logs for this conference? This cannot be undone.')) return
   
-  try {
-    setStatus('Clearing logs & attendance...', 'idle')
-    await scanLogService.clearAll(activeConf.id)
-    await attendanceService.clearAll(activeConf.id)
-    
-    allLogs = []
-    lastQR = null
-    lastQRTime = 0
-    lastScannedId = null
-    
-    renderLogs()
-    syncMobileLogs()
-    renderSchedule()
-    
-    setStatus('Logs and attendance reset', 'success')
-  } catch (e) {
-    console.error('clearLogs:', e)
-    setStatus('Failed to clear logs', 'error')
-  }
+  ui.confirm('Are you sure you want to CLEAR ALL logs and attendance for this conference? This action is permanent.', async () => {
+    try {
+      setStatus('Clearing logs & attendance...', 'idle')
+      await scanLogService.clearAll(activeConf.id)
+      await attendanceService.clearAll(activeConf.id)
+      
+      allLogs = []
+      lastQR = null
+      lastQRTime = 0
+      lastScannedId = null
+      
+      renderLogs()
+      syncMobileLogs()
+      renderSchedule()
+      
+      setStatus('Logs and attendance reset', 'success')
+      ui.toast('Conference logs cleared')
+    } catch (e) {
+      console.error('clearLogs:', e)
+      setStatus('Failed to clear logs', 'error')
+      ui.toast('Failed to clear: ' + e.message, 'error')
+    }
+  }, { title: 'Clear Conference Data', confirmText: 'Clear All' })
 }

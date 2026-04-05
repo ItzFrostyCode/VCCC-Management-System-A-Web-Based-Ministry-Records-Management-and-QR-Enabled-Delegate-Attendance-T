@@ -1,8 +1,10 @@
-// Attendance → attendance table
-
+import { BaseService } from './base.service.js';
 import { db } from '../db.js';
 
-export const attendanceService = {
+class AttendanceService extends BaseService {
+  constructor() {
+    super('attendance', '*', false);
+  }
 
   async checkDuplicate(conferenceId, dayId, slotId, delegateId, delegateType = null) {
     const query = db
@@ -11,120 +13,97 @@ export const attendanceService = {
       .eq('conference_id', conferenceId)
       .eq('day_id', dayId)
       .eq('slot_id', slotId)
-      .eq('delegate_id', delegateId)
+      .eq('delegate_id', delegateId);
 
     if (delegateType) {
-      query.eq('delegate_type', delegateType)
+      query.eq('delegate_type', delegateType);
     }
 
-    const { data, error } = await query.maybeSingle()
+    const { data, error } = await query.maybeSingle();
 
-    if (error) throw error
-    return data
-  },
+    if (error) throw error;
+    return data;
+  }
 
   async insert(conferenceId, dayId, slotId, delegateId, delegateType = null) {
-    // 1. Manually check for duplicates (Account for Type so Pastor/Wife both work)
-    const existing = await this.checkDuplicate(conferenceId, dayId, slotId, delegateId, delegateType)
+    const existing = await this.checkDuplicate(conferenceId, dayId, slotId, delegateId, delegateType);
     if (existing) {
-      const err = new Error('ALREADY_SCANNED')
-      err.code = 'ALREADY_SCANNED'
-      throw err
+      const err = new Error('ALREADY_SCANNED');
+      err.code = 'ALREADY_SCANNED';
+      throw err;
     }
 
-    const { data, error } = await db
-      .from('attendance')
-      .insert({
-        conference_id: conferenceId,
-        day_id: dayId,
-        slot_id: slotId,
-        delegate_id: delegateId,
-        delegate_type: delegateType, // Retained purely for local JS lookups
-        scanned_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (error) {
-      if (error.code === '23505' || error.message?.includes('duplicate')) {
-        const err = new Error('ALREADY_SCANNED')
-        err.code = 'ALREADY_SCANNED'
-        throw err
-      }
-      throw error
-    }
-
-    return data
-  },
+    return super.create({
+      conference_id: conferenceId,
+      day_id: dayId,
+      slot_id: slotId,
+      delegate_id: delegateId,
+      delegate_type: delegateType,
+      scanned_at: new Date().toISOString()
+    });
+  }
 
   async countBySlot(dayId, slotId) {
-    
     const { data, error } = await db
       .from('attendance')
       .select('id')
       .eq('day_id', dayId)
+      .eq('slot_id', slotId);
 
-    if (error) throw error
-
-    // Secondary filter — slot_id (needed because mock   only supports single .eq() for selects)
-    const matches = (data || []).filter(a => a.slot_id === slotId)
-    return matches.length
-  },
+    if (error) throw error;
+    return data ? data.length : 0;
+  }
 
   async countByConference(conferenceId) {
     const { data, error } = await db
       .from('attendance')
       .select('id')
-      .eq('conference_id', conferenceId)
+      .eq('conference_id', conferenceId);
 
-    if (error) throw error
-    return data ? data.length : 0
-  },
+    if (error) throw error;
+    return data ? data.length : 0;
+  }
 
   async clearAll(conferenceId) {
     const { error } = await db
       .from('attendance')
       .delete()
-      .eq('conference_id', conferenceId)
-    if (error) throw error
-
-    const user = authService.getCurrentUser()
-    if (user) {
-      await authService.logAudit(user.id, 'CLEAR_ATTENDANCE', `Cleared all attendance for conference ID: ${conferenceId}`)
-    }
-
-  },
+      .eq('conference_id', conferenceId);
+    
+    if (error) throw error;
+    await this.logAuditByCurrent('CLEAR_ATTENDANCE', `Cleared all attendance for conference ID: ${conferenceId}`);
+  }
 
   async fetchByMeal(mealId) {
-    // 1. Get meal info to find matching day/slot
     const { data: meal, error: mealErr } = await db
       .from('meals')
       .select('day_id, slot_id, conference_id')
       .eq('id', mealId)
-      .maybeSingle()
+      .maybeSingle();
 
-    if (mealErr) throw mealErr
-    if (!meal) return []
+    if (mealErr) throw mealErr;
+    if (!meal) return [];
 
-    // 2. Get attendance for that specific day+slot
     const { data, error } = await db
       .from('attendance')
       .select('*')
       .eq('conference_id', meal.conference_id)
       .eq('day_id', meal.day_id)
-      .eq('slot_id', meal.slot_id)
+      .eq('slot_id', meal.slot_id);
     
-    if (error) throw error
-    return data || []
-  },
+    if (error) throw error;
+    return data || [];
+  }
 
   async fetchByConference(conferenceId) {
     const { data, error } = await db
       .from('attendance')
       .select('*')
-      .eq('conference_id', conferenceId)
+      .eq('conference_id', conferenceId);
 
-    if (error) throw error
-    return data || []
+    if (error) throw error;
+    return data || [];
   }
 }
+
+export const attendanceService = new AttendanceService();

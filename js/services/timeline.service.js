@@ -2,30 +2,26 @@
 // Specialized service for the Ministry Timeline Engine
 
 import { db } from '../db.js';
+import { assignmentService } from './assignment.service.js';
 
 export const timelineService = {
   
   // Fetches and interleaves assignments, ranks, training, and pioneering into a single timeline feed
   async fetchPastorTimeline(pastorId) {
     // 1. Fetch data from secure RPCs and churches table
-    const [assignmentsRes, ranksRes, trainingRes, pioneeredRes] = await Promise.all([
-      db.rpc('get_assignments_v3'),
+    const [assignments, ranksRes, trainingRes, pioneeredRes] = await Promise.all([
+      assignmentService.fetchByPastor(pastorId),
       db.rpc('get_ranks_v3'),
       db.rpc('get_training_v3'),
       db.from('churches')
-        .select('id, church_name, created_at, church_address, districts(district_name)')
+        .select('id, church_name, created_at, church_address, districts(district_name, theme_color)')
         .eq('pioneer_pastor_id', pastorId)
         .eq('is_deleted', false)
     ]);
 
-    // 2. Comprehensive error checking
-    if (assignmentsRes.error) throw assignmentsRes.error;
-    if (ranksRes.error) throw ranksRes.error;
-    if (trainingRes.error) throw trainingRes.error;
-    if (pioneeredRes.error) throw pioneeredRes.error;
+    
 
     // 3. Filter by pastor
-    const assignments = (assignmentsRes.data || []).filter(a => a.pastor_id === pastorId);
     const ranks       = (ranksRes.data || []).filter(r => r.pastor_id === pastorId);
     const training    = (trainingRes.data || []).filter(t => t.pastor_id === pastorId);
     const pioneered   = pioneeredRes.data || [];
@@ -45,23 +41,38 @@ export const timelineService = {
         date: a.start_date,
         precision: a.precision_flag || 'exact',
         is_primary: a.is_primary,
-        title: `Assigned to ${a.churches?.church_name || 'Unknown Church'}`,
-        subtitle: `${a.role_code || 'Role'} · ${a.event_type || 'Event'} · ${a.churches?.districts?.district_name || 'No'} District`,
+        title: `Assigned to ${a.church_name || a.churches?.church_name || 'Unknown Church'}`,
+        subtitle: [
+          a.role_code || null,
+          a.assignment_type ? a.assignment_type.charAt(0).toUpperCase() + a.assignment_type.slice(1) : null,
+          a.district_name   || a.churches?.districts?.district_name  || null
+        ].filter(Boolean).join(' · ') || 'Assignment',
         notes: a.notes,
+        theme_color: a.churches?.districts?.theme_color || null,
         raw_data: a,
         sort_date: getSortTime(a.start_date)
       });
 
       // Event 2: Assignment Ended (if applicable)
       if (a.end_date) {
+        const endReasonLabels = {
+          transferred: 'Transferred',
+          pullout:     'Pullout',
+          redirection: 'Redirection',
+          ended:       'End of Term',
+          deceased:    'Deceased'
+        };
         timeline.push({
           type: 'ASSIGNMENT_END',
           id: `${a.id}_end`,
           date: a.end_date,
           precision: a.precision_flag || 'exact',
-          title: `End of term at ${a.churches?.church_name || 'Unknown Church'}`,
-          subtitle: `Status: ${a.status_code || 'N/A'}`,
-          notes: null, // usually no separate end notes unless added
+          title: `End of term at ${a.church_name || a.churches?.church_name || 'Unknown Church'}`,
+          subtitle: a.end_reason
+            ? `Reason: ${endReasonLabels[a.end_reason] || a.end_reason}`
+            : 'Assignment Closed',
+          notes: null,
+          theme_color: a.churches?.districts?.theme_color || null,
           raw_data: a,
           sort_date: getSortTime(a.end_date)
         });
@@ -78,6 +89,7 @@ export const timelineService = {
         title: `Promoted to ${r.rank_code || 'Unknown Rank'}`,
         subtitle: r.source ? `Source: ${r.source}` : 'Rank Update',
         notes: r.notes,
+        theme_color: '#3b82f6', // Promotion blue
         raw_data: r,
         sort_date: getSortTime(r.effective_date)
       });
@@ -94,6 +106,7 @@ export const timelineService = {
         subtitle: t.blocker_flag ? 'Deployment Blocker' : 'Formation',
         notes: t.notes,
         is_blocker: t.blocker_flag,
+        theme_color: t.status_code === 'Failed' ? '#ef4444' : '#22c55e',
         raw_data: t,
         sort_date: getSortTime(t.completion_date)
       });
@@ -109,6 +122,7 @@ export const timelineService = {
         title: `Pioneered ${c.church_name}`,
         subtitle: `Foundation · ${c.districts?.district_name || 'No'} District`,
         notes: `Original Address: ${c.church_address || '—'}`,
+        theme_color: '#0d9488', // Foundation teal
         raw_data: c,
         sort_date: getSortTime(c.created_at)
       });

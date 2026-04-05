@@ -1,31 +1,20 @@
 // js/pages/dashboard.js
-import { db } from '../db.js';
 import { requireAuth } from '../supabase.js';
 import { dashboardService } from '../services/dashboard.service.js';
-import { authService } from '../services/auth.service.js';
-import { highlightNav, injectMobileNav } from '../router.js';
+import { conferenceService } from '../services/conference.service.js';
+import { initLayout } from '../layout.js';
 import { initGuide } from '../utils/guide.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const user = await requireAuth()
+  const user = await requireAuth();
   if (!user) return; // Stop execution if auth failed and redirecting
 
-  highlightNav();
-  injectMobileNav();
+  initLayout('Dashboard');
   initGuide();
-
-  // Bind logout button
-  const logoutBtn = document.getElementById('btn-logout');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      await authService.signOut();
-      window.location.href = '/login.html';
-    });
-  }
 
   // Initial load
   await loadDashboardAll();
-  
+
   // Polling every 10 seconds for real-time updates
   setInterval(loadDashboardAll, 10000);
 });
@@ -266,33 +255,32 @@ async function loadUserActivity() {
   }
 }
 
-// Minimal calendar renderer
+// Calendar uses conferenceService instead of direct db call
 async function renderCalendar() {
   const el = document.getElementById('calendar-widget');
   try {
     const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
-    
-    // Fetch conferences to check dates
-    const { data: confs } = await db.from('conferences').select('start_date, end_date').eq('is_deleted', false);
-    
+
+    // Use conferenceService instead of direct db call
+    const confs = await conferenceService.fetchAll();
+
     const isConferenceDate = (dateObj) => {
-      // Return true if Date is within start_date & end_date across all confs
       const time = dateObj.getTime();
-      return (confs || []).some(c => {
-         if(!c.start_date || !c.end_date) return false;
-         const start = new Date(c.start_date).getTime();
-         const end = new Date(c.end_date).getTime();
-         return time >= start && time <= end;
+      return confs.some(c => {
+        if (!c.start_date || !c.end_date) return false;
+        const start = new Date(c.start_date).getTime();
+        const end   = new Date(c.end_date).getTime();
+        return time >= start && time <= end;
       });
     };
 
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const firstDay    = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    
+
+    const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
     let html = `
       <div class="cal-header">
         <div class="cal-month">${monthNames[currentMonth]} ${currentYear}</div>
@@ -308,9 +296,8 @@ async function renderCalendar() {
 
     for (let d = 1; d <= daysInMonth; d++) {
        const cellDate = new Date(currentYear, currentMonth, d);
-       const isToday = d === today.getDate() ? 'today' : '';
-       const isConf = isConferenceDate(cellDate) ? 'conference' : '';
-       
+       const isToday  = d === today.getDate() ? 'today' : '';
+       const isConf   = isConferenceDate(cellDate) ? 'conference' : '';
        html += `<div class="cal-day ${isToday} ${isConf}">${d}</div>`;
     }
 

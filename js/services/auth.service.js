@@ -157,6 +157,15 @@ class AuthService {
       console.warn('Audit log failed or table missing:', err.message);
     }
   }
+
+  /**
+   * Helper to log audit without manually passing userId
+   */
+  async logAuditByCurrent(action, details = null, deviceInfo = null) {
+    const user = this.getCurrentUser();
+    if (!user || !user.id) return;
+    await this.logAudit(user.id, action, details, deviceInfo);
+  }
 }
 
 export const authService = new AuthService();

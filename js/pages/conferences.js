@@ -1,3 +1,4 @@
+import { ui } from '../utils/ui.js';
 import { requireAuth } from '../supabase.js';
 import { authService } from '../services/auth.service.js';
 import { pastorService } from '../services/pastor.service.js';
@@ -5,9 +6,9 @@ import { discipleService } from '../services/disciple.service.js';
 import { conferenceService } from '../services/conference.service.js';
 import { mealService } from '../services/meal.service.js';
 import { attendanceService } from '../services/attendance.service.js';
-import { highlightNav, injectMobileNav } from '../router.js';
 import { initGuide } from '../utils/guide.js';
 import { esc, formatDate } from '../utils/helper.js';
+import { exportConferences } from '../utils/export/conferences/export-conference.js';
 
 let allConfs = []
 let daysMap = {}   // { confId: [] }
@@ -32,8 +33,6 @@ let currentFetchId     = 0
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await requireAuth()
-        highlightNav()
-        injectMobileNav()
         initGuide()
 
         await initDelegateData()
@@ -301,15 +300,20 @@ async function deleteConf() {
 }
 
 async function forceDeleteConf() {
-  if (!confirm('EXTREME WARNING: This will PERMANENTLY delete all attendance records. Are you sure?')) return
-  const btn = document.getElementById('btn-delete-confirm')
-  btn.disabled = true; btn.textContent = 'Force Removing...'
-  try {
-    await conferenceService.forceRemove(deletingConfId)
-    closeDeleteModal()
-    await reloadData()
-    alert('Conference and all associated scans have been erased.')
-  } catch (e) { alert('Error: ' + e.message); btn.disabled = false; btn.textContent = 'Force Delete (DANGER)' }
+  ui.confirm('EXTREME WARNING: This will PERMANENTLY delete all attendance records and scans for this conference. Are you absolutely sure?', async () => {
+    const btn = document.getElementById('btn-delete-confirm')
+    btn.disabled = true; btn.textContent = 'Force Removing...'
+    try {
+      await conferenceService.forceRemove(deletingConfId)
+      closeDeleteModal()
+      await reloadData()
+      ui.toast('Conference and all scans erased')
+    } catch (e) { 
+      ui.toast('Error: ' + e.message, 'error')
+      btn.disabled = false
+      btn.textContent = 'Force Delete (DANGER)' 
+    }
+  }, { title: 'DANGER: Force Delete', confirmText: 'ERASE EVERYTHING' })
 }
 
 async function saveGrid() {
@@ -333,14 +337,6 @@ async function saveGrid() {
 }
 
 function bindEvents() {
-  const btnLogout = document.getElementById('btn-logout')
-  if (btnLogout) {
-    btnLogout.addEventListener('click', async () => {
-      await authService.signOut()
-      window.location.href = '/login.html'
-    })
-  }
-
   const isStaff = authService.getCurrentUser()?.role === 'Staff';
   const btnAdd = document.getElementById('btn-add');
   if (isStaff && btnAdd) btnAdd.style.display = 'none';
@@ -359,7 +355,16 @@ function bindEvents() {
 
   document.getElementById('btn-close-report').onclick = closeReport
   document.getElementById('btn-refresh-report').onclick = () => refreshReport()
-  document.getElementById('btn-export-excel').onclick = exportToExcel
+  document.getElementById('btn-export-excel').onclick = exportAttendanceToExcel
+
+  // Export conference list button
+  const btnExportConf = document.getElementById('btn-export-conf')
+  if (btnExportConf) {
+    btnExportConf.onclick = async () => {
+      if (!allConfs.length) { alert('No conferences to export.'); return }
+      await exportConferences(allConfs)
+    }
+  }
   
   const logSearch = document.getElementById('log-search')
   if (logSearch) logSearch.oninput = renderGlobalList
@@ -468,7 +473,8 @@ async function refreshReport(isAuto = false) {
   if (currentConference) await loadGlobalReport(currentConference.id)
 }
 
-function exportToExcel() {
+// Export conference attendance grid (inside report view)
+function exportAttendanceToExcel() {
   if (!globalReportData.length) return alert('No data')
   const aoa = [[`Conference: ${currentConference.title}`], []]
   const slotOrder = { 'MORNING': 1, 'AFTERNOON': 2, 'EVENING': 3 }
@@ -476,7 +482,7 @@ function exportToExcel() {
       const aDayNum = parseInt(a.day_number) || 0
       const bDayNum = parseInt(b.day_number) || 0
       if (aDayNum !== bDayNum) return aDayNum - bDayNum
-      return slotOrder[a.slot_name] - slotOrder[b.slot_name]
+      return (slotOrder[a.slot_name] || 0) - (slotOrder[b.slot_name] || 0)
   })
   const headers = ['Role', 'Name', 'Church', 'Status', 'Total']
   sortedMeals.forEach(m => headers.push(`Day ${m.day_number} ${m.slot_name}`))
@@ -486,7 +492,15 @@ function exportToExcel() {
     sortedMeals.forEach(m => line.push(row.scans[`${m.day_id}_${m.slot_id}`] ? 'Scanned' : '--'))
     aoa.push(line)
   })
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  // Simple CSV-style download (basic spreadsheet)
+  const csvContent = aoa.map(row => row.join('\t')).join('\n')
+  const blob = new Blob([csvContent], { type: 'text/tab-separated-values' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `Attendance_${currentConference.title}_${new Date().toISOString().split('T')[0]}.tsv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function getAvatarHtml(imageUrl, name) {

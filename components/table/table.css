@@ -31,15 +31,35 @@
 }
 
 /* Grid columns for specific entities */
-.cols-disciples { grid-template-columns: 1.5fr 1.2fr 1fr 100px; }
-.cols-pastors   { grid-template-columns: 40px 1.2fr 1.1fr 1fr 0.7fr 0.8fr 0.7fr 0.7fr 120px; gap: 8px; }
+.cols-disciples { grid-template-columns: 1.5fr 1.2fr 1fr 180px; }
+.cols-church    { grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr 1.2fr 300px; gap: 10px; }
+.cols-pastors   { grid-template-columns: 40px 1.2fr 1.1fr 1fr 0.7fr 0.8fr 0.7fr 0.7fr 240px; gap: 8px; }
+.cols-assign    { grid-template-columns: 2fr 1.5fr 1fr 1fr 100px; gap: 12px; }
+
 .cols-pastors > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .cols-pastors .cell-name-primary { font-size: 13px; }
-.cols-pastors .row-actions { overflow: visible; }
+.cols-pastors .row-actions,
+.cols-church .row-actions,
+.cols-disciples .row-actions,
+.cols-assign .row-actions { overflow: visible; }
 
 .row-actions { 
-  display: flex; gap: 8px; justify-content: flex-end; opacity: 0.6; transition: opacity .2s;
+  display: flex; gap: 0; justify-content: flex-start; opacity: 0.8; transition: opacity .2s;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
 }
+.row-actions .pcm-action-btn {
+  height: 36px;
+  font-size: 12px;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  background: transparent;
+}
+.row-actions .pcm-action-btn:first-child { border-radius: 8px 0 0 8px; }
+.row-actions .pcm-action-btn:last-child { border-radius: 0 8px 8px 0; border-right: none; }
 .data-table-row:hover .row-actions { opacity: 1; }
 
 @media (max-width: 1024px) {
@@ -53,10 +73,12 @@
   }
   .data-table-row:not(.cols-pastors, .cols-church, .cols-disciples):hover { transform: none; padding-left: 17px; }
   
-  .data-table-row:not(.cols-pastors, .cols-church, .cols-disciples) > div:not(.row-actions) {
-    display: flex;
-    justify-content: space-between;
+  .data-table-row:not(.cols-pastors, .cols-church, .cols-disciples) > div:not(.row-actions) { 
+    display: flex !important; 
+    gap: 8px; 
+    justify-content: flex-start; /* Aligned Left */
     align-items: center;
+    min-height: 48px;
     text-align: right;
     font-size: 14px !important;
   }
