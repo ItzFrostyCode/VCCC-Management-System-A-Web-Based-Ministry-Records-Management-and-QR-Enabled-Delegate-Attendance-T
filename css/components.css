@@ -12,6 +12,5 @@
 /* ── UI Utilities ── */
 @import url('../components/stats/stats.css');
 @import url('../components/tabs/tabs.css');
-@import url('../components/badge/badge.css');
 @import url('../components/history/history.css');
 @import url('../components/password/password.css');

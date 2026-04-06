@@ -28,7 +28,6 @@ const ASSETS = [
     '/css/app.css',
     '/css/layout.css',
     '/css/components.css',
-    '/css/ui.css',
     '/css/pages/login.css',
     '/css/pages/pastor-view.css',
 
