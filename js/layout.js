@@ -157,12 +157,9 @@ export function initLayout(title) {
   window.ui = ui;
   window.events = events;
 
-  // 6. Inject UI CSS if missing
-  if (!document.querySelector('link[href*="css/ui.css"]')) {
-     const link = document.createElement('link');
-     link.rel = 'stylesheet';
-     link.href = 'css/ui.css';
-     document.head.appendChild(link);
+  // 6. Design System Check
+  if (!document.querySelector('link[href*="css/app.css"]')) {
+     console.warn('VCCC-MS: Core design system (app.css) missing.');
   }
 
 

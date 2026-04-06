@@ -25,12 +25,12 @@
   --t-dim:   rgba(242, 242, 245, 0.28);
 
   /* Accent (brand red) */
-  --accent:       #EF4444;
-  --accent-light: #FCA5A5;
-  --accent-dark:  #B91C1C;
-  --accent-glow:  rgba(239, 68, 68, 0.30);
-  --accent-bg:    rgba(239, 68, 68, 0.10);
-  --accent-ring:  rgba(239, 68, 68, 0.35);
+  --accent:       var(--red);
+  --accent-light: var(--red-light);
+  --accent-dark:  var(--red-dark);
+  --accent-glow:  rgba(232, 56, 32, 0.30);
+  --accent-bg:    rgba(232, 56, 32, 0.10);
+  --accent-ring:  rgba(232, 56, 32, 0.35);
 
   /* Status colours */
   --success:        #22C55E;
@@ -62,26 +62,15 @@
 }
 
 /* ─────────────────────────────────────────────
-   RESET & BASE
+   SCANNER LAYOUT OVERRIDES
 ───────────────────────────────────────────── */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
+body.scanner-active {
   background: var(--s-bg);
   color: var(--t-main);
   height: 100dvh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ═══════════════════════════════════════════════════════════
