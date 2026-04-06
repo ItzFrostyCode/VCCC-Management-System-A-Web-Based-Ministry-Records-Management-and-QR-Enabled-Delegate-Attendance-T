@@ -91,6 +91,18 @@ class Router {
             document.title = doc.title;
             
             if (window._highlightNavFunc) window._highlightNavFunc(); // Call layout's highlight function
+            
+            // 5b. Dyn-inject Page Styles (CSS)
+            const newLinks = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+            newLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (!document.querySelector(`link[href="${href}"]`)) {
+                    const cloned = document.createElement('link');
+                    cloned.rel = 'stylesheet';
+                    cloned.href = href;
+                    document.head.appendChild(cloned);
+                }
+            });
 
             // 6. Bootstrap New Module
             const moduleScript = doc.querySelector('script[type="module"][src*="pages/"]');

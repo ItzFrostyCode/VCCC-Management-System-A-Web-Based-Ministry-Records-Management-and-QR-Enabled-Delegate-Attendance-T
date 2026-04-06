@@ -280,40 +280,49 @@
   </div>
 </div>
 
-<!-- Export Options Modal -->
+
+<!-- Simplified Export Modal -->
 <div class="modal-overlay" id="modal-export">
   <div class="modal-box modal-sm">
     <div class="modal-head">
-      <span class="modal-title">Export Options</span>
+      <span class="modal-title">Export Data</span>
       <button class="modal-close" onclick="document.getElementById('modal-export').classList.remove('open')">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
     <div class="modal-body">
-      <div style="margin-bottom: 12px; font-weight: 600; font-size: 14px; color: var(--text);">Export Mode: <span id="export-mode-label" style="color: var(--red);">ALL</span></div>
+      <div id="export-mode-label" style="font-size:12px; margin-bottom:15px; color:var(--blue); font-weight:600;">ALL PASTORS</div>
       
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" id="exp-pastor-img" checked />
-          <span style="font-size:14px;">Include Pastor Image</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" id="exp-wife-img" checked />
-          <span style="font-size:14px;">Include Wife Image</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" id="exp-bdays" checked />
-          <span style="font-size:14px;">Include Birthdates</span>
-        </label>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <button class="btn btn-primary" id="btn-export-all" style="justify-content: flex-start; height: 56px; padding: 0 20px;">
+          <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+            <div style="background: rgba(255,255,255,0.2); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px;">1</div>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; font-size: 14px;">ALL PASTORS</div>
+              <div style="font-size: 11px; opacity: 0.8; font-weight: 400;">Full Detailed List (A-Z)</div>
+            </div>
+            <svg style="margin-left: auto; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </button>
+
+        <button class="btn btn-ghost" id="btn-export-district" style="justify-content: flex-start; height: 56px; padding: 0 20px; border: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+            <div style="background: var(--bg-2); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--text-2);">2</div>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; font-size: 14px; color: var(--text);">BY DISTRICT</div>
+              <div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Excel Sheets (Categorized)</div>
+            </div>
+            <svg style="margin-left: auto; width: 18px; height: 18px; color: var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </button>
       </div>
-      
-      <div style="margin-top:16px; font-size:11px; color:var(--text-3); font-style:italic;">
-        * Images will be embedded directly into the Excel file.
+
+      <div style="font-size: 11px; color: var(--text-3); line-height: 1.5; background: var(--bg-2); padding: 12px; border-radius: 4px;">
+        <strong>Note:</strong> All exports include images and primary contact details by default.
       </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" id="btn-cancel-export">Cancel</button>
-      <button class="btn btn-primary" id="btn-export-confirm">Download Excel</button>
     </div>
   </div>
 </div>

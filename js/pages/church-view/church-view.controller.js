@@ -1,4 +1,3 @@
-import { router } from '../router.js';
 import { initLayout } from '../layout.js';
 import { requireAuth } from '../supabase.js';
 import { districtService } from '../services/district.service.js';

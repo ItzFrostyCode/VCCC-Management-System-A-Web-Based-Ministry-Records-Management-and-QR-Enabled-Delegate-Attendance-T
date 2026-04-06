@@ -36,6 +36,9 @@ export class PastorsView {
             btnExport: document.getElementById('btn-export'),
             modalExport: document.getElementById('modal-export'),
             exportModeLabel: document.getElementById('export-mode-label'),
+            btnExportAll: document.getElementById('btn-export-all'),
+            btnExportDistrict: document.getElementById('btn-export-district'),
+            btnCancelExport: document.getElementById('btn-cancel-export'),
             // Modern Image Uploader
             uploaderPastor: document.getElementById('uploader-pastor'),
             uploaderWife: document.getElementById('uploader-wife'),
