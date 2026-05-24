@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pastors — VCCC DAVAO MS</title>
+  <link rel="stylesheet" href="./css/app.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" /> <!-- Keeping original index -->
+  <link rel="stylesheet" href="components/button/button.css" />
+  <link rel="stylesheet" href="components/form/form.css" />
+  <link rel="stylesheet" href="components/modal/modal.css" />
+  <link rel="stylesheet" href="components/table/table.css" />
+  <link rel="stylesheet" href="components/filter-bar/filter-bar.css" />
+  <link rel="stylesheet" href="components/search-select/search-select.css" />
+  <link rel="stylesheet" href="components/avatar/avatar.css" />
+  <link rel="stylesheet" href="components/stats/stats.css" />
+  <link rel="stylesheet" href="components/tabs/tabs.css" />
+  <link rel="stylesheet" href="components/badge/badge.css" />
+  <link rel="stylesheet" href="components/history/history.css" />
+  <link rel="stylesheet" href="components/password/password.css" />
+  <link rel="icon" type="image/png" href="./assets/VCCC-Logo.png">
+  <link rel="stylesheet" href="css/pages/pastors.css" />
+  <!-- Vanilla CSS only — Tailwind CDN removed (app uses custom component CSS) -->
+</head>
+<body>
+<div class="app-shell">
+  <div class="app-main">
+    <main class="page-content" id="main-content">
+      <div class="page-header">
+        <div class="page-header-info"><span class="page-header-title">Pastors</span><span class="page-header-count" id="count-label"></span></div>
+        <div class="page-header-actions">
+          <button class="btn btn-ghost" id="btn-export"><svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg> Export Data</button>
+          <button class="btn btn-primary" id="btn-add"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add pastor</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="search-input" placeholder="Search by name, wife, or church..." /></div>
+        <div id="filter-district" style="width:180px;"></div>
+        <div id="filter-church"   style="width:200px;"></div>
+      </div>
+      <div class="data-table">
+        <div class="data-table-head cols-pastors">
+          <span style="display:flex; justify-content:center; align-items:center;"><input type="checkbox" id="check-all" /></span>
+          <span>Pastor</span>
+          <span>Wife</span>
+          <span>Contact</span>
+          <span>Status</span>
+          <span>Birthdate</span>
+          <span>Age</span>
+          <span>Since</span>
+          <span style="text-align:right">Actions</span>
+        </div>
+        <div class="mobile-selection-header" style="display:none; padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid var(--border); align-items:center; gap:10px;">
+          <input type="checkbox" id="check-all-mobile" style="width:18px; height:18px; cursor:pointer;" />
+          <label for="check-all-mobile" style="font-size:12px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:.05em; cursor:pointer;">Select All</label>
+        </div>
+        <div id="table-body">
+          <div class="skel-row skeleton"></div>
+          <div class="skel-row skeleton"></div>
+          <div class="skel-row skeleton"></div>
+        </div>
+        <div id="pagination" style="display:none; justify-content:space-between; align-items:center; padding: 12px 16px; border-top: 1px solid var(--border);">
+          <div style="font-size:13px; color:var(--text-3); font-weight:500;" id="page-info"></div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-prev" onclick="prevPage()">Prev</button>
+            <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-next" onclick="nextPage()">Next</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- TEMPLATES FOR SAFE DOM RENDERING -->
+<template id="pastor-grid-template">
+  <div class="data-table-row cols-pastors">
+    <div style="display:flex; align-items:center; justify-content:center;">
+      <input type="checkbox" class="row-check" />
+    </div>
+    <div class="col-pastor" style="display:flex; align-items:center;">
+      <div class="avatar-container"></div>
+      <div style="min-width:0; flex:1;">
+        <div class="name cell-name-primary"></div>
+        <div class="church cell-name-sub"></div>
+      </div>
+    </div>
+    <div class="col-wife" style="display:flex; align-items:center;">
+      <div class="avatar-container"></div>
+      <div class="name" style="min-width:0; flex:1;"></div>
+    </div>
+    <div class="col-contact"></div>
+    <div class="col-status"><div class="badge"></div></div>
+    <div class="col-bdate"></div>
+    <div class="col-age"></div>
+    <div class="col-since"></div>
+    <div class="col-actions row-actions"></div>
+  </div>
+</template>
+
+<template id="pastor-card-template">
+  <div class="pastor-card-mobile pcm-wrap">
+    <div class="pcm-header">
+      <div class="pcm-check-wrap" style="margin-right: 4px;">
+        <input type="checkbox" class="row-check-mobile" style="width:18px; height:18px; cursor:pointer;" />
+      </div>
+      <div class="pcm-avatars">
+        <div class="pcm-avatar-wrap pcm-avatar-pastor"></div>
+        <div class="pcm-avatar-wrap pcm-avatar-wife"></div>
+      </div>
+      <div class="pcm-title-area">
+        <div class="pcm-name"></div>
+        <div class="pcm-wife-name"></div>
+      </div>
+      <div class="pcm-status-wrap"></div>
+    </div>
+    <div class="pcm-info-grid">
+      <div class="pcm-info-item"><span class="pcm-info-label">Church</span><span class="pcm-info-val church-text"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Contact</span><span class="pcm-info-val contact-val"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Age (P/W)</span><span class="pcm-info-val age-val"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Since</span><span class="pcm-info-val since-val"></span></div>
+    </div>
+    <div class="pcm-actions"></div>
+  </div>
+</template>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modal-form">
+  <div class="modal-box">
+    <form id="pastor-form">
+      <div class="modal-head">
+        <span class="modal-title" id="modal-title">Add Pastor</span>
+        <button type="button" class="modal-close" id="btn-close-modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="f-id" name="id" />
+        <div class="form-row-2">
+          <div class="form-field"><label class="form-label">Full name <span class="req">*</span></label><input class="input" type="text" id="f-name" name="full_name" placeholder="Pastor full name" required /></div>
+          <div class="form-field"><label class="form-label">Wife's name <span class="opt">(optional)</span></label><input class="input" type="text" id="f-wife-name" name="wife_name" placeholder="Wife's name" /></div>
+        </div>
+        <!-- Modern Image Uploader Row -->
+        <div class="form-row-2" style="margin-bottom: 24px; gap: 40px !important;">
+          <div class="form-field uploader-field">
+            <label class="form-label">Pastor Photo</label>
+            <div class="photo-uploader" id="uploader-pastor">
+              <div class="photo-preview-wrap">
+                <img id="p-preview-img" src="" style="display:none;" />
+                <div class="photo-placeholder" id="p-placeholder">
+                  <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </div>
+                <div class="photo-overlay"><span>Change</span></div>
+                <button type="button" class="photo-remove-btn" id="btn-remove-p-photo" title="Remove photo" style="display:none;">
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <input type="file" id="pastor-image" name="pastor_image" accept="image/*" hidden />
+            </div>
+          </div>
+          <div class="form-field uploader-field">
+            <label class="form-label">Spouse Photo</label>
+            <div class="photo-uploader" id="uploader-wife">
+              <div class="photo-preview-wrap">
+                <img id="w-preview-img" src="" style="display:none;" />
+                <div class="photo-placeholder" id="w-placeholder">
+                  <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </div>
+                <div class="photo-overlay"><span>Change</span></div>
+                <button type="button" class="photo-remove-btn" id="btn-remove-w-photo" title="Remove photo" style="display:none;">
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <input type="file" id="wife-image" name="wife_image" accept="image/*" hidden />
+            </div>
+          </div>
+        </div>
+        <div class="form-field"><label class="form-label">Contact number <span class="opt">(optional)</span></label><input class="input" type="text" id="f-contact-number" name="contact_number" placeholder="Enter contact number" /></div>
+        <div class="form-row-2">
+          <div class="form-field"><label class="form-label">Pastor Birthdate <span class="opt">(optional)</span></label><input class="input" type="date" id="f-birthdate" name="birthdate" /></div>
+          <div class="form-field"><label class="form-label">Wife Birthdate <span class="opt">(optional)</span></label><input class="input" type="date" id="f-wife-birthdate" name="wife_birthdate" /></div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field"><label class="form-label">Pastoring Start <span class="opt">(optional)</span></label><input class="input" type="date" id="f-pastoring-start" name="pastoring_start_date" /></div>
+          <div class="form-field">
+            <label class="form-label">Ministry Status</label>
+            <div id="f-status-readonly" style="display:none; padding:10px 14px; background:var(--bg-card); border:1.5px solid var(--border); border-radius:10px; font-weight:700; font-size:14px; color:var(--text);">
+               <span id="f-status-label">Active</span>
+               <div style="font-size:11px; font-weight:400; color:var(--text-light); margin-top:4px;">
+                 ℹ️ Manage lifecycle via <b>Update Status</b> wizard.
+               </div>
+            </div>
+            <select id="f-status-code" name="current_status_code" class="input">
+              <option value="active">Active (Serving)</option>
+              <option value="undeployed">Undeployed (No Church)</option>
+              <option value="deceased">Deceased</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Record Status (completeness) -->
+        <div class="form-field">
+          <label class="form-label">Record Type</label>
+          <div class="rec-status-group">
+            <label id="rec-status-active-lbl">
+              <input type="radio" name="record_status" id="f-rec-active" value="active" checked style="accent-color:var(--red);" />
+              Active record
+            </label>
+            <label id="rec-status-draft-lbl">
+              <input type="radio" name="record_status" id="f-rec-draft" value="draft" style="accent-color:var(--text-3);" />
+              Draft / Placeholder
+            </label>
+          </div>
+          <div id="draft-hint" style="display:none; margin-top:6px; font-size:12px; color:var(--text-3); padding:8px 12px; background:var(--bg-input); border-radius:6px; border:1px solid var(--border);">
+            ℹ️ Draft records are for incomplete or placeholder entries. Optional fields will be skipped.
+          </div>
+        </div>
+
+        <!-- Parent Pastor (lineage) -->
+        <div class="form-field" id="parent-pastor-field">
+          <label class="form-label">Came From <span class="opt">(parent pastor — optional)</span></label>
+          <div class="parent-row">
+            <div id="parent-pastor-select-container" style="flex:1;"></div>
+            <button type="button" id="btn-create-draft-parent"
+              style="height:42px; padding:0 16px; font-size:12px; font-weight:700; background:var(--bg-input); border:1.5px dashed var(--border); border-radius:10px; color:var(--text-2); cursor:pointer; white-space:nowrap; flex-shrink:0; display:none;"
+              title="Create a new draft parent pastor with just a name">
+              + Draft parent
+            </button>
+          </div>
+          <div id="parent-draft-preview" style="display:none; margin-top:6px; padding:8px 12px; border-radius:8px; background:#fff8e1; border:1px solid #ffe082; font-size:12px; color:#795548;"></div>
+        </div>
+
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="btn-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-save">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box modal-sm">
+    <div class="modal-head">
+      <span class="modal-title">Remove pastor</span>
+      <button class="modal-close" id="btn-close-delete">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body"><p style="font-size:13px;color:var(--text-2);" id="delete-msg"></p></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btn-cancel-delete">Cancel</button>
+      <button class="btn btn-danger" id="btn-delete-confirm">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Viewer Modal -->
+<div class="modal-overlay" id="modal-image-viewer">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title" id="image-viewer-title">View Image</span>
+      <button class="modal-close" id="btn-close-image-viewer">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding: 10px; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; position: relative;">
+      <img id="full-image-display" class="modal-img-full" src="" style="display:none; max-height: 70vh;" />
+      <div id="full-initials-display" style="display:none; width:150px; height:150px; border-radius:50%; background:var(--red); color:white; font-size:64px; font-weight:800; align-items:center; justify-content:center;"></div>
+      
+      <!-- Quick Update Action -->
+      <div id="image-viewer-actions" style="margin-top: 20px; display: none;">
+        <button type="button" class="btn btn-primary" id="btn-update-viewing-photo" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); color: #fff;">
+          <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:8px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Update Photo
+        </button>
+        <input type="file" id="image-viewer-input" accept="image/*" hidden />
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Simplified Export Modal -->
+<div class="modal-overlay" id="modal-export">
+  <div class="modal-box modal-sm">
+    <div class="modal-head">
+      <span class="modal-title">Export Data</span>
+      <button class="modal-close" onclick="document.getElementById('modal-export').classList.remove('open')">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="export-mode-label" style="font-size:12px; margin-bottom:15px; color:var(--blue); font-weight:600;">ALL PASTORS</div>
+      
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <button class="btn btn-primary" id="btn-export-all" style="justify-content: flex-start; height: 56px; padding: 0 20px;">
+          <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+            <div style="background: rgba(255,255,255,0.2); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px;">1</div>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; font-size: 14px;">ALL PASTORS</div>
+              <div style="font-size: 11px; opacity: 0.8; font-weight: 400;">Full Detailed List (A-Z)</div>
+            </div>
+            <svg style="margin-left: auto; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </button>
+
+        <button class="btn btn-ghost" id="btn-export-district" style="justify-content: flex-start; height: 56px; padding: 0 20px; border: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+            <div style="background: var(--bg-2); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--text-2);">2</div>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; font-size: 14px; color: var(--text);">BY DISTRICT</div>
+              <div style="font-size: 11px; color: var(--text-3); font-weight: 400;">Excel Sheets (Categorized)</div>
+            </div>
+            <svg style="margin-left: auto; width: 18px; height: 18px; color: var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </button>
+      </div>
+
+      <div style="font-size: 11px; color: var(--text-3); line-height: 1.5; background: var(--bg-2); padding: 12px; border-radius: 4px;">
+        <strong>Note:</strong> All exports include images and primary contact details by default.
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btn-cancel-export">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SECRETARY WORKFLOW MODALS                                         -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<!-- Assign Pastor Modal (Add Current Assignment or History Record) -->
+<div class="modal-overlay" id="modal-assign">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title" id="assign-modal-title">Assign Pastor to Church</span>
+      <button type="button" class="modal-close" id="btn-close-assign">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="assign-form">
+      <div class="modal-body">
+        <input type="hidden" id="af-pastor-id" />
+        <!-- Pastor name display (read-only) -->
+        <div class="form-field" style="margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label class="form-label" style="margin-bottom:0;">Pastor</label>
+            <button type="button" id="btn-quick-add-pastor" class="text-btn" style="font-size:12px; font-weight:700; color:var(--red); cursor:pointer; background:none; border:none; padding:0;">+ Create New</button>
+          </div>
+          <div id="af-pastor-name" style="font-weight:700; font-size:15px; color:var(--text); padding:10px 14px; background:var(--bg-input); border:1.5px solid var(--border); border-radius:10px;"></div>
+        </div>
+        <!-- Occupied Church Warning -->
+        <div id="af-occupied-warning" style="display:none; margin-bottom:16px;"></div>
+        <div class="form-field">
+          <label class="form-label">Assignment Type <span class="req">*</span></label>
+          <select id="af-type" class="input" required>
+            <option value="pioneering">🌱 Pioneering — Starting a new church</option>
+            <option value="takeover">🤝 Takeover — Assuming an existing pastorate</option>
+            <option value="legacy">📜 Legacy — Historical record</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Church <span class="req">*</span></label>
+          <div id="af-church-sel"></div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label class="form-label">Start Date <span class="req">*</span></label>
+            <input class="input" type="date" id="af-start" required />
+          </div>
+          <div class="form-field">
+            <label class="form-label">End Date <span class="opt">(leave blank = current)</span></label>
+            <input class="input" type="date" id="af-end" />
+          </div>
+        </div>
+        <div class="form-field" id="af-end-reason-field" style="display:none;">
+          <label class="form-label">End Reason</label>
+          <select id="af-end-reason" class="input">
+            <option value="ended">Ended (Natural)</option>
+            <option value="transferred">Transferred</option>
+            <option value="pullout">Pullout</option>
+            <option value="redirection">Redirection</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Notes <span class="opt">(optional)</span></label>
+          <textarea class="input" id="af-notes" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="btn-cancel-assign">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-save-assign">Save Assignment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Transfer Pastor Modal -->
+<div class="modal-overlay" id="modal-transfer">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">Transfer Pastor</span>
+      <button type="button" class="modal-close" id="btn-close-transfer">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="transfer-form">
+      <div class="modal-body">
+        <input type="hidden" id="tf-pastor-id" />
+        <div class="form-field" style="margin-bottom:12px;">
+          <label class="form-label">Pastor</label>
+          <div id="tf-pastor-name" style="font-weight:700; font-size:15px; color:var(--text); padding:10px 14px; background:var(--bg-input); border:1.5px solid var(--border); border-radius:10px;"></div>
+        </div>
+        <div id="tf-current-church-info" style="margin-bottom:16px; padding:10px 14px; background:#fef9ec; border:1.5px solid #fbbf24; border-radius:10px; font-size:13px; color:#92400e;"></div>
+        <div class="form-field">
+          <label class="form-label">Assignment Type at New Church <span class="req">*</span></label>
+          <select id="tf-type" class="input" required>
+            <option value="pioneering">🌱 Pioneering — Starting a new church</option>
+            <option value="takeover">🤝 Takeover — Assuming an existing pastorate</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">New Church <span class="req">*</span></label>
+          <div id="tf-church-sel"></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Transfer Date <span class="req">*</span></label>
+          <input class="input" type="date" id="tf-date" required />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Notes <span class="opt">(optional)</span></label>
+          <textarea class="input" id="tf-notes" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="btn-cancel-transfer">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-save-transfer">Confirm Transfer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Pastoral Transition Wizard (Phase 10) -->
+<div class="modal-overlay" id="modal-transition">
+  <div class="modal-box modal-md">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-transition-title">Pastor Transition Wizard</span>
+      <button type="button" class="modal-close" id="btn-close-transition">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="transition-form">
+      <div class="modal-body">
+        <input type="hidden" id="tr-pastor-id" />
+        <div class="tr-profile-summary" style="display:flex; align-items:center; gap:12px; margin-bottom:20px; padding:12px; background:var(--bg-card); border-radius:12px; border:1px solid var(--border);">
+           <div id="tr-pastor-avatar" style="width:44px; height:44px; border-radius:50%; background:var(--bg-page); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--red);">?</div>
+           <div>
+             <div id="tr-pastor-name" style="font-weight:700; font-size:16px; color:var(--text);"></div>
+             <div id="tr-current-status" style="font-size:12px; color:var(--text-light);">Loading status...</div>
+           </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Effective Date <span class="req">*</span></label>
+          <input class="input" type="date" id="tr-date" required />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Next Step (Transition Type) <span class="req">*</span></label>
+          <div class="tr-choice-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+             <label class="tr-choice">
+                <input type="radio" name="tr-type" value="pioneer" checked />
+                <div class="tr-choice-card">
+                   <div class="tr-icon">🏗️</div>
+                   <strong>Pioneer</strong>
+                   <span>Start new church</span>
+                </div>
+             </label>
+             <label class="tr-choice">
+                <input type="radio" name="tr-type" value="takeover" />
+                <div class="tr-choice-card">
+                   <div class="tr-icon">🤝</div>
+                   <strong>Takeover</strong>
+                   <span>Replace existing</span>
+                </div>
+             </label>
+             <label class="tr-choice">
+                <input type="radio" name="tr-type" value="international" />
+                <div class="tr-choice-card">
+                   <div class="tr-icon">🌍</div>
+                   <strong>International</strong>
+                   <span>Foreign mission</span>
+                </div>
+             </label>
+             <label class="tr-choice" id="tr-choice-undeploy">
+                <input type="radio" name="tr-type" value="undeploy" />
+                <div class="tr-choice-card">
+                   <div class="tr-icon">🛑</div>
+                   <strong>Undeploy</strong>
+                   <span>End / Pullout</span>
+                </div>
+             </label>
+          </div>
+        </div>
+
+        <!-- Dynamic Contextual Fields -->
+        <div id="tr-fields-wrap" style="margin-top:20px; padding-top:20px; border-top:1px dashed var(--border);">
+           
+           <!-- Case: Pioneer -->
+           <div class="tr-panel" data-type="pioneer">
+              <div class="form-field">
+                <label class="form-label">New Church Name <span class="req">*</span></label>
+                <input type="text" id="tr-new-church-name" class="input" placeholder="e.g. VCCC Central Station" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Target District <span class="req">*</span></label>
+                <div id="tr-new-church-dist-sel"></div>
+              </div>
+           </div>
+
+           <!-- Case: Takeover -->
+           <div class="tr-panel" data-type="takeover" style="display:none;">
+              <div class="form-field">
+                <label class="form-label">Target Station <span class="req">*</span></label>
+                <div id="tr-takeover-church-sel"></div>
+              </div>
+              <div id="tr-occupied-warning" style="margin-top:12px;"></div>
+           </div>
+
+           <!-- Case: International -->
+           <div class="tr-panel" data-type="international" style="display:none;">
+              <div class="form-field">
+                <label class="form-label">Mission / Location Details <span class="req">*</span></label>
+                <input type="text" id="tr-intl-details" class="input" placeholder="e.g. United Kingdom - London Fellowship" />
+              </div>
+           </div>
+
+           <!-- Case: Undeploy -->
+           <div class="tr-panel" data-type="undeploy" style="display:none;">
+              <div class="form-field">
+                <label class="form-label">Closing Reason <span class="req">*</span></label>
+                <select id="tr-undeploy-reason" class="input">
+                  <option value="pullout">Pullout — Withdrew</option>
+                  <option value="redirection">Redirection — Reassigned</option>
+                  <option value="ended">Ended — Natural end</option>
+                </select>
+              </div>
+           </div>
+
+           <div class="form-field" style="margin-top:16px;">
+             <label class="form-label">Transition Notes <span class="opt">(optional)</span></label>
+             <textarea class="input" id="tr-notes" rows="2" placeholder="Describe the transition flow..."></textarea>
+           </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="btn-skip-transition" style="display:none; margin-right:auto;">Setup Later</button>
+        <button type="button" class="btn btn-ghost" id="btn-cancel-transition">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-save-transition">Execute Transition</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="./js/libs/supabase.min.js"></script>
+<script type="module" src="./js/pages/pastors/pastors.controller.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disciples — VCCC DAVAO MS</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="components/button/button.css" />
+  <link rel="stylesheet" href="components/form/form.css" />
+  <link rel="stylesheet" href="components/modal/modal.css" />
+  <link rel="stylesheet" href="components/table/table.css" />
+  <link rel="stylesheet" href="components/filter-bar/filter-bar.css" />
+  <link rel="stylesheet" href="components/search-select/search-select.css" />
+  <link rel="stylesheet" href="components/avatar/avatar.css" />
+  <link rel="stylesheet" href="components/stats/stats.css" />
+  <link rel="stylesheet" href="components/tabs/tabs.css" />
+  <link rel="stylesheet" href="components/badge/badge.css" />
+  <link rel="stylesheet" href="components/history/history.css" />
+  <link rel="stylesheet" href="components/password/password.css" />
+  <link rel="icon" type="image/png" href="assets/VCCC-Logo.png">
+</head>
+<body>
+<div class="app-shell">
+  <div class="app-main">
+    <main class="page-content" id="main-content">
+  <div class="page-header">
+    <div class="page-header-info">
+      <span class="page-header-title">Disciples</span>
+      <span class="page-header-count" id="count-label"></span>
+    </div>
+    <div class="page-header-actions">
+      <button class="btn btn-ghost" id="btn-export">
+        <svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg> Export Data
+      </button>
+      <button class="btn btn-primary" id="btn-add">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add disciple
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="search-input" placeholder="Search by name, church, or district..." />
+    </div>
+    <div id="filter-district" style="width:180px;"></div>
+    <div id="filter-pastor"   style="width:200px;"></div>
+  </div>
+
+  <div class="data-table">
+    <div class="data-table-head cols-disciples">
+      <span>Disciple</span>
+      <span>Church</span>
+      <span>District</span>
+      <span style="text-align:left">Actions</span>
+    </div>
+    <div id="table-body">
+      <div class="skel-row skeleton"></div>
+      <div class="skel-row skeleton"></div>
+    </div>
+    <div id="pagination" style="display:none; justify-content:space-between; align-items:center; padding: 12px 16px; border-top: 1px solid var(--border);">
+      <div style="font-size:13px; color:var(--text-3); font-weight:500;" id="page-info"></div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-prev">Prev</button>
+        <button class="btn btn-ghost" style="height:32px; padding:0 12px; font-size:13px;" id="btn-next">Next</button>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES FOR SAFE DOM RENDERING -->
+<template id="disciple-grid-template">
+  <div class="data-table-row cols-disciples">
+    <div class="cell-name-primary" data-label="Disciple" style="display:flex; align-items:center; gap:10px;">
+      <div class="avatar-container"></div>
+      <span class="d-name"></span>
+    </div>
+    <div class="d-church" style="font-size:13px; color:var(--text); font-weight:500;" data-label="Church"></div>
+    <div class="d-district" style="font-size:12px; color:var(--text-2); opacity:0.8;" data-label="District"></div>
+    <div class="row-actions"></div>
+  </div>
+</template>
+
+<template id="disciple-card-template">
+  <div class="pastor-card-mobile pcm-wrap">
+    <div class="pcm-header">
+      <div class="pcm-avatars">
+        <div class="pcm-avatar-wrap pcm-avatar-pastor"></div>
+      </div>
+      <div class="pcm-title-area">
+        <div class="pcm-name"></div>
+        <div class="pcm-wife-name d-church-sub"></div>
+      </div>
+    </div>
+    <div class="pcm-info-grid">
+      <div class="pcm-info-item"><span class="pcm-info-label">District</span><span class="pcm-info-val d-district-val pcm-info-value"></span></div>
+      <div class="pcm-info-item"><span class="pcm-info-label">Church</span><span class="pcm-info-val d-church-val pcm-info-value"></span></div>
+    </div>
+    <div class="pcm-actions"></div>
+  </div>
+</template>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modal-form">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-title">Add Disciple</span>
+      <button class="modal-close" id="btn-close-modal">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="disciple-form">
+      <div class="modal-body">
+        <input type="hidden" name="id" id="f-id" />
+        <div class="form-field">
+          <label class="form-label">Full name <span class="req">*</span></label>
+          <input class="input" name="full_name" type="text" id="f-name" placeholder="Disciple full name" required />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Filter by district <span class="opt">(optional)</span></label>
+          <div id="f-district-filter"></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Church <span class="req">*</span></label>
+          <div id="f-church-select"></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Profile Picture <span class="opt">(optional)</span></label>
+          <input class="input" type="file" id="disciple-image" accept="image/*" />
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" type="button" id="btn-cancel">Cancel</button>
+        <button class="btn btn-primary" type="submit" id="btn-save">Save disciple</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box modal-sm">
+    <div class="modal-head">
+      <span class="modal-title">Remove disciple</span>
+      <button class="modal-close" id="btn-close-delete">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body"><p style="font-size:13px;color:var(--text-2);" id="delete-msg"></p></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btn-cancel-delete">Cancel</button>
+      <button class="btn btn-danger" id="btn-delete-confirm">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Viewer Modal -->
+<div class="modal-overlay" id="modal-image-viewer">
+  <div class="modal-box" style="max-width:800px; background:transparent; border:none; box-shadow:none;">
+    <div class="modal-head" style="border:none; padding:10px 0;">
+      <div class="modal-title" id="image-viewer-title" style="color:#fff;">View Image</div>
+      <button class="modal-close" id="btn-close-image-viewer" style="background:rgba(255,255,255,0.1); color:#fff; border-radius:50%;">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:0; flex-direction:column; align-items:center; justify-content:center; display:flex; min-height: 400px;">
+      <img id="full-image-display" class="modal-img-full" src="" alt="Full size image" style="display:none; max-height: 70vh;" />
+      <div id="full-initials-display" style="display:none; width:150px; height:150px; border-radius:50%; background:var(--red); color:white; font-size:64px; font-weight:800; align-items:center; justify-content:center; margin:20px auto;"></div>
+      
+      <!-- Quick Update Action -->
+      <div id="image-viewer-actions" style="margin-top: 20px; display: none;">
+        <button type="button" class="btn btn-primary" id="btn-update-viewing-photo" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); color: #fff;">
+          <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:8px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Update Photo
+        </button>
+        <input type="file" id="image-viewer-input" accept="image/*" hidden />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Export Choice Modal -->
+<div class="modal-overlay" id="export-modal-overlay">
+  <div class="modal-box modal-sm" style="max-width:400px;">
+    <div class="modal-head">
+      <span class="modal-title">Export Disciple List</span>
+      <button class="modal-close" id="btn-close-export"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; flex-direction:column; gap:12px; padding:8px 0;">
+        <button class="btn btn-ghost" id="btn-export-all" style="justify-content:flex-start; height:52px; font-weight:600; border:1px solid var(--border); padding:0 20px;"><span style="font-size:16px; margin-right:16px; color:var(--text-3);">1.</span> ALL DISCIPLES (A to Z)</button>
+        <button class="btn btn-ghost" id="btn-export-by-church" style="justify-content:flex-start; height:52px; font-weight:600; border:1px solid var(--border); padding:0 20px;"><span style="font-size:16px; margin-right:16px; color:var(--text-3);">2.</span> BY CHURCH (Excel Sheets)</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btn-cancel-export" style="width:100%;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="./js/libs/supabase.min.js"></script>
+<script type="module" src="./js/pages/disciples/disciples.controller.js"></script>
+</body>
+</html>

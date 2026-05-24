@@ -209,7 +209,19 @@ export async function exportDisciplesAll(disciples) {
   showExportProgress('Generating file...')
   const buffer = await workbook.xlsx.writeBuffer()
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  saveAs(blob, `All_Disciples_${new Date().toISOString().split('T')[0]}.xlsx`)
+  const fileName = `All_Disciples_${new Date().toISOString().split('T')[0]}.xlsx`
+
+  if (typeof saveAs !== 'undefined') {
+    saveAs(blob, fileName)
+  } else {
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
   showExportProgress('Export complete!')
   hideExportProgress(2000)
 }
