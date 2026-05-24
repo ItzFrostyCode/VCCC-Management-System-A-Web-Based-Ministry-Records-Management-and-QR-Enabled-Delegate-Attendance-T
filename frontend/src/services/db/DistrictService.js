@@ -4,7 +4,7 @@ export const DistrictService = {
   async getAll() {
     const { data, error } = await supabase
       .from('districts')
-      .select('*')
+      .select('*, leader:pastors(id, full_name, pastor_image_url)')
       .eq('is_deleted', false)
       .order('district_name')
 
@@ -17,9 +17,10 @@ export const DistrictService = {
       .from('districts')
       .select(`
         *,
+        leader:pastors(id, full_name, pastor_image_url),
         churches(
           id, church_name, is_deleted,
-          pastors(id, full_name, is_deleted)
+          assignments(status_code, pastor:pastors(id, full_name, is_deleted))
         )
       `)
       .eq('id', id)
@@ -31,8 +32,8 @@ export const DistrictService = {
     // Filter out deleted relations
     if (data && data.churches) {
         data.churches = data.churches.filter(c => !c.is_deleted).map(c => {
-            if (c.pastors) {
-                c.pastors = c.pastors.filter(p => !p.is_deleted)
+            if (c.assignments) {
+                c.assignments = c.assignments.filter(a => a.status_code === 'active' && a.pastor && !a.pastor.is_deleted)
             }
             return c
         })

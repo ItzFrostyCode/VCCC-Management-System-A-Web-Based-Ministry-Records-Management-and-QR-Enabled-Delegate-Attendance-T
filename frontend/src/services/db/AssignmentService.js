@@ -3,10 +3,10 @@ import { supabase } from '../supabase'
 export const AssignmentService = {
   async getAll() {
     const { data, error } = await supabase
-      .from('pastoral_assignments')
+      .from('assignments')
       .select(`
         *,
-        pastor:pastors(id, full_name, role_title),
+        pastor:pastors(id, full_name),
         church:churches(id, church_name)
       `)
       .order('start_date', { ascending: false })
@@ -17,7 +17,7 @@ export const AssignmentService = {
 
   async getByPastor(pastorId) {
     const { data, error } = await supabase
-      .from('pastoral_assignments')
+      .from('assignments')
       .select(`
         *,
         church:churches(id, church_name)
@@ -31,10 +31,10 @@ export const AssignmentService = {
 
   async getByChurch(churchId) {
     const { data, error } = await supabase
-      .from('pastoral_assignments')
+      .from('assignments')
       .select(`
         *,
-        pastor:pastors(id, full_name, role_title, current_status_code)
+        pastor:pastors(id, full_name, current_status_code)
       `)
       .eq('church_id', churchId)
       .order('start_date', { ascending: false })
@@ -45,7 +45,7 @@ export const AssignmentService = {
 
   async create(payload) {
     const { data, error } = await supabase
-      .from('pastoral_assignments')
+      .from('assignments')
       .insert([payload])
       .select()
       .single()
@@ -56,7 +56,7 @@ export const AssignmentService = {
 
   async update(id, payload) {
     const { data, error } = await supabase
-      .from('pastoral_assignments')
+      .from('assignments')
       .update(payload)
       .eq('id', id)
       .select()
@@ -68,7 +68,7 @@ export const AssignmentService = {
 
   async delete(id) {
     const { error } = await supabase
-      .from('pastoral_assignments')
+      .from('assignments')
       .delete()
       .eq('id', id)
       

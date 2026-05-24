@@ -6,7 +6,10 @@ export const PastorService = {
       .from('pastors')
       .select(`
         *,
-        church:churches(id, church_name, district:districts(id, district_name))
+        assignments(
+          status_code,
+          church:churches(id, church_name, district:districts(id, district_name))
+        )
       `)
       .eq('is_deleted', false)
       .order('full_name')

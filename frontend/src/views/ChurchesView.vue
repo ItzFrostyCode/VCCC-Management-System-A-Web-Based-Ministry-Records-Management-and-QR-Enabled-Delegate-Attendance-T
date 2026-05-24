@@ -17,6 +17,9 @@
 
     <!-- Search and Filter Bar -->
     <div class="relative z-40 w-full mb-6">
+      <div v-if="debugError" class="bg-red-50 text-red-600 p-4 rounded-xl mb-4 text-xs font-mono">
+        {{ debugError }}
+      </div>
       <div class="flex items-center w-full bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-sm transition-all focus-within:bg-white focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10">
         <div class="pl-4 flex items-center pointer-events-none shrink-0">
           <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -403,19 +406,31 @@ const paginatedChurches = computed(() => {
 const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
 const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
 
+const debugError = ref(null)
+
 const fetchData = async (silent = false) => {
     if (!silent) loading.value = true
+    debugError.value = null
     try {
         const [cRes, pRes, dRes] = await Promise.all([
              ChurchService.getAll(),
              PastorService.getAll(),
              DistrictService.getAll()
         ])
-        churches.value = cRes
+        churches.value = cRes.map(church => {
+            const activeAssignment = church.assignments?.find(a => a.status_code === 'active');
+            return {
+                ...church,
+                district_name: church.district?.district_name || null,
+                current_pastor_name: activeAssignment?.pastor?.full_name || null,
+                current_pastor_image: activeAssignment?.pastor?.pastor_image_url || null
+            }
+        })
         pastors.value = pRes
         districts.value = dRes
     } catch (e) {
         console.error(e)
+        debugError.value = String(e.message || e)
     } finally {
         if (!silent) loading.value = false
     }

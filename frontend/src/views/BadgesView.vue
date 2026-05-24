@@ -19,10 +19,14 @@
                  v-model="search" 
                  @focus="searchFocused = true" 
                  @blur="handleSearchBlur"
+                 @input="searchFocused = true"
                  type="text" 
                  placeholder="Search and Select a Pastor/Wife/Discple" 
                  class="flex-1 w-full pl-3 pr-2 py-3.5 bg-transparent text-sm font-semibold text-gray-900 outline-none placeholder-gray-400"
                >
+               <button v-if="search" @click="search = ''; searchFocused = true" class="p-1 mr-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+               </button>
                
                <!-- Divider and Filter Button -->
                <div class="flex items-center pr-2 shrink-0">
@@ -80,20 +84,20 @@
                         <div v-if="cfg.profile.enabled && selectedDelegate.imageUrl" class="absolute overflow-hidden bg-gray-100 border-2 border-white shadow-lg" :style="getProfileStyle()">
                           <img :src="selectedDelegate.imageUrl" class="w-full h-full object-cover">
                         </div>
-                        <div v-if="cfg.name.enabled" class="absolute uppercase leading-tight whitespace-nowrap" :style="getFieldStyle('name', (overrides.fullName || selectedDelegate.fullName))">
+                        <div v-if="cfg.name.enabled" class="absolute uppercase whitespace-nowrap" :style="getFieldStyle('name', (overrides.fullName || selectedDelegate.fullName))">
                           {{ overrides.fullName || selectedDelegate.fullName }}
                         </div>
-                        <div v-if="cfg.role.enabled" class="absolute uppercase leading-tight whitespace-nowrap" :style="getFieldStyle('role', selectedDelegate.role)">
+                        <div v-if="cfg.role.enabled" class="absolute uppercase whitespace-nowrap" :style="getFieldStyle('role', selectedDelegate.role)">
                           {{ selectedDelegate.role }}
                         </div>
-                        <div v-if="cfg.district.enabled" class="absolute uppercase leading-tight whitespace-nowrap" :style="getFieldStyle('district', selectedDelegate.districtName)">
+                        <div v-if="cfg.district.enabled" class="absolute uppercase whitespace-nowrap" :style="getFieldStyle('district', selectedDelegate.districtName)">
                           {{ selectedDelegate.districtName || 'VCCC DAVAO' }}
                         </div>
-                        <div v-if="cfg.church.enabled" class="absolute uppercase leading-tight whitespace-nowrap" :style="getFieldStyle('church', (overrides.churchName || selectedDelegate.churchName))">
+                        <div v-if="cfg.church.enabled" class="absolute uppercase whitespace-nowrap" :style="getFieldStyle('church', (overrides.churchName || selectedDelegate.churchName))">
                           {{ overrides.churchName || selectedDelegate.churchName }}
                         </div>
-                        <div v-if="cfg.qr.enabled" class="absolute bg-white p-2 rounded-2xl flex items-center justify-center z-10 shadow-sm" :style="getQRStyle()">
-                          <qrcode-vue :value="qrValue" :size="cfg.qr.size - 16" level="H" :render-as="'svg'"/>
+                        <div v-if="cfg.qr.enabled" class="absolute z-10 bg-white" :style="getQRStyle()">
+                          <qrcode-vue :value="qrValue" :size="cfg.qr.size" level="H" :render-as="'svg'"/>
                         </div>
                       </div>
                       <div v-if="templateImg" class="absolute inset-0 z-0 bg-[length:100%_100%] bg-no-repeat bg-center" :style="{ backgroundImage: `url(${templateImg})` }"></div>
@@ -107,6 +111,33 @@
                     </div>
                   </div>
                </div>
+             </div>
+          </div>
+
+          <!-- HIDDEN EXPORT CANVAS -->
+          <div style="position: fixed; top: -9999px; left: -9999px; z-index: -9999; pointer-events: none; opacity: 0;">
+             <div id="badge-export-target" class="id-card-landscape bg-white relative overflow-hidden border-none" :style="getBadgeStyle()">
+                <div v-if="selectedDelegate" class="absolute inset-0 z-20">
+                  <div v-if="cfg.profile.enabled && selectedDelegate.imageUrl" class="absolute overflow-hidden bg-gray-100 border-2 border-white shadow-lg" :style="getProfileStyle()">
+                    <img :src="selectedDelegate.imageUrl" class="w-full h-full object-cover">
+                  </div>
+                  <div v-if="cfg.name.enabled" class="absolute uppercase whitespace-nowrap" :style="getFieldStyle('name', (overrides.fullName || selectedDelegate.fullName))">
+                    {{ overrides.fullName || selectedDelegate.fullName }}
+                  </div>
+                  <div v-if="cfg.role.enabled" class="absolute uppercase whitespace-nowrap" :style="getFieldStyle('role', selectedDelegate.role)">
+                    {{ selectedDelegate.role }}
+                  </div>
+                  <div v-if="cfg.district.enabled" class="absolute uppercase whitespace-nowrap" :style="getFieldStyle('district', selectedDelegate.districtName)">
+                    {{ selectedDelegate.districtName || 'VCCC DAVAO' }}
+                  </div>
+                  <div v-if="cfg.church.enabled" class="absolute uppercase whitespace-nowrap" :style="getFieldStyle('church', (overrides.churchName || selectedDelegate.churchName))">
+                    {{ overrides.churchName || selectedDelegate.churchName }}
+                  </div>
+                  <div v-if="cfg.qr.enabled" class="absolute z-10 bg-white" :style="getQRStyle()">
+                    <qrcode-vue :value="qrValue" :size="cfg.qr.size" level="H" :render-as="'svg'"/>
+                  </div>
+                </div>
+                <div v-if="templateImg" class="absolute inset-0 z-0 bg-[length:100%_100%] bg-no-repeat bg-center" :style="{ backgroundImage: `url(${templateImg})` }"></div>
              </div>
           </div>
         </div>
@@ -451,7 +482,7 @@ import { DiscipleService } from '../services/db/DiscipleService'
 import Swal from 'sweetalert2'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import html2canvas from 'html2canvas'
+import domtoimage from 'dom-to-image-more'
 
 const DEFAULT_CONFIG = {
   badge: { width: 1050, height: 750 },
@@ -493,11 +524,23 @@ const getFieldStyle = (key, text) => {
       canvasContext.font = `${f.fontStyle} normal ${f.fontWeight} ${effectiveFontSize}px Inter, sans-serif`
     }
   }
+  let leftPx = f.x
+  if (f.textAlign === 'center') {
+    leftPx = f.x - (f.maxWidth / 2)
+  } else if (f.textAlign === 'right') {
+    leftPx = f.x - f.maxWidth
+  }
+
   return {
-    left: `${f.x}px`, top: `${f.y}px`, fontSize: `${effectiveFontSize}px`,
-    fontWeight: f.fontWeight, fontStyle: f.fontStyle, color: f.color,
-    textAlign: f.textAlign, width: `${f.maxWidth}px`,
-    transform: f.textAlign === 'center' ? 'translateX(-50%)' : f.textAlign === 'right' ? 'translateX(-100%)' : 'none'
+    left: `${leftPx}px`, 
+    top: `${f.y}px`, 
+    fontSize: `${effectiveFontSize}px`,
+    fontWeight: f.fontWeight, 
+    fontStyle: f.fontStyle, 
+    color: f.color,
+    textAlign: f.textAlign, 
+    width: `${f.maxWidth}px`,
+    lineHeight: '1'
   }
 }
 
@@ -544,12 +587,13 @@ const fetchData = async () => {
 
     if (pRes) {
       pRes.forEach(p => {
-        const churchData = p.church || {}
+        const activeAssignment = (p.assignments || []).find(a => a.status_code === 'active') || {}
+        const churchData = activeAssignment.church || {}
         const districtData = churchData.district || {}
         const payload = {
           id: p.id, fullName: p.full_name, role: 'PASTOR',
-          churchName: churchData.church_name || p.church_name || '',
-          districtName: districtData.district_name || p.district_name || '',
+          churchName: churchData.church_name || '',
+          districtName: districtData.district_name || '',
           imageUrl: p.pastor_image_url, uniqueId: `PASTOR-${p.id}`
         }
         all.push(payload)
@@ -689,7 +733,7 @@ const runExport = async () => {
   exportSizeMb.value = 0
   
   const zip = new JSZip()
-  const badgeTarget = document.getElementById('badge-target')
+  const badgeTarget = document.getElementById('badge-export-target')
   
   // Save current selection to restore later
   const originalDelegate = selectedDelegate.value
@@ -703,14 +747,19 @@ const runExport = async () => {
     await new Promise(r => setTimeout(r, 200)) // 200ms delay for image loading
     
     try {
-      const canvas = await html2canvas(badgeTarget, {
-        scale: 2, // 2x resolution for printing
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false
+      const dataUrl = await domtoimage.toJpeg(badgeTarget, {
+        quality: 0.95,
+        bgcolor: '#ffffff',
+        width: cfg.value.badge.width * 2,
+        height: cfg.value.badge.height * 2,
+        style: {
+          transform: 'scale(2)',
+          transformOrigin: 'top left'
+        }
       })
       
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
+      const res = await fetch(dataUrl)
+      const blob = await res.blob()
       
       const distFolder = delegate.districtName || 'Unassigned District'
       const churchFolder = delegate.churchName || 'Unassigned Church'
@@ -746,16 +795,22 @@ const runExport = async () => {
 const downloadCurrentBadge = async () => {
   if (!selectedDelegate.value) return
   
-  const badgeTarget = document.getElementById('badge-target')
+  const badgeTarget = document.getElementById('badge-export-target')
   try {
-    const canvas = await html2canvas(badgeTarget, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false
+    const dataUrl = await domtoimage.toJpeg(badgeTarget, {
+      quality: 0.95,
+      bgcolor: '#ffffff',
+      width: cfg.value.badge.width * 2,
+      height: cfg.value.badge.height * 2,
+      style: {
+        transform: 'scale(2)',
+        transformOrigin: 'top left'
+      }
     })
     
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
+    const res = await fetch(dataUrl)
+    const blob = await res.blob()
+    
     const fileName = `${selectedDelegate.value.role} - ${overrides.value.fullName || selectedDelegate.value.fullName}.jpg`
     saveAs(blob, fileName)
   } catch (e) {
@@ -793,7 +848,13 @@ input[type="number"] {
   @page { size: landscape; margin: 0; }
   body * { visibility: hidden; }
   .badge-scaler-wrap { display: block !important; transform: none !important; margin: 0 !important; width: 100% !important; height: auto !important; }
-  .id-card-landscape { position: absolute !important; left: 0 !important; top: 0 !important; width: 3.5in !important; height: 2.5in !important; visibility: visible !important; border: none !important; box-shadow: none !important; }
+  .id-card-landscape { position: absolute !important; left: 0 !important; top: 0 !important; width: 3.5in !important; height: 2.5in !important; visibility: visible !important; border: none !important; box-shadow: none !important; outline: none !important; }
   .id-card-landscape * { visibility: visible !important; }
+}
+
+/* Fix dom-to-image-more rendering unwanted borders from Tailwind reset */
+#badge-export-target *, #badge-target * {
+  border: none !important;
+  outline: none !important;
 }
 </style>

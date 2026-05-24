@@ -31,8 +31,8 @@
           </div>
         </div>
 
-        <!-- Table Section -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Table Section (Desktop) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden md:block">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
@@ -91,9 +91,12 @@
                         {{ u.is_active ? 'Active' : 'Deactivated' }}
                       </span>
                     </td>
-                    <td class="px-6 py-4 text-right">
+                    <td class="px-6 py-4 text-right flex items-center justify-end gap-2">
                       <button @click="openEditModal(u)" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Edit User">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                      </button>
+                      <button @click="deleteUser(u)" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Delete User">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                       </button>
                     </td>
                   </tr>
@@ -101,6 +104,66 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+        <!-- Cards Section (Mobile) -->
+        <div class="md:hidden space-y-4">
+          <template v-if="loading">
+            <div v-for="i in 5" :key="i" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gray-100 rounded-full animate-pulse shrink-0"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-4 bg-gray-100 rounded animate-pulse w-3/4"></div>
+                  <div class="h-3 bg-gray-100 rounded animate-pulse w-1/2"></div>
+                </div>
+              </div>
+              <div class="flex justify-between items-center mt-2">
+                <div class="h-6 w-16 bg-gray-100 rounded-full animate-pulse"></div>
+                <div class="h-6 w-16 bg-gray-100 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </template>
+          <template v-else-if="filteredUsers.length === 0">
+            <div class="bg-white p-8 text-center rounded-2xl shadow-sm border border-gray-100">
+              <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                 <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+              </div>
+              <p class="text-sm font-semibold text-gray-500">No users found matching your criteria.</p>
+            </div>
+          </template>
+          <template v-else>
+            <div v-for="u in filteredUsers" :key="'mob-'+u.id" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
+                    {{ u.full_name.charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <div class="font-bold text-gray-900 text-sm">{{ u.full_name }}</div>
+                    <div class="text-xs text-gray-500 font-medium">@{{ u.username.split('@')[0] }}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button @click="openEditModal(u)" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 rounded-xl transition-all" title="Edit User">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                  </button>
+                  <button @click="deleteUser(u)" class="p-2 text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-xl transition-all" title="Delete User">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between mt-1 pt-3 border-t border-gray-50">
+                <span :class="roleClass(u.role)" class="px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full">
+                  {{ u.role }}
+                </span>
+                <span :class="u.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full" :class="u.is_active ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                  {{ u.is_active ? 'Active' : 'Deactivated' }}
+                </span>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -266,6 +329,34 @@ const closeModal = () => {
   showModal.value = false
 }
 
+const deleteUser = async (user) => {
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Do you really want to permanently delete the account for ${user.username}? This cannot be undone.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Yes, delete it!'
+  })
+
+  if (result.isConfirmed) {
+    loading.value = true
+    try {
+      const { error } = await supabase.rpc('delete_user_account', { target_user_id: user.id })
+      if (error) throw error
+      
+      Swal.fire({ icon: 'success', title: 'Deleted!', text: 'User account has been permanently deleted.', timer: 1500, showConfirmButton: false })
+      await fetchUsers()
+    } catch (err) {
+      console.error(err)
+      Swal.fire({ icon: 'error', title: 'Deletion Failed', text: err.message || 'An error occurred while deleting the user.' })
+    } finally {
+      loading.value = false
+    }
+  }
+}
+
 const saveUser = async () => {
   saving.value = true
   modalError.value = ''
@@ -283,7 +374,23 @@ const saveUser = async () => {
       if (error) throw error
       Swal.fire({ icon: 'success', title: 'User Updated', timer: 1500, showConfirmButton: false })
     } else {
-      Swal.fire({ icon: 'warning', title: 'Not Supported', text: 'Creating users should be done in Supabase Dashboard or requires an Edge Function.', timer: 3000, showConfirmButton: true })
+      const email = form.value.username.includes('@') ? form.value.username : `${form.value.username}@vccc.local`
+      const defaultPassword = form.value.password || '123456'
+
+      const { data: userId, error } = await supabase.rpc('create_user_account', {
+        new_email: email,
+        new_password: defaultPassword,
+        new_username: form.value.username,
+        new_full_name: payload.full_name,
+        new_role: payload.role,
+        new_is_active: payload.is_active
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Failed to create user via database function.')
+      }
+
+      Swal.fire({ icon: 'success', title: 'User Created', text: 'User account has been securely created, bypassing all rate limits!', timer: 3000 })
     }
     
     closeModal()

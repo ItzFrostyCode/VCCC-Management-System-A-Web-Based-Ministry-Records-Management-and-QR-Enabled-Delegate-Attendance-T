@@ -378,7 +378,10 @@ const fetchDistrict = async () => {
     try {
         district.value = await DistrictService.getById(route.params.id)
         // Because backend injects churches array inside the district object
-        churches.value = district.value.churches || [] 
+        churches.value = (district.value.churches || []).map(church => ({
+            ...church,
+            pastor: church.assignments?.[0]?.pastor || null
+        }))
     } catch (e) {
         console.error("Failed to load district data:", e)
     } finally {

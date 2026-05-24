@@ -7,7 +7,7 @@ export const AttendanceService = {
   async store(payload) {
     // 1. Check if already scanned
     const { data: existingScan } = await supabase
-      .from('attendances')
+      .from('attendance')
       .select('*')
       .eq('scan_uuid', payload.scan_uuid)
       .maybeSingle()
@@ -22,7 +22,7 @@ export const AttendanceService = {
 
     // 3. Atomicity & Deduplication (Double scan in same session)
     const { data: existingSessionScan } = await supabase
-      .from('attendances')
+      .from('attendance')
       .select('*')
       .eq('conference_id', payload.conference_id)
       .eq('day_id', payload.day_id)
@@ -42,7 +42,7 @@ export const AttendanceService = {
 
     // 4. Record
     const { data, error } = await supabase
-      .from('attendances')
+      .from('attendance')
       .insert([{
           id: payload.id || crypto.randomUUID(),
           scan_uuid: payload.scan_uuid,
@@ -51,6 +51,7 @@ export const AttendanceService = {
           slot_id: payload.slot_id,
           delegate_id: payload.delegate_id,
           delegate_type: payload.delegate_type,
+          scanned_by: payload.scanned_by,
           scanned_at: new Date().toISOString()
       }])
       .select()
@@ -71,7 +72,7 @@ export const AttendanceService = {
 
   async getByConference(conferenceId) {
     const { data, error } = await supabase
-      .from('attendances')
+      .from('attendance')
       .select('*')
       .eq('conference_id', conferenceId)
 

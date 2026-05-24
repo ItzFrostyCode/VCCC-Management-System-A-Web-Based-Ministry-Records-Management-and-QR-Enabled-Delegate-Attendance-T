@@ -7,7 +7,7 @@ export const ChurchService = {
       .select(`
         *,
         district:districts(id, district_name),
-        pastors(id, full_name, is_deleted)
+        assignments(status_code, pastor:pastors(id, full_name, pastor_image_url))
       `)
       .eq('is_deleted', false)
       .order('church_name')
@@ -22,7 +22,9 @@ export const ChurchService = {
       .select(`
         *,
         district:districts(id, district_name),
-        pastors(id, full_name, role_title, current_status_code, pastor_image_url, is_deleted)
+        pioneer_pastor:pastors!pioneer_pastor_id(id, full_name),
+        mother_church:churches!mother_church_id(id, church_name),
+        assignments(status_code, pastor:pastors(id, full_name, current_status_code, pastor_image_url, is_deleted))
       `)
       .eq('id', id)
       .eq('is_deleted', false)

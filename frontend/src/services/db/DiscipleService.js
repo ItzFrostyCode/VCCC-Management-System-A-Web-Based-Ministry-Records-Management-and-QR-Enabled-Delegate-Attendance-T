@@ -6,7 +6,7 @@ export const DiscipleService = {
       .from('disciples')
       .select(`
         *,
-        church:churches(id, church_name, district:districts(id, district_name))
+        church:churches(id, church_name, church_address, district:districts(id, district_name))
       `)
       .eq('is_deleted', false)
       .order('full_name')
@@ -25,7 +25,7 @@ export const DiscipleService = {
       .from('disciples')
       .select(`
         *,
-        church:churches(id, church_name, district:districts(id, district_name)),
+        church:churches(id, church_name, church_address, district:districts(id, district_name)),
         mentor:pastors(id, full_name)
       `)
       .eq('id', id)

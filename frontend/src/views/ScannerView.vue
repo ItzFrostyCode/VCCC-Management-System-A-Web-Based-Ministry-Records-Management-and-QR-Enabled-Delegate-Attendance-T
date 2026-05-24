@@ -202,8 +202,10 @@ import { PastorService } from '../services/db/PastorService'
 import { DiscipleService } from '../services/db/DiscipleService'
 import { AttendanceService } from '../services/db/AttendanceService'
 import { supabase } from '../services/supabase'
+import { useAuth } from '../composables/useAuth'
 
 // --- STATE ---
+const { user: authUser } = useAuth()
 const currentUser = ref(null)
 const conferences = ref([])
 const days = ref([])
@@ -406,6 +408,7 @@ const onScanSuccess = async (text) => {
             slot_id: session.value.slotId,
             delegate_id: data.id,
             delegate_type: data.t,
+            scanned_by: authUser.value?.id,
             metadata: metadata 
          }
          

@@ -34,11 +34,14 @@
         
         <!-- Avatars -->
         <div class="flex items-center shrink-0">
-          <div class="relative z-10">
-            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-[1.25rem] border border-gray-100 shadow-sm overflow-hidden bg-white">
+          <div class="relative z-10 group cursor-pointer" @click="viewingAvatar = { url: pastor.pastor_image_url, text: pastor.full_name.charAt(0), bgClass: 'bg-slate-50', textClass: 'text-slate-300' }">
+            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-[1.25rem] border border-gray-100 shadow-sm overflow-hidden bg-white relative">
               <img v-if="pastor.pastor_image_url" :src="pastor.pastor_image_url" class="w-full h-full object-cover" />
               <div v-else class="w-full h-full bg-slate-50 flex items-center justify-center text-3xl sm:text-4xl font-black text-slate-300 uppercase">
                 {{ pastor.full_name.charAt(0) }}
+              </div>
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                 <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
               </div>
             </div>
             <!-- Status Badge -->
@@ -49,11 +52,14 @@
             </div>
           </div>
           
-          <div v-if="pastor.wife_name" class="relative -ml-6 sm:-ml-8 z-0">
-            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[3px] border-white shadow-sm overflow-hidden bg-pink-50">
+          <div v-if="pastor.wife_name" class="relative -ml-6 sm:-ml-8 z-0 group cursor-pointer" @click="viewingAvatar = { url: pastor.wife_image_url, text: pastor.wife_name.charAt(0), bgClass: 'bg-pink-50', textClass: 'text-pink-300', isRounded: true }">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[3px] border-white shadow-sm overflow-hidden bg-pink-50 relative">
               <img v-if="pastor.wife_image_url" :src="pastor.wife_image_url" class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-black text-pink-300 uppercase">
                 {{ pastor.wife_name.charAt(0) }}
+              </div>
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                 <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
               </div>
             </div>
           </div>
@@ -179,7 +185,7 @@
                   <div class="text-[9px] font-black text-gray-400 mb-0.5 uppercase tracking-widest">
                     {{ new Date(assign.start_date).getFullYear() }} — {{ assign.end_date ? new Date(assign.end_date).getFullYear() : 'Present' }}
                   </div>
-                  <h4 class="text-sm font-black text-gray-900 uppercase tracking-tight mb-1">{{ assign.church_name }}</h4>
+                  <h4 class="text-sm font-black text-gray-900 uppercase tracking-tight mb-1">{{ assign.church?.church_name || 'Unknown Church' }}</h4>
                   <div class="flex flex-wrap gap-1 mb-2">
                       <span class="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[9px] font-bold uppercase tracking-widest">{{ assign.assignment_type }}</span>
                       <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest" :class="assign.status_code === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'">{{ assign.status_code }}</span>
@@ -199,9 +205,12 @@
           
           <div v-if="pastor.disciples && pastor.disciples.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div v-for="son in pastor.disciples" :key="son.id" @click="router.push(`/pastors/${son.id}`)" class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all cursor-pointer">
-                  <div class="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden shrink-0">
+                  <div class="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden shrink-0 relative group/avatar" @click.stop="viewingAvatar = { url: son.pastor_image_url, text: son.full_name.charAt(0), bgClass: 'bg-gray-100', textClass: 'text-gray-300' }">
                       <img v-if="son.pastor_image_url" :src="son.pastor_image_url" class="w-full h-full object-cover" />
                       <div v-else class="w-full h-full flex items-center justify-center font-black text-gray-300 text-xs uppercase">{{ son.full_name.charAt(0) }}</div>
+                      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </div>
                   </div>
                   <div class="flex-1 min-w-0">
                       <div class="font-bold text-gray-900 uppercase text-xs truncate">{{ son.full_name }}</div>
@@ -368,6 +377,22 @@
       </div>
     </div>
 
+    <!-- Avatar Viewer Modal -->
+    <div v-if="viewingAvatar" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" @click="viewingAvatar = null">
+      <button class="absolute top-4 right-4 sm:top-8 sm:right-8 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all" @click="viewingAvatar = null">
+         <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      
+      <div class="w-full max-w-2xl flex items-center justify-center" @click.stop>
+        <div v-if="viewingAvatar.url" class="relative">
+          <img :src="viewingAvatar.url" class="max-w-full max-h-[85vh] rounded-[2rem] shadow-2xl object-contain animate-in zoom-in-95 duration-300" />
+        </div>
+        <div v-else :class="[`w-64 h-64 sm:w-96 sm:h-96 flex items-center justify-center text-[8rem] sm:text-[12rem] font-black uppercase shadow-2xl animate-in zoom-in-95 duration-300`, viewingAvatar.bgClass, viewingAvatar.textClass, viewingAvatar.isRounded ? 'rounded-full' : 'rounded-[3rem]']">
+          {{ viewingAvatar.text }}
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -388,6 +413,7 @@ const assignments = ref([])
 const allPastors = ref([])
 const activeTab = ref('overview')
 const loading = ref(true)
+const viewingAvatar = ref(null)
 
 // Edit Modal State
 const isEditModalOpen = ref(false)

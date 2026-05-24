@@ -52,12 +52,17 @@
           class="bg-white rounded-2xl border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] overflow-hidden transition-all">
           <!-- Top: Avatar + Info -->
           <div class="flex items-start gap-4 p-5">
-            <div v-if="disciple.disciple_image_url"
-              class="w-14 h-14 rounded-xl border border-gray-100 overflow-hidden bg-cover bg-center shrink-0 shadow-sm"
-              :style="{ backgroundImage: `url(${disciple.disciple_image_url})` }"></div>
-            <div v-else
-              class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-600 font-black flex items-center justify-center border border-indigo-100/50 shrink-0 text-xl shadow-sm uppercase">
-              {{ disciple.full_name?.charAt(0) }}
+            <div class="relative group/avatar cursor-pointer shrink-0" @click.stop="viewingAvatar = { url: disciple.disciple_image_url, text: disciple.full_name?.charAt(0), bgClass: 'bg-indigo-50', textClass: 'text-indigo-300' }">
+              <div v-if="disciple.disciple_image_url"
+                class="w-14 h-14 rounded-xl border border-gray-100 overflow-hidden bg-cover bg-center shadow-sm"
+                :style="{ backgroundImage: `url(${disciple.disciple_image_url})` }"></div>
+              <div v-else
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-600 font-black flex items-center justify-center border border-indigo-100/50 text-xl shadow-sm uppercase">
+                {{ disciple.full_name?.charAt(0) }}
+              </div>
+              <div class="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                 <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </div>
             </div>
             <div class="flex-1 min-w-0 pt-0.5">
               <div class="font-bold text-gray-900 text-base truncate tracking-tight">{{ disciple.full_name }}</div>
@@ -138,9 +143,12 @@
               <tr v-for="disciple in paginatedDisciples" :key="disciple.id" class="hover:bg-indigo-50/30 transition-colors group">
                 <td class="px-6 py-4">
                 <div class="flex items-center gap-4">
-                  <div class="relative">
+                  <div class="relative group/avatar cursor-pointer" @click.stop="viewingAvatar = { url: disciple.disciple_image_url, text: disciple.full_name?.charAt(0), bgClass: 'bg-indigo-50', textClass: 'text-indigo-300' }">
                     <div v-if="disciple.disciple_image_url" class="w-10 h-10 rounded-xl border border-gray-100 overflow-hidden bg-cover bg-center shadow-sm" :style="{ backgroundImage: `url(${disciple.disciple_image_url})` }"></div>
                     <div v-else class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-600 font-black flex items-center justify-center border border-indigo-100/50 shadow-sm text-sm uppercase">{{ disciple.full_name?.charAt(0) }}</div>
+                    <div class="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                       <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </div>
                   </div>
                   <div>
                     <div class="font-bold text-gray-900 tracking-tight">{{ disciple.full_name }}</div>
@@ -287,6 +295,22 @@
         </div>
       </div>
     </div>
+    <!-- Avatar Viewer Modal -->
+    <div v-if="viewingAvatar" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" @click="viewingAvatar = null">
+      <button class="absolute top-4 right-4 sm:top-8 sm:right-8 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all" @click="viewingAvatar = null">
+         <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      
+      <div class="w-full max-w-2xl flex items-center justify-center" @click.stop>
+        <div v-if="viewingAvatar.url" class="relative">
+          <img :src="viewingAvatar.url" class="max-w-full max-h-[85vh] rounded-[2rem] shadow-2xl object-contain animate-in zoom-in-95 duration-300" />
+        </div>
+        <div v-else :class="[`w-64 h-64 sm:w-96 sm:h-96 flex items-center justify-center text-[8rem] sm:text-[12rem] font-black uppercase shadow-2xl animate-in zoom-in-95 duration-300`, viewingAvatar.bgClass, viewingAvatar.textClass, viewingAvatar.isRounded ? 'rounded-full' : 'rounded-[3rem]']">
+          {{ viewingAvatar.text }}
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -328,6 +352,9 @@ const formPreview = ref(null)
 
 // Pagination
 const currentPage = ref(1)
+const filterRole = ref('')
+
+const viewingAvatar = ref(null)
 const itemsPerPage = 12
 
 // Computed
@@ -366,7 +393,14 @@ const fetchData = async (silent = false) => {
             DistrictService.getAll(),
             PastorService.getAll()
         ])
-        disciples.value = dRes
+        
+        disciples.value = dRes.map(d => {
+            const myChurch = cRes.find(c => c.id === d.church_id);
+            return {
+                ...d,
+                church: myChurch || d.church
+            };
+        })
         churches.value = cRes
         districts.value = distRes
         pastors.value = pRes
