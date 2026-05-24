@@ -228,7 +228,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../services/api'
+import { ChurchService } from '../services/db/ChurchService'
+import { AssignmentService } from '../services/db/AssignmentService'
+import { PastorService } from '../services/db/PastorService'
 import Swal from 'sweetalert2'
 import { generateSummaryHtml } from '../utils/swal-helper'
 
@@ -266,14 +268,14 @@ const fetchData = async () => {
         
         // Parallel fetching
         const [cRes, aRes, pRes] = await Promise.all([
-             api.get(`/churches/${id}`),
-             api.get(`/churches/${id}/assignments`),
-             api.get('/pastors') // for dropdown
+             ChurchService.getById(id),
+             AssignmentService.getByChurch(id),
+             PastorService.getAll() // for dropdown
         ])
         
-        church.value = cRes.data.data
-        assignments.value = aRes.data.data
-        allPastors.value = pRes.data.data
+        church.value = cRes
+        assignments.value = aRes
+        allPastors.value = pRes
     } catch (err) {
         console.error(err)
     } finally {
@@ -310,11 +312,10 @@ const submitHistoricalRecord = async () => {
 
     isSaving.value = true
     try {
-        await api.post('/assignments', formData.value)
+        await AssignmentService.create(formData.value)
         isModalOpen.value = false
         // Refresh Timeline
-        const aRes = await api.get(`/churches/${route.params.id}/assignments`)
-        assignments.value = aRes.data.data
+        assignments.value = await AssignmentService.getByChurch(route.params.id)
     } catch(err) {
         console.error(err)
         alert('Failed to save historical record')

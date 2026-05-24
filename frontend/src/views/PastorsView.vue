@@ -483,7 +483,9 @@
 
 <script setup>
 import { ref, onMounted, onActivated, computed, watch } from 'vue'
-import api from '../services/api'
+import { PastorService } from '../services/db/PastorService'
+import { ChurchService } from '../services/db/ChurchService'
+import { AssignmentService } from '../services/db/AssignmentService'
 import Swal from 'sweetalert2'
 import { generateSummaryHtml } from '../utils/swal-helper'
 import { exportPastorInfo } from '../services/export/pastor-export'
@@ -564,11 +566,10 @@ const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
 const fetchPastors = async (silent = false) => {
     if (!silent) loading.value = true
     try {
-        const response = await api.get('/pastors')
-        pastors.value = response.data.data
+        pastors.value = await PastorService.getAll()
     } catch (error) {
         console.error("Failed to load pastors:", error)
-        if (!silent) alert("Failed to load records from backend")
+        if (!silent) alert("Failed to load records from database")
     } finally {
         if (!silent) loading.value = false
     }
@@ -647,8 +648,7 @@ const wizardData = ref({
 
 const getChurches = async () => {
     try {
-        const response = await api.get('/churches')
-        availableChurches.value = response.data.data
+        availableChurches.value = await ChurchService.getAll()
     } catch (e) {
         console.error('Failed fetching churches dropdown', e)
     }
@@ -685,22 +685,17 @@ const submitForm = async () => {
 
     try {
         if (isEditing.value) {
-            payload.append('_method', 'PUT')
-            await api.post(`/pastors/${formData.value.id}`, payload, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            })
+            await PastorService.update(formData.value.id, formData.value, formFiles.value.pastor, formFiles.value.wife)
             closeModal()
             fetchPastors() 
         } else {
-            const res = await api.post('/pastors', payload, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            })
+            const data = await PastorService.create(formData.value, formFiles.value.pastor, formFiles.value.wife)
             closeModal()
             fetchPastors()
             
             // LAUNCH SEQUENCE: Deploy Wizard!
-            if (res.data && res.data.data && res.data.data.id && formData.value.record_status === 'active') {
-                wizardData.value.pastor_id = res.data.data.id
+            if (data && data.id && formData.value.record_status === 'active') {
+                wizardData.value.pastor_id = data.id
                 wizardData.value.effective_date = new Date().toISOString().split('T')[0]
                 isWizardOpen.value = true
             }
@@ -731,7 +726,7 @@ const submitWizard = async () => {
 
     isSaving.value = true
     try {
-        await api.post('/assignments', wizardData.value)
+        await AssignmentService.create(wizardData.value)
         isWizardOpen.value = false
         fetchPastors() // Refresh statuses
     } catch(err) {
@@ -752,7 +747,7 @@ const executeDelete = async () => {
     if(!pastorToDelete.value) return;
     isSaving.value = true
     try {
-        await api.delete(`/pastors/${pastorToDelete.value.id}`)
+        await PastorService.softDelete(pastorToDelete.value.id)
         isDeleteModalOpen.value = false
         fetchPastors()
     } catch (err) {

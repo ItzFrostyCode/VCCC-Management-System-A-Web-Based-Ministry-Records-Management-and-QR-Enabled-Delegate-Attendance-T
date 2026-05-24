@@ -369,11 +369,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onActivated, watch } from 'vue'
-import api from '../services/api'
+import { ref, onMounted, onActivated, computed, watch } from 'vue'
+import { DistrictService } from '../services/db/DistrictService'
+import { PastorService } from '../services/db/PastorService'
+import { ChurchService } from '../services/db/ChurchService'
+import { AssignmentService } from '../services/db/AssignmentService'
+import { exportDistricts } from '../services/export/district-export'
 import Swal from 'sweetalert2'
 import { generateSummaryHtml } from '../utils/swal-helper'
-import { exportDistricts } from '../services/export/district-export'
 
 const districts = ref([])
 const pastors = ref([])
@@ -446,15 +449,15 @@ const fetchData = async (silent = false) => {
   if (!silent) loading.value = true
   try {
     const [dRes, pRes, cRes, aRes] = await Promise.all([
-      api.get('/districts'),
-      api.get('/pastors'),
-      api.get('/churches'),
-      api.get('/assignments')
+      DistrictService.getAll(),
+      PastorService.getAll(),
+      ChurchService.getAll(),
+      AssignmentService.getAll()
     ])
-    districts.value = dRes.data.data
-    pastors.value = pRes.data.data
-    churches.value = cRes.data.data
-    assignments.value = aRes.data.data
+    districts.value = dRes
+    pastors.value = pRes
+    churches.value = cRes
+    assignments.value = aRes
   } catch (error) {
     console.error(error)
   } finally {
@@ -531,9 +534,9 @@ const submitForm = async () => {
     }
 
     if (isEditing.value) {
-      await api.put(`/districts/${formData.value.id}`, payload)
+      await DistrictService.update(formData.value.id, payload)
     } else {
-      await api.post('/districts', payload)
+      await DistrictService.create(payload)
     }
 
     closeModal()
@@ -549,7 +552,7 @@ const submitForm = async () => {
 const confirmDelete = async () => {
   if (confirm(`Are you sure you want to delete ${formData.value.district_name}? This action cannot be easily undone.`)) {
     try {
-      await api.delete(`/districts/${formData.value.id}`)
+      await DistrictService.softDelete(formData.value.id)
       closeModal()
       await fetchData()
     } catch (error) {
@@ -576,7 +579,7 @@ const closeAddChurchModal = () => {
 const submitChurchForm = async () => {
   isSavingChurch.value = true
   try {
-    await api.post('/churches', churchFormData.value)
+    await ChurchService.create(churchFormData.value)
     alert('Church added successfully! You can assign a Pastor from the Pastors tab.')
     closeAddChurchModal()
     await fetchData()

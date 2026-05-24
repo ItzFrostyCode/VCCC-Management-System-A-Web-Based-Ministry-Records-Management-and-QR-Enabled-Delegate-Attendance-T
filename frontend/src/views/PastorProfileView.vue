@@ -374,7 +374,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../services/api'
+import { PastorService } from '../services/db/PastorService'
+import { ChurchService } from '../services/db/ChurchService'
+import { AssignmentService } from '../services/db/AssignmentService'
 
 import Swal from 'sweetalert2'
 import { generateSummaryHtml } from '../utils/swal-helper'
@@ -412,16 +414,14 @@ const fetchData = async () => {
         const id = route.params.id
         
         // Single pastor with relationships
-        const response = await api.get(`/pastors/${id}`)
-        pastor.value = response.data.data
+        pastor.value = await PastorService.getById(id)
         
         // Fetch assignments
-        const assignRes = await api.get(`/pastors/${id}/assignments`)
-        assignments.value = assignRes.data.data
+        assignments.value = await AssignmentService.getByPastor(id)
         
         // Fetch ALL pastors (for mentor dropdown)
-        const allRes = await api.get('/pastors')
-        allPastors.value = allRes.data.data.filter(p => p.id !== id) // exclude self
+        const allRes = await PastorService.getAll()
+        allPastors.value = allRes.filter(p => p.id !== id) // exclude self
     } catch (err) {
         console.error(err)
     } finally {
@@ -441,8 +441,7 @@ const openAssignModal = async () => {
     }
     if (allChurches.value.length === 0) {
         try {
-            const res = await api.get('/churches')
-            allChurches.value = res.data.data
+            allChurches.value = await ChurchService.getAll()
         } catch (err) {
             console.error(err)
         }
@@ -468,7 +467,7 @@ const submitAssign = async () => {
 
     isAssigning.value = true
     try {
-        await api.post('/assignments', {
+        await AssignmentService.create({
             pastor_id: route.params.id,
             ...assignData.value
         })
@@ -527,24 +526,8 @@ const submitEdit = async () => {
     if (!result.isConfirmed) return;
 
     isSaving.value = true
-    const id = route.params.id
-    
-    // Use FormData for image upload support
-    const payload = new FormData()
-    payload.append('_method', 'PUT') // For Laravel PUT spoofing
-    Object.keys(editData.value).forEach(key => {
-        if (editData.value[key] !== null) {
-            payload.append(key, editData.value[key])
-        }
-    })
-    
-    if (editFiles.value.pastor) payload.append('pastor_image', editFiles.value.pastor)
-    if (editFiles.value.wife) payload.append('wife_image', editFiles.value.wife)
-
     try {
-        await api.post(`/pastors/${id}`, payload, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        })
+        await PastorService.update(route.params.id, editData.value, editFiles.value.pastor, editFiles.value.wife)
         isEditModalOpen.value = false
         fetchData() // Refresh
     } catch (err) {

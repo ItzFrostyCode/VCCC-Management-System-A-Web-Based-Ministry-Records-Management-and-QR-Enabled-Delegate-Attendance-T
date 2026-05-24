@@ -107,7 +107,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import api from '../services/api'
+import { ConferenceService } from '../services/db/ConferenceService'
+import { PastorService } from '../services/db/PastorService'
+import { DiscipleService } from '../services/db/DiscipleService'
+import { AttendanceService } from '../services/db/AttendanceService'
 import { exportAttendanceMatrix } from '../services/export/attendance-export'
 
 const route = useRoute()
@@ -133,22 +136,19 @@ const fetchReport = async () => {
    const confId = route.params.id
    try {
       // 1. Fetch Conference & All Delegates
-      const [confRes, pastorsRes, disciplesRes, attendanceRes] = await Promise.all([
-         api.get(`/conferences/${confId}`),
-         api.get('/pastors'),
-         api.get('/disciples'),
-         api.get(`/attendance?conference_id=${confId}`)
+      const [confData, allPastors, allDisciples, attendees] = await Promise.all([
+         ConferenceService.getById(confId),
+         PastorService.getAll(),
+         DiscipleService.getAll(),
+         AttendanceService.getByConference(confId)
       ])
 
-      conference.value = confRes.data.data
-      const attendees = attendanceRes.data.data
-      const allPastors = pastorsRes.data.data
-      const allDisciples = disciplesRes.data.data
+      conference.value = confData
 
       // 2. Build Columns (Day X - Slot)
       const cols = []
       conference.value.days.forEach(day => {
-         conference.value.time_slots.forEach(slot => {
+         conference.value.timeSlots.forEach(slot => {
             cols.push({
                id: `${day.id}_${slot.id}`,
                label: `D${day.day_index} ${slot.name.charAt(0)}${slot.name.slice(1).toLowerCase()}`,

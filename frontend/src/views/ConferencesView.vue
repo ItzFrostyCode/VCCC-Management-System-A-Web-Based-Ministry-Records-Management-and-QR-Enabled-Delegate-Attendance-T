@@ -169,11 +169,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onActivated, computed, watch } from 'vue'
-import api from '../services/api'
+import { ref, computed, onMounted, watch, onActivated } from 'vue'
+import { ConferenceService } from '../services/db/ConferenceService'
+import { exportConferences } from '../services/export/conference-export'
 import Swal from 'sweetalert2'
 import { generateSummaryHtml } from '../utils/swal-helper'
-import { exportConferences } from '../services/export/conference-export'
 
 const conferences = ref([])
 const loading = ref(true)
@@ -236,8 +236,7 @@ watch(calculatedDays, (days) => {
 const fetchData = async (silent = false) => {
   if (!silent) loading.value = true
   try {
-    const res = await api.get('/conferences')
-    conferences.value = res.data.data
+    conferences.value = await ConferenceService.getAll()
   } catch (error) {
     console.error(error)
   } finally {
@@ -293,9 +292,9 @@ const submitForm = async () => {
   try {
     const payload = { ...formData.value, slots_map: slotsMap.value }
     if (isEditing.value) {
-      await api.put(`/conferences/${editingId.value}`, payload)
+      await ConferenceService.update(editingId.value, payload)
     } else {
-      await api.post('/conferences', payload)
+      await ConferenceService.create(payload, slotsMap.value)
     }
     closeModal()
     fetchData()
@@ -319,7 +318,7 @@ const deleteConference = async (conf) => {
   
   if (result.isConfirmed) {
     try {
-      await api.delete(`/conferences/${conf.id}`)
+      await ConferenceService.softDelete(conf.id)
       fetchData()
     } catch (error) {
       alert("Failed to delete conference. Check if there are active attendance records.")

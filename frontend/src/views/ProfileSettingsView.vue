@@ -81,7 +81,6 @@
 import { ref, onMounted, watch } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { supabase } from '../services/supabase'
-import api from '../services/api'
 import Swal from 'sweetalert2'
 
 const { user, profile } = useAuth()
@@ -128,10 +127,10 @@ const updateProfile = async () => {
        profile.value.full_name = form.value.full_name
     }
 
-    // 2. Update Auth Password using backend if password provided
+    // 2. Update Auth Password using Supabase auth API if password provided
     if (form.value.password) {
-       await api.put(`/users/${profile.value.id}`, { password: form.value.password })
-       // Note: we're using the admin API to update password for simplicity
+       const { error: pwdError } = await supabase.auth.updateUser({ password: form.value.password })
+       if (pwdError) throw pwdError
     }
     
     successMsg.value = 'Profile updated successfully.'

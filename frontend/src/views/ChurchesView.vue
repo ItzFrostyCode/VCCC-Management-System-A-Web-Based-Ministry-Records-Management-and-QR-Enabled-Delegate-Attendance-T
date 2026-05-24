@@ -338,7 +338,9 @@
 
 <script setup>
 import { ref, onMounted, onActivated, computed, watch } from 'vue'
-import api from '../services/api'
+import { ChurchService } from '../services/db/ChurchService'
+import { PastorService } from '../services/db/PastorService'
+import { DistrictService } from '../services/db/DistrictService'
 import Swal from 'sweetalert2'
 import { generateSummaryHtml } from '../utils/swal-helper'
 import { exportChurches } from '../services/export/church-export'
@@ -405,13 +407,13 @@ const fetchData = async (silent = false) => {
     if (!silent) loading.value = true
     try {
         const [cRes, pRes, dRes] = await Promise.all([
-             api.get('/churches'),
-             api.get('/pastors'),
-             api.get('/districts')
+             ChurchService.getAll(),
+             PastorService.getAll(),
+             DistrictService.getAll()
         ])
-        churches.value = cRes.data.data
-        pastors.value = pRes.data.data
-        districts.value = dRes.data.data
+        churches.value = cRes
+        pastors.value = pRes
+        districts.value = dRes
     } catch (e) {
         console.error(e)
     } finally {
@@ -488,9 +490,9 @@ const submitForm = async () => {
         if(!payload.mother_church_id) payload.mother_church_id = null
 
         if (isEditing.value) {
-            await api.put(`/churches/${payload.id}`, payload)
+            await ChurchService.update(payload.id, payload)
         } else {
-            await api.post('/churches', payload)
+            await ChurchService.create(payload)
         }
         closeModal()
         await fetchData()
@@ -510,7 +512,7 @@ const confirmDelete = (church) => {
 const executeDelete = async () => {
     isSaving.value = true
     try {
-        await api.delete(`/churches/${churchToDelete.value.id}`)
+        await ChurchService.softDelete(churchToDelete.value.id)
         isDeleteModalOpen.value = false
         await fetchData()
     } catch (e) {

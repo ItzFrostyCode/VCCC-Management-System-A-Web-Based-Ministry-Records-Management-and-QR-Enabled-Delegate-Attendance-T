@@ -446,7 +446,8 @@
 <script setup>
 import { ref, onMounted, computed, onUnmounted, nextTick } from 'vue'
 import QrcodeVue from 'qrcode.vue'
-import api from '../services/api'
+import { PastorService } from '../services/db/PastorService'
+import { DiscipleService } from '../services/db/DiscipleService'
 import Swal from 'sweetalert2'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
@@ -538,11 +539,11 @@ const handleTemplateUpload = (e) => {
 
 const fetchData = async () => {
   try {
-    const [pRes, dRes] = await Promise.all([api.get('/pastors'), api.get('/disciples')])
+    const [pRes, dRes] = await Promise.all([PastorService.getAll(), DiscipleService.getAll()])
     const all = []
 
-    if (pRes.data && pRes.data.data) {
-      pRes.data.data.forEach(p => {
+    if (pRes) {
+      pRes.forEach(p => {
         const churchData = p.church || {}
         const districtData = churchData.district || {}
         const payload = {
@@ -556,8 +557,8 @@ const fetchData = async () => {
       })
     }
 
-    if (dRes.data && dRes.data.data) {
-      dRes.data.data.forEach(d => {
+    if (dRes) {
+      dRes.forEach(d => {
         const churchData = d.church || {}
         const districtData = churchData.district || {}
         all.push({

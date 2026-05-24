@@ -196,8 +196,12 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { Html5Qrcode } from 'html5-qrcode'
-import api from '../services/api'
 import ScannerQueue from '../services/scanner-queue'
+import { ConferenceService } from '../services/db/ConferenceService'
+import { PastorService } from '../services/db/PastorService'
+import { DiscipleService } from '../services/db/DiscipleService'
+import { AttendanceService } from '../services/db/AttendanceService'
+import { supabase } from '../services/supabase'
 
 // --- STATE ---
 const currentUser = ref(null)
@@ -290,8 +294,8 @@ const getSlotTimeRange = (slot) => {
 // --- API ACTIONS ---
 const fetchUser = async () => {
   try {
-    const res = await api.get('/user')
-    currentUser.value = res.data
+    const { data: { user } } = await supabase.auth.getUser()
+    currentUser.value = { email: user?.email, role: 'Admin' }
   } catch (err) {
     console.warn("Could not fetch user profile", err)
   }
@@ -303,8 +307,7 @@ const fetchConferences = async (forceRefresh = false) => {
     fetchConfDetails()
     return
   }
-  const res = await api.get('/conferences')
-  conferences.value = res.data.data
+  conferences.value = await ConferenceService.getAll()
   const params = new URLSearchParams(window.location.search)
   if (params.has('confId')) {
      session.value.conferenceId = params.get('confId')
@@ -316,9 +319,9 @@ const fetchConferences = async (forceRefresh = false) => {
 
 const fetchConfDetails = async () => {
   if (!session.value.conferenceId) return
-  const res = await api.get(`/conferences/${session.value.conferenceId}`)
-  days.value = res.data.data.days || []
-  slots.value = res.data.data.time_slots || []
+  const data = await ConferenceService.getById(session.value.conferenceId)
+  days.value = data.days || []
+  slots.value = data.timeSlots || []
 }
 
 // --- SCANNER ACTIONS ---
@@ -370,9 +373,17 @@ const onScanSuccess = async (text) => {
       cooldowns.set(text, Date.now())
 
       // 2. Fetch Metadata (immediate feedback)
-      const endpoint = (data.t==='PASTOR'||data.t==='WIFE') ? `/pastors/${data.id}` : `/disciples/${data.id}`
-      const info = await api.get(endpoint).catch(e => { throw new Error("Delegate record not found") })
-      const d = info.data.data
+      let d = null
+      try {
+         if (data.t === 'PASTOR' || data.t === 'WIFE') {
+             d = await PastorService.getById(data.id)
+         } else {
+             d = await DiscipleService.getById(data.id)
+         }
+      } catch (e) {
+         throw new Error("Delegate record not found")
+      }
+      
       const metadata = {
          name: (data.t==='WIFE' ? d.wife_name : d.full_name) || 'Unknown',
          role: data.t || 'Delegate',
@@ -428,9 +439,9 @@ const processSyncQueue = async () => {
    const pending = await ScannerQueue.getAll()
    if (pending.length === 0) return
 
-   for (const scan of pending) {
+    for (const scan of pending) {
       try {
-         await api.post('/attendance', scan)
+         await AttendanceService.store(scan)
          await ScannerQueue.remove(scan.scan_uuid) // Only remove on explicit success
       } catch (err) {
          // If it's a conflict (Already Scanned), we should remove it from queue too

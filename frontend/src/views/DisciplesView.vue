@@ -292,7 +292,10 @@
 
 <script setup>
 import { ref, onMounted, onActivated, computed, watch } from 'vue'
-import api from '../services/api'
+import { DiscipleService } from '../services/db/DiscipleService'
+import { ChurchService } from '../services/db/ChurchService'
+import { DistrictService } from '../services/db/DistrictService'
+import { PastorService } from '../services/db/PastorService'
 import Swal from 'sweetalert2'
 import { generateSummaryHtml } from '../utils/swal-helper'
 import { exportDisciplesAll, exportDisciplesHierarchical } from '../services/export/disciple-export'
@@ -358,15 +361,15 @@ const fetchData = async (silent = false) => {
     if (!silent) loading.value = true
     try {
         const [dRes, cRes, distRes, pRes] = await Promise.all([
-            api.get('/disciples'),
-            api.get('/churches'),
-            api.get('/districts'),
-            api.get('/pastors')
+            DiscipleService.getAll(),
+            ChurchService.getAll(),
+            DistrictService.getAll(),
+            PastorService.getAll()
         ])
-        disciples.value = dRes.data.data
-        churches.value = cRes.data.data
-        districts.value = distRes.data.data
-        pastors.value = pRes.data.data
+        disciples.value = dRes
+        churches.value = cRes
+        districts.value = distRes
+        pastors.value = pRes
     } catch (error) {
         console.error("Failed to load disciples:", error)
     } finally {
@@ -447,14 +450,9 @@ const submitForm = async () => {
 
     try {
         if (isEditing.value) {
-            payload.append('_method', 'PUT')
-            await api.post(`/disciples/${formData.value.id}`, payload, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            })
+            await DiscipleService.update(formData.value.id, formData.value, formFile.value)
         } else {
-            await api.post('/disciples', payload, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            })
+            await DiscipleService.create(formData.value, formFile.value)
         }
         closeModal()
         fetchData()
@@ -475,7 +473,7 @@ const executeDelete = async () => {
     if (!discipleToDelete.value) return
     isSaving.value = true
     try {
-        await api.delete(`/disciples/${discipleToDelete.value.id}`)
+        await DiscipleService.softDelete(discipleToDelete.value.id)
         isDeleteModalOpen.value = false
         fetchData()
     } catch (err) {

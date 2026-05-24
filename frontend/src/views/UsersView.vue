@@ -177,7 +177,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onActivated } from 'vue'
-import api from '../services/api'
+import { supabase } from '../services/supabase'
 import Swal from 'sweetalert2'
 
 const users = ref([])
@@ -201,7 +201,8 @@ const form = ref({
 const fetchUsers = async (silent = false) => {
   if (!silent) loading.value = true
   try {
-    const { data } = await api.get('/users')
+    const { data, error } = await supabase.from('profiles').select('*')
+    if (error) throw error
     users.value = data
   } catch (error) {
     console.error('Error fetching users:', error)
@@ -270,24 +271,25 @@ const saveUser = async () => {
   modalError.value = ''
   
   try {
-    const payload = { ...form.value }
-    if (!isEditing.value && !payload.password) {
-        payload.password = '123456'
+    const payload = { 
+      full_name: form.value.full_name,
+      username: form.value.username,
+      role: form.value.role,
+      is_active: form.value.is_active
     }
 
     if (isEditing.value) {
-      if (!payload.password) delete payload.password; // Don't send empty password
-      await api.put(`/users/${payload.id}`, payload)
+      const { error } = await supabase.from('profiles').update(payload).eq('id', form.value.id)
+      if (error) throw error
       Swal.fire({ icon: 'success', title: 'User Updated', timer: 1500, showConfirmButton: false })
     } else {
-      await api.post('/users', payload)
-      Swal.fire({ icon: 'success', title: 'User Created', timer: 1500, showConfirmButton: false })
+      Swal.fire({ icon: 'warning', title: 'Not Supported', text: 'Creating users should be done in Supabase Dashboard or requires an Edge Function.', timer: 3000, showConfirmButton: true })
     }
     
     closeModal()
     fetchUsers()
   } catch (err) {
-    modalError.value = err.response?.data?.message || err.response?.data?.error?.msg || 'Failed to save user.'
+    modalError.value = err.message || 'Failed to save user.'
   } finally {
     saving.value = false
   }

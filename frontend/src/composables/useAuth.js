@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
 import { supabase } from '../services/supabase'
-import api from '../services/api'
 import { useRouter } from 'vue-router'
 
 const user = ref(null)
@@ -15,13 +14,10 @@ export function useAuth() {
     const { data: { session } } = await supabase.auth.getSession()
     if (session) {
       user.value = session.user
-      // Set the token for Laravel backend requests
-      api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`
       await fetchProfile(session.user.id)
     } else {
       user.value = null
       profile.value = null
-      delete api.defaults.headers.common['Authorization']
     }
     loading.value = false
   }
@@ -51,7 +47,6 @@ export function useAuth() {
     if (error) throw error
     
     user.value = data.user
-    api.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`
     
     await fetchProfile(data.user.id)
     
@@ -67,7 +62,6 @@ export function useAuth() {
     await supabase.auth.signOut()
     user.value = null
     profile.value = null
-    delete api.defaults.headers.common['Authorization']
     router.push({ name: 'login' })
   }
 

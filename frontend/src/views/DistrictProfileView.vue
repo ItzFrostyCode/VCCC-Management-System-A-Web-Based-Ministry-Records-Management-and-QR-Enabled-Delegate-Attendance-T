@@ -255,7 +255,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../services/api'
+import { DistrictService } from '../services/db/DistrictService'
+import { ChurchService } from '../services/db/ChurchService'
 import Swal from 'sweetalert2'
 import { generateSummaryHtml } from '../utils/swal-helper'
 
@@ -300,8 +301,9 @@ const filteredAvailable = computed(() => {
 const openSelectionModal = async () => {
     isSelectionModalOpen.value = true
     try {
-        const res = await api.get('/churches?unassigned=true')
-        availableChurches.value = res.data.data
+        const res = await ChurchService.getAll()
+        // Client-side filter for unassigned churches
+        availableChurches.value = res.filter(c => !c.district_id)
     } catch (e) {
         console.error("Failed to load unassigned churches")
     }
@@ -310,7 +312,7 @@ const openSelectionModal = async () => {
 const linkChurch = async (church) => {
     isLinking.value = church.id
     try {
-        await api.put(`/churches/${church.id}`, {
+        await ChurchService.update(church.id, {
             church_name: church.church_name,
             church_address: church.church_address,
             church_scope: church.church_scope,
@@ -357,7 +359,7 @@ const submitChurchForm = async () => {
 
     isSavingChurch.value = true
     try {
-        await api.post(`/churches`, {
+        await ChurchService.create({
            ...churchFormData.value,
            district_id: route.params.id,
            church_scope: 'local'
@@ -374,8 +376,7 @@ const submitChurchForm = async () => {
 const fetchDistrict = async () => {
     loading.value = true
     try {
-        const res = await api.get(`/districts/${route.params.id}`)
-        district.value = res.data.data
+        district.value = await DistrictService.getById(route.params.id)
         // Because backend injects churches array inside the district object
         churches.value = district.value.churches || [] 
     } catch (e) {
