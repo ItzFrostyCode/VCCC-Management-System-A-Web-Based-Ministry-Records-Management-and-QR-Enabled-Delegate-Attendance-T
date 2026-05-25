@@ -25,10 +25,16 @@
         
         <div class="flex items-center pr-2 shrink-0">
           <div class="w-[1.5px] h-6 bg-gray-200 mx-1.5 rounded-full hidden sm:block"></div>
-          <select v-model="churchFilter" class="bg-transparent border-0 text-[10px] font-black uppercase tracking-widest text-gray-600 py-2 pl-3 pr-8 hover:bg-gray-50 focus:ring-0 cursor-pointer outline-none rounded-lg max-w-[150px] sm:max-w-none truncate">
-            <option value="">ALL CHURCHES</option>
-            <option v-for="church in churches" :key="church.id" :value="church.id">{{ church.church_name }}</option>
-          </select>
+          <div class="min-w-[200px]">
+            <SearchableSelect
+              v-model="churchFilter"
+              :options="churches"
+              label-key="church_name"
+              value-key="id"
+              placeholder="ALL CHURCHES"
+              clear-placeholder="ALL CHURCHES"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -226,10 +232,14 @@
               
               <div>
                 <label class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">Assign Local Church <span class="text-red-500">*</span></label>
-                <select v-model="formData.church_id" required class="w-full px-4 py-3 bg-white border border-gray-200/60 rounded-xl text-sm font-semibold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer">
-                  <option value="" disabled>Select a church...</option>
-                  <option v-for="church in churches" :key="church.id" :value="church.id">{{ church.church_name }}</option>
-                </select>
+                <SearchableSelect
+                  v-model="formData.church_id"
+                  :options="churches"
+                  label-key="church_name"
+                  value-key="id"
+                  placeholder="-- Select a church --"
+                  clear-placeholder="None"
+                />
               </div>
             </div>
 
@@ -316,6 +326,7 @@
 
 <script setup>
 import { ref, onMounted, onActivated, computed, watch } from 'vue'
+import SearchableSelect from '../components/SearchableSelect.vue'
 import { DiscipleService } from '../services/db/DiscipleService'
 import { ChurchService } from '../services/db/ChurchService'
 import { DistrictService } from '../services/db/DistrictService'

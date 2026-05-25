@@ -276,11 +276,14 @@
                          </div>
                          <div>
                             <label class="block text-[9px] font-bold text-[#475569] uppercase tracking-widest mb-1.5">ALIGNMENT</label>
-                            <select v-model="cfg[activeField].textAlign" class="w-full px-3 py-2 bg-white border border-[#e2e8f0] focus:border-[#0038FF] rounded-lg text-sm font-semibold outline-none transition-all appearance-none cursor-pointer">
-                               <option value="left">Left</option>
-                               <option value="center">Center</option>
-                               <option value="right">Right</option>
-                            </select>
+                             <SearchableSelect
+                               v-model="cfg[activeField].textAlign"
+                               :options="[{value: 'left', label: 'Left'}, {value: 'center', label: 'Center'}, {value: 'right', label: 'Right'}]"
+                               label-key="label"
+                               value-key="value"
+                               placeholder="Select Alignment"
+                               clear-placeholder="None"
+                             />
                          </div>
                       </div>
 
@@ -477,6 +480,7 @@
 <script setup>
 import { ref, onMounted, computed, onUnmounted, nextTick } from 'vue'
 import QrcodeVue from 'qrcode.vue'
+import SearchableSelect from '../components/SearchableSelect.vue'
 import { PastorService } from '../services/db/PastorService'
 import { DiscipleService } from '../services/db/DiscipleService'
 import Swal from 'sweetalert2'

@@ -287,10 +287,14 @@
 
               <div class="sm:col-span-2">
                 <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Mentor</label>
-                <select v-model="editData.parent_id" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold">
-                    <option :value="null">None (Root Leader)</option>
-                    <option v-for="p in allPastors" :key="p.id" :value="p.id">{{ p.full_name }}</option>
-                </select>
+                <SearchableSelect
+                  v-model="editData.parent_id"
+                  :options="allPastors"
+                  label-key="full_name"
+                  value-key="id"
+                  placeholder="None (Root Leader)"
+                  clear-placeholder="None (Root Leader)"
+                />
               </div>
 
               <div class="sm:col-span-2">
@@ -325,13 +329,14 @@
           <form @submit.prevent="submitAssign" class="space-y-4">
             <div>
               <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Transition Type</label>
-              <select v-model="assignData.transition_type" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold">
-                  <option value="pioneer">Pioneer New Church</option>
-                  <option value="takeover">Takeover Existing Church</option>
-                  <option value="international">International Mission</option>
-                  <option value="undeploy">Undeploy / Pullout</option>
-                  <option value="legacy">Legacy (Deceased/Ended)</option>
-              </select>
+              <SearchableSelect
+                v-model="assignData.transition_type"
+                :options="transitionTypes"
+                label-key="label"
+                value-key="value"
+                placeholder="Select transition type..."
+                clear-placeholder="None"
+              />
             </div>
 
             <div>
@@ -341,10 +346,14 @@
 
             <div v-if="assignData.transition_type === 'takeover'">
               <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Select Church</label>
-              <select v-model="assignData.church_id" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold">
-                  <option :value="null" disabled>Select a church...</option>
-                  <option v-for="church in allChurches" :key="church.id" :value="church.id">{{ church.church_name }}</option>
-              </select>
+              <SearchableSelect
+                v-model="assignData.church_id"
+                :options="allChurches"
+                label-key="church_name"
+                value-key="id"
+                placeholder="Select a church..."
+                clear-placeholder="None"
+              />
             </div>
 
             <div v-if="['pioneer', 'international'].includes(assignData.transition_type)">
@@ -354,11 +363,14 @@
 
             <div v-if="assignData.transition_type === 'undeploy'">
               <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Reason Code</label>
-              <select v-model="assignData.reason" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold">
-                  <option value="pullout">Pullout</option>
-                  <option value="redirection">Redirection</option>
-                  <option value="transferred">Transferred</option>
-              </select>
+              <SearchableSelect
+                v-model="assignData.reason"
+                :options="undeployReasons"
+                label-key="label"
+                value-key="value"
+                placeholder="Select reason..."
+                clear-placeholder="None"
+              />
             </div>
 
             <div>
@@ -399,6 +411,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import SearchableSelect from '../components/SearchableSelect.vue'
 import { PastorService } from '../services/db/PastorService'
 import { ChurchService } from '../services/db/ChurchService'
 import { AssignmentService } from '../services/db/AssignmentService'
@@ -421,6 +434,20 @@ const isSaving = ref(false)
 const editData = ref({})
 const editFiles = ref({ pastor: null, wife: null })
 const editPreviews = ref({ pastor: null, wife: null })
+
+const transitionTypes = [
+  { value: 'pioneer', label: 'Pioneer New Church' },
+  { value: 'takeover', label: 'Takeover Existing Church' },
+  { value: 'international', label: 'International Mission' },
+  { value: 'undeploy', label: 'Undeploy / Pullout' },
+  { value: 'legacy', label: 'Legacy (Deceased/Ended)' }
+]
+
+const undeployReasons = [
+  { value: 'pullout', label: 'Pullout' },
+  { value: 'redirection', label: 'Redirection' },
+  { value: 'transferred', label: 'Transferred' }
+]
 
 // Assign Modal State
 const allChurches = ref([])

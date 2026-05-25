@@ -300,12 +300,14 @@
 
               <div class="col-span-2">
                 <label class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">Spiritual Father / Mentor</label>
-                <select v-model="formData.parent_id" class="w-full px-4 py-3 bg-white border border-gray-200/60 rounded-xl text-sm font-semibold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer">
-                  <option :value="null">None (Root/Senior)</option>
-                  <option v-for="p in pastors.filter(p => !isEditing || p.id !== formData.id)" :key="p.id" :value="p.id">
-                    {{ p.full_name }}
-                  </option>
-                </select>
+                <SearchableSelect
+                  v-model="formData.parent_id"
+                  :options="pastors.filter(p => !isEditing || p.id !== formData.id)"
+                  label-key="full_name"
+                  value-key="id"
+                  placeholder="-- Select Spiritual Father --"
+                  clear-placeholder="None (Root/Senior)"
+                />
               </div>
 
               <div class="col-span-2">
@@ -450,10 +452,14 @@
                
                <div v-if="wizardData.transition_type === 'takeover'">
                   <label class="block text-sm font-medium text-gray-700 mb-1">Target Station <span class="text-red-500">*</span></label>
-                  <select v-model="wizardData.church_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                     <option value="" disabled>Select church to takeover...</option>
-                     <option v-for="church in availableChurches" :key="church.id" :value="church.id">{{ church.church_name }}</option>
-                  </select>
+                  <SearchableSelect
+                    v-model="wizardData.church_id"
+                    :options="availableChurches"
+                    label-key="church_name"
+                    value-key="id"
+                    placeholder="Select church to takeover..."
+                    clear-placeholder="None"
+                  />
                </div>
 
                <div v-if="wizardData.transition_type === 'international'">
@@ -483,6 +489,7 @@
 
 <script setup>
 import { ref, onMounted, onActivated, computed, watch } from 'vue'
+import SearchableSelect from '../components/SearchableSelect.vue'
 import { PastorService } from '../services/db/PastorService'
 import { ChurchService } from '../services/db/ChurchService'
 import { AssignmentService } from '../services/db/AssignmentService'

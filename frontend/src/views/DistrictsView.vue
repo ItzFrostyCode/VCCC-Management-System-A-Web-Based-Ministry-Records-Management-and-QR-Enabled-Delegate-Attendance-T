@@ -289,10 +289,14 @@
 
             <div>
               <label class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">Leader Pastor (District Leader)</label>
-              <select v-model="formData.leader_pastor_id" class="w-full px-4 py-3 bg-white border border-gray-200/60 rounded-xl text-sm font-semibold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer">
-                <option value="">-- No Leader Assigned --</option>
-                <option v-for="pastor in pastors" :key="pastor.id" :value="pastor.id">{{ pastor.full_name }}</option>
-              </select>
+              <SearchableSelect
+                v-model="formData.leader_pastor_id"
+                :options="pastors"
+                label-key="full_name"
+                value-key="id"
+                placeholder="-- Select Leader Pastor --"
+                clear-placeholder="-- No Leader Assigned --"
+              />
             </div>
 
             <div>
@@ -372,6 +376,7 @@
 
 <script setup>
 import { ref, onMounted, onActivated, computed, watch } from 'vue'
+import SearchableSelect from '../components/SearchableSelect.vue'
 import { DistrictService } from '../services/db/DistrictService'
 import { PastorService } from '../services/db/PastorService'
 import { ChurchService } from '../services/db/ChurchService'

@@ -207,12 +207,14 @@
 
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Role <span class="text-red-500">*</span></label>
-                <select v-model="form.role" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                  <option value="Admin">Admin</option>
-                  <option value="Owner">Owner</option>
-                  <option value="Staff">Staff</option>
-                  <option value="Scanner">Scanner</option>
-                </select>
+                <SearchableSelect
+                  v-model="form.role"
+                  :options="[{value: 'Admin', label: 'Admin'}, {value: 'Owner', label: 'Owner'}, {value: 'Staff', label: 'Staff'}, {value: 'Scanner', label: 'Scanner'}]"
+                  label-key="label"
+                  value-key="value"
+                  placeholder="Select Role"
+                  clear-placeholder="None"
+                />
               </div>
 
               <div v-if="isEditing" class="flex items-center gap-3 pt-2">
@@ -241,6 +243,7 @@
 <script setup>
 import { ref, computed, onMounted, onActivated } from 'vue'
 import { supabase } from '../services/supabase'
+import SearchableSelect from '../components/SearchableSelect.vue'
 import Swal from 'sweetalert2'
 
 const users = ref([])

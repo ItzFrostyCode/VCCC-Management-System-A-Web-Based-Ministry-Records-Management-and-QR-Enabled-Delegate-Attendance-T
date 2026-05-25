@@ -101,16 +101,14 @@
     <div class="p-6 border-b border-gray-100 bg-white">
       <label class="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Event Environment</label>
       <div class="relative group">
-        <select
+        <SearchableSelect
           v-model="session.conferenceId"
-          @change="fetchConfDetails"
-          class="w-full h-12 bg-gray-50 border border-gray-100 rounded-xl px-4 text-xs font-bold text-gray-900 cursor-pointer focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none outline-none"
-        >
-          <option v-for="c in conferences" :key="c.id" :value="c.id" v-text="c.theme || c.title" />
-        </select>
-        <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </div>
+          :options="conferences"
+          label-key="displayName"
+          value-key="id"
+          placeholder="Select Environment"
+          clear-placeholder="None"
+        />
       </div>
     </div>
 
@@ -196,6 +194,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { Html5Qrcode } from 'html5-qrcode'
+import SearchableSelect from '../components/SearchableSelect.vue'
 import ScannerQueue from '../services/scanner-queue'
 import { ConferenceService } from '../services/db/ConferenceService'
 import { PastorService } from '../services/db/PastorService'
@@ -246,6 +245,10 @@ watch(activeSession, (newVal) => {
         session.value.slotId = newVal.slot.id
     }
 }, { immediate: true })
+
+watch(() => session.value.conferenceId, () => {
+    fetchConfDetails();
+})
 
 // --- CLOCK & LOGIC ---
 const updateClock = () => {
@@ -309,7 +312,11 @@ const fetchConferences = async (forceRefresh = false) => {
     fetchConfDetails()
     return
   }
-  conferences.value = await ConferenceService.getAll()
+  const rawConferences = await ConferenceService.getAll()
+  conferences.value = rawConferences.map(c => ({
+      ...c,
+      displayName: c.theme || c.title
+  }))
   const params = new URLSearchParams(window.location.search)
   if (params.has('confId')) {
      session.value.conferenceId = params.get('confId')

@@ -187,10 +187,14 @@
           <form @submit.prevent="submitHistoricalRecord" class="space-y-4">
             <div>
               <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Assigned Pastor</label>
-              <select v-model="formData.pastor_id" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold">
-                 <option value="" disabled>Select assigned pastor...</option>
-                 <option v-for="pastor in allPastors" :key="pastor.id" :value="pastor.id">{{ pastor.full_name }}</option>
-              </select>
+              <SearchableSelect
+                v-model="formData.pastor_id"
+                :options="allPastors"
+                label-key="full_name"
+                value-key="id"
+                placeholder="Select assigned pastor..."
+                clear-placeholder="None"
+              />
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -231,6 +235,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import SearchableSelect from '../components/SearchableSelect.vue'
 import { ChurchService } from '../services/db/ChurchService'
 import { AssignmentService } from '../services/db/AssignmentService'
 import { PastorService } from '../services/db/PastorService'
