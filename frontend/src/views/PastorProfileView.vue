@@ -122,7 +122,10 @@
             <div v-if="pastor.pastoring_start_date" class="flex items-start gap-3">
                <svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                <div class="min-w-0">
-                  <p class="text-[10px] font-bold text-emerald-600 uppercase">Ordained</p>
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <p class="text-[10px] font-bold text-emerald-600 uppercase">Ordained</p>
+                    <span v-if="yearsInMinistry !== null" class="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[9px] font-black tracking-widest border border-emerald-100 shadow-sm">{{ yearsInMinistry }} {{ yearsInMinistry === 1 ? 'Year' : 'Years' }} in Ministry</span>
+                  </div>
                   <p class="text-xs font-bold text-gray-900 truncate">{{ new Date(pastor.pastoring_start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) }}</p>
                </div>
             </div>
@@ -413,7 +416,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SearchableSelect from '../components/SearchableSelect.vue'
 import { PastorService } from '../services/db/PastorService'
@@ -431,6 +434,18 @@ const allPastors = ref([])
 const activeTab = ref('overview')
 const loading = ref(true)
 const viewingAvatar = ref(null)
+
+const yearsInMinistry = computed(() => {
+    if (!pastor.value || !pastor.value.pastoring_start_date) return null
+    const start = new Date(pastor.value.pastoring_start_date)
+    const now = new Date()
+    let years = now.getFullYear() - start.getFullYear()
+    const m = now.getMonth() - start.getMonth()
+    if (m < 0 || (m === 0 && now.getDate() < start.getDate())) {
+        years--
+    }
+    return years >= 0 ? years : 0
+})
 
 // Edit Modal State
 const isEditModalOpen = ref(false)

@@ -711,7 +711,7 @@ const submitForm = async () => {
             // LAUNCH SEQUENCE: Deploy Wizard!
             if (data && data.id && formData.value.record_status === 'active') {
                 wizardData.value.pastor_id = data.id
-                wizardData.value.effective_date = new Date().toISOString().split('T')[0]
+                wizardData.value.effective_date = formData.value.pastoring_start_date || new Date().toISOString().split('T')[0]
                 isWizardOpen.value = true
             }
         }
