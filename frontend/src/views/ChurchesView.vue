@@ -218,8 +218,9 @@
     </div><!-- end desktop table -->
 
     <!-- Modal Form: Add / Edit -->
-    <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <Teleport to="body">
+    <div v-if="isModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-full">
         <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
           <h3 class="text-lg font-black text-gray-900 tracking-tight">{{ isEditing ? 'Edit Church' : 'Add New Church' }}</h3>
           <button @click="closeModal" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
@@ -227,7 +228,7 @@
           </button>
         </div>
         
-        <div class="overflow-y-auto p-6 bg-gray-50/30">
+        <div class="overflow-y-auto p-6 md:px-10 bg-gray-50/30">
           <form @submit.prevent="submitForm" class="space-y-6">
             <div class="grid grid-cols-2 gap-5">
               <div class="col-span-2">
@@ -304,10 +305,12 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Modal Delete Confirm -->
-    <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center">
+    <Teleport to="body">
+    <div v-if="isDeleteModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 md:px-10 text-center">
         <div class="w-16 h-16 rounded-full bg-red-50 text-red-500 mx-auto flex items-center justify-center mb-5">
           <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         </div>
@@ -321,9 +324,11 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Export Options Modal -->
-    <div v-if="isExportModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+    <Teleport to="body">
+    <div v-if="isExportModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
         <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
           <h3 class="text-lg font-black text-gray-900 tracking-tight">Export Church List</h3>
@@ -331,7 +336,7 @@
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
-        <div class="p-6 bg-gray-50/30">
+        <div class="p-6 md:px-10 bg-gray-50/30">
           <div class="flex flex-col gap-3">
             <button @click="executeExport('all')" class="flex items-center justify-start gap-4 p-4 border border-gray-200/80 bg-white rounded-2xl hover:bg-indigo-50/50 hover:border-indigo-200 transition-all text-left group shadow-sm hover:shadow">
               <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black group-hover:bg-indigo-100 transition-colors">1</div>
@@ -354,6 +359,7 @@
         </div>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 

@@ -349,9 +349,10 @@
     
     <!-- ══ EXPORT WIZARD MODAL ══ -->
     <transition name="fade">
-      <div v-if="isExportWizardOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="!isExporting && (isExportWizardOpen = false)"></div>
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden relative z-10 flex flex-col max-h-[90vh]">
+      <Teleport to="body">
+        <div v-if="isExportWizardOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10">
+          <div class="absolute inset-0 bg-gray-900/80 backdrop-blur-sm" @click="!isExporting && (isExportWizardOpen = false)"></div>
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden relative z-10 flex flex-col max-h-full">
           
           <!-- Header -->
           <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
@@ -471,8 +472,9 @@
             </button>
           </div>
 
+          </div>
         </div>
-      </div>
+      </Teleport>
     </transition>
   </div>
 </template>

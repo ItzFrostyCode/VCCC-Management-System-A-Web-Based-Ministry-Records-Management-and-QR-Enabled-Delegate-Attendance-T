@@ -228,7 +228,8 @@
     </div>
 
     <!-- Edit Modal -->
-    <div v-if="isEditModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm sm:p-6 overflow-y-auto py-10">
+    <Teleport to="body">
+    <div v-if="isEditModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
       <div class="bg-white rounded-[1.5rem] shadow-xl w-full max-w-2xl flex flex-col relative my-auto">
         <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-[1.5rem]">
           <h3 class="text-sm font-black text-gray-900 uppercase tracking-widest">Edit Profile</h3>
@@ -314,9 +315,11 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Assign Modal -->
-    <div v-if="isAssignModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm sm:p-6 overflow-y-auto py-10">
+    <Teleport to="body">
+    <div v-if="isAssignModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
       <div class="bg-white rounded-[1.5rem] shadow-xl w-full max-w-xl flex flex-col relative my-auto animate-in slide-in-from-bottom duration-300">
         <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-[1.5rem]">
           <h3 class="text-sm font-black text-gray-900 uppercase tracking-widest">Assign Role / Transfer</h3>
@@ -388,6 +391,7 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Avatar Viewer Modal -->
     <div v-if="viewingAvatar" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" @click="viewingAvatar = null">

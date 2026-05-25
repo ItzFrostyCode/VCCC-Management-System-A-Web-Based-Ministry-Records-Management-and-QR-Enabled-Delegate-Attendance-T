@@ -170,10 +170,11 @@
 
     <!-- Modal Form (Create/Edit) -->
     <Transition name="modal">
-      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-        <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="closeModal"></div>
-        
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative flex flex-col max-h-full">
+      <Teleport to="body">
+        <div v-if="showModal" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
+          <div class="absolute inset-0" @click="closeModal"></div>
+          
+          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative flex flex-col max-h-full">
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 shrink-0">
             <h3 class="text-lg font-bold text-gray-900">{{ isEditing ? 'Edit User Account' : 'Create New User' }}</h3>
             <button @click="closeModal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
@@ -235,7 +236,8 @@
             </form>
           </div>
         </div>
-      </div>
+        </div>
+      </Teleport>
     </Transition>
   </div>
 </template>

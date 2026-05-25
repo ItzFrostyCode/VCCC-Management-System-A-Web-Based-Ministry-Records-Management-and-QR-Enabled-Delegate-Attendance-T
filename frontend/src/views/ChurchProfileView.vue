@@ -174,7 +174,8 @@
     </div>
 
     <!-- Record Entry Modal -->
-    <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm sm:p-6 overflow-y-auto py-10">
+    <Teleport to="body">
+    <div v-if="isModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
       <div class="bg-white rounded-[1.5rem] shadow-xl w-full max-w-xl flex flex-col relative my-auto animate-in slide-in-from-bottom duration-300">
         <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-[1.5rem]">
           <h3 class="text-sm font-black text-gray-900 uppercase tracking-widest">Archive Deployment</h3>
@@ -228,6 +229,7 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
   </div>
 </template>

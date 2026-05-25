@@ -6,11 +6,26 @@
 html, body {
   font-family: 'Inter', sans-serif;
   background-color: #f3f4f6;
-  /* Prevent any element from causing horizontal scroll */
-  overflow-x: hidden;
+  width: 100vw;
+  height: 100dvh;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#app {
   width: 100%;
-  max-width: 100%;
-  overscroll-behavior: none; /* Prevent iOS bounce/rubber-band effect */
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Prevent horizontal scroll in modals and trap bounce */
+.overflow-y-auto, .overflow-auto {
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
 

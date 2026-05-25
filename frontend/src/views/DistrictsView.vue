@@ -16,7 +16,8 @@
     </div>
 
     <!-- Export Options Modal -->
-    <div v-if="isExportModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+    <Teleport to="body">
+    <div v-if="isExportModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
       <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
         <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <h3 class="text-lg font-semibold text-gray-900">Export District Report</h3>
@@ -27,7 +28,7 @@
           </button>
         </div>
 
-        <div class="p-6">
+        <div class="p-6 md:px-10">
           <div class="space-y-4">
             <button
               @click="executeExport"
@@ -52,6 +53,7 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <div class="relative z-40 w-full mb-6">
       <div v-if="debugError" class="bg-red-50 text-red-600 p-4 rounded-xl mb-4 text-xs font-mono">
@@ -263,7 +265,8 @@
     </div><!-- end desktop table -->
 
     <!-- Edit / Add District Modal -->
-    <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+    <Teleport to="body">
+    <div v-if="isModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
         <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
           <h3 class="text-lg font-black text-gray-900 tracking-tight">{{ isEditing ? 'Manage District' : 'Add New District' }}</h3>
@@ -272,7 +275,7 @@
           </button>
         </div>
 
-        <div class="p-6 bg-gray-50/30">
+        <div class="p-6 md:px-10 bg-gray-50/30">
           <form @submit.prevent="submitForm" class="space-y-5">
             <div>
               <label class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">District Name <span class="text-red-500">*</span></label>
@@ -330,9 +333,11 @@
         </div>
       </div>
     </div>
+    </Teleport>
 
     <!-- Quick Add Church Modal -->
-    <div v-if="isAddChurchModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+    <Teleport to="body">
+    <div v-if="isAddChurchModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
         <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
           <h3 class="text-lg font-black text-gray-900 tracking-tight">Add Church to <span class="text-indigo-600">{{ selectedDistrictName }}</span></h3>
@@ -341,7 +346,7 @@
           </button>
         </div>
 
-        <div class="p-6 bg-gray-50/30">
+        <div class="p-6 md:px-10 bg-gray-50/30">
           <form @submit.prevent="submitChurchForm" class="space-y-5">
             <div>
               <label class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">Church Name <span class="text-red-500">*</span></label>
@@ -371,6 +376,7 @@
         </div>
       </div>
     </div>
+    </Teleport>
   </div>
 </template>
 
