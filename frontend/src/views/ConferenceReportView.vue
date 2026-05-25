@@ -1,51 +1,51 @@
 <template>
   <div class="h-full flex flex-col bg-gray-50 overflow-hidden">
     <!-- Header -->
-    <div class="px-8 py-6 bg-white/80 backdrop-blur-xl border-b border-gray-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 z-10 sticky top-0">
-      <div class="flex items-center gap-4">
-        <router-link to="/conferences" class="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-500 transition-colors border border-gray-200/60 shadow-sm">
-           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    <div class="px-4 py-3 sm:px-8 sm:py-6 bg-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shrink-0 z-10 relative">
+      <div class="flex items-start sm:items-center gap-3 min-w-0">
+        <router-link to="/conferences" class="p-2 sm:p-2.5 bg-transparent hover:bg-gray-100/50 rounded-lg sm:rounded-xl text-gray-500 transition-colors border border-gray-200/60 shadow-sm shrink-0 mt-0.5 sm:mt-0">
+           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
         </router-link>
-        <div>
-           <div class="flex items-center gap-2 mb-1.5">
-              <h1 class="text-xl font-black text-gray-900 leading-tight tracking-tight">{{ conference?.theme || conference?.title || 'Loading Report...' }}</h1>
-              <span class="px-2.5 py-1 bg-indigo-50/80 text-indigo-600 text-[9px] font-black rounded-lg uppercase tracking-widest border border-indigo-100/50">Analytics</span>
+        <div class="min-w-0 flex-1">
+           <div class="flex items-center gap-2 mb-0.5 sm:mb-1.5">
+              <h1 class="text-sm sm:text-xl font-black text-gray-900 leading-tight tracking-tight truncate">{{ conference?.theme || conference?.title || 'Loading Report...' }}</h1>
+              <span class="hidden sm:inline-block px-2.5 py-1 bg-indigo-50/80 text-indigo-600 text-[9px] font-black rounded-lg uppercase tracking-widest border border-indigo-100/50 shrink-0">Analytics</span>
            </div>
-           <p class="text-[10px] text-indigo-600 font-black uppercase tracking-widest">{{ conference?.location || 'General Report' }}</p>
+           <p class="text-[8px] sm:text-[10px] text-indigo-600 font-black uppercase tracking-widest truncate">{{ conference?.location || 'General Report' }}</p>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-         <button @click="exportToExcel" class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white text-[10px] font-black rounded-xl shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Export to Excel
+      <div class="flex items-center gap-3 self-end sm:self-auto shrink-0">
+         <button @click="exportToExcel" class="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white text-[9px] sm:text-[10px] font-black rounded-lg sm:rounded-xl shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span class="hidden sm:inline">Export to Excel</span>
          </button>
       </div>
     </div>
 
     <!-- Analytics Dashboard -->
-    <div class="flex-1 overflow-y-auto p-8">
+    <div class="flex-1 overflow-y-auto px-4 py-4 sm:px-8 sm:py-8">
        <!-- Summary Row -->
-       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white p-6 rounded-3xl border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-transform">
-             <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Delegates</div>
-             <div class="text-4xl font-black text-gray-900 tracking-tight">{{ reportData.totalDelegates }}</div>
-             <div class="mt-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50/80 inline-block px-2 py-1 rounded-md">Registered in DB</div>
+       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <div class="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-transform">
+             <div class="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 sm:mb-3 truncate">Total Delegates</div>
+             <div class="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight">{{ reportData.totalDelegates }}</div>
+             <div class="mt-1 sm:mt-3 text-[8px] sm:text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50/80 inline-block px-1.5 sm:px-2 py-1 rounded-md truncate max-w-full">Registered in DB</div>
           </div>
-          <div class="bg-white p-6 rounded-3xl border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border-l-4 border-l-emerald-500 hover:-translate-y-1 transition-transform">
-             <div class="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-3">Engaged Delegates</div>
-             <div class="text-4xl font-black text-gray-900 tracking-tight">{{ reportData.activeAttendees }}</div>
-             <div class="mt-3 text-[9px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50/80 inline-block px-2 py-1 rounded-md">{{ reportData.engagementRate }}% Engagement Rate</div>
+          <div class="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border-l-4 border-l-emerald-500 hover:-translate-y-1 transition-transform">
+             <div class="text-[8px] sm:text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1 sm:mb-3 truncate">Engaged Delegates</div>
+             <div class="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight">{{ reportData.activeAttendees }}</div>
+             <div class="mt-1 sm:mt-3 text-[8px] sm:text-[9px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50/80 inline-block px-1.5 sm:px-2 py-1 rounded-md truncate max-w-full">{{ reportData.engagementRate }}% Engagement Rate</div>
           </div>
-          <div class="bg-white p-6 rounded-3xl border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border-l-4 border-l-rose-500 hover:-translate-y-1 transition-transform">
-             <div class="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-3">Inactive / No Check-in</div>
-             <div class="text-4xl font-black text-gray-900 tracking-tight">{{ reportData.inactiveAttendees }}</div>
-             <div class="mt-3 text-[9px] font-bold text-rose-500 uppercase tracking-widest bg-rose-50/80 inline-block px-2 py-1 rounded-md">Awaiting First Scan</div>
+          <div class="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border-l-4 border-l-rose-500 hover:-translate-y-1 transition-transform">
+             <div class="text-[8px] sm:text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1 sm:mb-3 truncate">Inactive / Absent</div>
+             <div class="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight">{{ reportData.inactiveAttendees }}</div>
+             <div class="mt-1 sm:mt-3 text-[8px] sm:text-[9px] font-bold text-rose-500 uppercase tracking-widest bg-rose-50/80 inline-block px-1.5 sm:px-2 py-1 rounded-md truncate max-w-full">No Scans Recorded</div>
           </div>
-          <div class="bg-gradient-to-br from-indigo-600 to-violet-600 p-6 rounded-3xl shadow-xl shadow-indigo-500/20 text-white hover:-translate-y-1 transition-transform">
-             <div class="text-[9px] font-black text-indigo-200 uppercase tracking-widest mb-3">Total Scans</div>
-             <div class="text-4xl font-black tracking-tight">{{ reportData.totalScans }}</div>
-             <div class="mt-3 text-[9px] font-bold text-white uppercase tracking-widest bg-white/10 inline-block px-2 py-1 rounded-md backdrop-blur-sm">Across All Slots</div>
+          <div class="bg-gradient-to-br from-indigo-600 to-violet-600 p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl shadow-indigo-500/20 text-white hover:-translate-y-1 transition-transform">
+             <div class="text-[8px] sm:text-[9px] font-black text-indigo-200 uppercase tracking-widest mb-1 sm:mb-3 truncate">Total Scans</div>
+             <div class="text-2xl sm:text-4xl font-black tracking-tight">{{ reportData.totalScans }}</div>
+             <div class="mt-1 sm:mt-3 text-[8px] sm:text-[9px] font-bold text-white uppercase tracking-widest bg-white/10 inline-block px-1.5 sm:px-2 py-1 rounded-md backdrop-blur-sm truncate max-w-full">Across All Slots</div>
           </div>
        </div>
 
@@ -78,10 +78,12 @@
                             <div :class="['w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs shadow-sm border border-white/50', person.role === 'PASTOR' ? 'bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-600 border-indigo-100/50' : (person.role === 'WIFE' ? 'bg-gradient-to-br from-rose-100 to-rose-50 text-rose-600 border-rose-100/50' : 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 border-emerald-100/50')]">
                                {{ person.role.charAt(0) }}
                             </div>
-                            <div>
-                               <div class="text-sm font-black text-gray-900 tracking-tight">{{ person.name }}</div>
-                               <div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{{ person.church }}</div>
-                            </div>
+                             <div class="min-w-0">
+                                <div class="text-sm font-black text-gray-900 tracking-tight truncate">{{ person.name }}</div>
+                                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 truncate">
+                                  {{ person.church }} <span v-if="person.district !== 'No District'">• {{ person.district }}</span>
+                                </div>
+                             </div>
                          </div>
                       </td>
                       <td v-for="slot in reportData.columns" :key="slot.id" class="px-4 py-4 border-l border-gray-100/30 text-center">
@@ -176,6 +178,7 @@ const fetchReport = async () => {
             name: name,
             role: role,
             church: p.church?.church_name || 'No Church',
+            district: p.church?.district?.district_name || 'No District',
             attendance: attMap,
             hasCheckedIn
          })
