@@ -25,7 +25,7 @@
         
         <div class="flex items-center pr-2 shrink-0">
           <div class="w-[1.5px] h-6 bg-gray-200 mx-1.5 rounded-full hidden sm:block"></div>
-          <div class="min-w-[200px]">
+          <div class="sm:min-w-[200px]">
             <SearchableSelect
               v-model="churchFilter"
               :options="churches"
@@ -33,6 +33,7 @@
               value-key="id"
               placeholder="ALL CHURCHES"
               clear-placeholder="ALL CHURCHES"
+              icon-only-on-mobile
             />
           </div>
         </div>
