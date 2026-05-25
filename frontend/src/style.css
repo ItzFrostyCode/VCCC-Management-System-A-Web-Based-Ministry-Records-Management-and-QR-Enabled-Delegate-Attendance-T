@@ -29,6 +29,28 @@ html, body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── Form Labels & Inputs ── */
+label {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100%;
+}
+
+input[type="date"], input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  max-width: 100%;
+  /* Fix iOS specific date input overflow */
+  min-height: calc(1.5em + 1rem + 2px);
+  box-sizing: border-box;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 /* ── Mobile: ensure content never bleeds past viewport ── */
 @media (max-width: 767px) {
   /* Tables, cards etc: allow horizontal scroll inside their container,
