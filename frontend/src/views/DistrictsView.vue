@@ -414,7 +414,7 @@ const filteredDistricts = computed(() => {
 })
 
 const currentPage = ref(1)
-const itemsPerPage = 15
+const itemsPerPage = 10
 
 watch(searchQuery, () => {
   currentPage.value = 1

@@ -26,19 +26,19 @@
         </div>
         <input v-model="searchQuery" type="text" placeholder="Search church name or address..." class="flex-1 w-full pl-3 pr-2 py-3.5 bg-transparent text-sm font-semibold text-gray-900 outline-none placeholder-gray-400">
         
-        <div class="flex items-center pr-2 shrink-0">
+        <div class="flex items-center pr-2 shrink-0 relative">
           <div class="w-[1.5px] h-6 bg-gray-200 mx-1.5 rounded-full hidden sm:block"></div>
-          <div class="sm:min-w-[200px]">
-            <SearchableSelect
-              v-model="districtFilter"
-              :options="districts"
-              label-key="district_name"
-              value-key="id"
-              placeholder="ALL DISTRICTS"
-              clear-placeholder="ALL DISTRICTS"
-              icon-only-on-mobile
-            />
+
+          <!-- Mobile Filter Icon -->
+          <div class="sm:hidden p-2 text-gray-400 relative">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+            <div v-if="districtFilter" class="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full"></div>
           </div>
+
+          <select v-model="districtFilter" class="absolute inset-0 opacity-0 sm:relative sm:opacity-100 bg-transparent border-0 text-[10px] font-black uppercase tracking-widest text-gray-900 py-2 sm:pl-3 sm:pr-8 hover:bg-gray-50 focus:ring-0 cursor-pointer outline-none rounded-lg w-full sm:w-auto z-10">
+            <option value="">ALL DISTRICTS</option>
+            <option v-for="d in districts" :key="d.id" :value="d.id">{{ (d.district_name || '').toUpperCase() }}</option>
+          </select>
         </div>
       </div>
     </div>
@@ -415,7 +415,7 @@ const filteredChurches = computed(() => {
 })
 
 const currentPage = ref(1)
-const itemsPerPage = 15
+const itemsPerPage = 10
 
 watch([searchQuery, districtFilter], () => {
     currentPage.value = 1

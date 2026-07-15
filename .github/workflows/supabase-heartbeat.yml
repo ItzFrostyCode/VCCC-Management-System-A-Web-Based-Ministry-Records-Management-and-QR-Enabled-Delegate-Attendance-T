@@ -1,0 +1,20 @@
+name: Supabase Heartbeat
+
+# Supabase pauses Free-tier projects after 7 days with no database query
+# activity. This runs a tiny read-only query twice a week so the project
+# never sits idle long enough to trigger that.
+on:
+  schedule:
+    - cron: '0 3 * * 1,4' # Mondays and Thursdays, 03:00 UTC
+  workflow_dispatch: {} # allows manually running it from the Actions tab too
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Supabase to keep the project active
+        run: |
+          curl -sf "${{ secrets.SUPABASE_URL }}/rest/v1/conferences?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -o /dev/null

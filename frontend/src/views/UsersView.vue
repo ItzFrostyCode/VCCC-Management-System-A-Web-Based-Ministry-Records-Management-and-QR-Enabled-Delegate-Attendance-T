@@ -23,11 +23,30 @@
           </button>
         </div>
 
-        <!-- Search and Filters -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div class="relative w-full sm:max-w-xs">
-            <input v-model="searchQuery" type="text" placeholder="Search users..." class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors text-sm" />
-            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <!-- Search and Filter Bar -->
+        <div class="relative z-40 w-full">
+          <div class="flex items-center w-full bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-sm transition-all focus-within:bg-white focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10">
+            <div class="pl-4 flex items-center pointer-events-none shrink-0">
+              <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <input v-model="searchQuery" type="text" placeholder="Search users..." class="flex-1 w-full pl-3 pr-2 py-3.5 bg-transparent text-sm font-semibold text-gray-900 outline-none placeholder-gray-400">
+
+            <div class="flex items-center pr-2 shrink-0 relative">
+              <div class="w-[1.5px] h-6 bg-gray-200 mx-1.5 rounded-full hidden sm:block"></div>
+
+              <!-- Mobile Filter Icon -->
+              <div class="sm:hidden p-2 text-gray-400 relative">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                <div v-if="statusFilter" class="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full"></div>
+              </div>
+
+              <!-- Select (Hidden text on mobile, fully visible on desktop) -->
+              <select v-model="statusFilter" class="absolute inset-0 opacity-0 sm:relative sm:opacity-100 bg-transparent border-0 text-[10px] font-black uppercase tracking-widest text-gray-600 py-2 sm:pl-3 sm:pr-8 hover:bg-gray-50 focus:ring-0 cursor-pointer outline-none rounded-lg w-full sm:w-auto z-10">
+                <option value="">ALL STATUS</option>
+                <option value="active">ACTIVE</option>
+                <option value="deactivated">DEACTIVATED</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -251,6 +270,7 @@ import Swal from 'sweetalert2'
 const users = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
+const statusFilter = ref('')
 
 const showModal = ref(false)
 const isEditing = ref(false)
@@ -298,6 +318,9 @@ const filteredUsers = computed(() => {
       u.username.toLowerCase().includes(q) ||
       u.role.toLowerCase().includes(q)
     )
+  }
+  if (statusFilter.value) {
+    result = result.filter(u => (statusFilter.value === 'active' ? u.is_active : !u.is_active))
   }
   return result
 })

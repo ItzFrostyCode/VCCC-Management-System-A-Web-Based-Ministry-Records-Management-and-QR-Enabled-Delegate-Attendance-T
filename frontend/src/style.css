@@ -59,5 +59,9 @@ input[type="date"]::-webkit-date-and-time-value {
 
   /* Tables should not force-expand the layout */
   table { table-layout: auto; }
+
+  /* iOS Safari auto-zooms on focus for any input/select/textarea under 16px,
+     regardless of the viewport meta tag's user-scalable/maximum-scale setting. */
+  input, select, textarea { font-size: 16px !important; }
 }
 

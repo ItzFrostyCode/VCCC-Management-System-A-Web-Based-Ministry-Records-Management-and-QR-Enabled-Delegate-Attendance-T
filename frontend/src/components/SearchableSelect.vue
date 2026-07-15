@@ -1,8 +1,8 @@
 <template>
   <div class="relative w-full" ref="containerRef">
     <div
-      class="flex items-center w-full transition-all cursor-text focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500"
-      :class="iconOnlyOnMobile ? 'p-2 sm:px-4 sm:py-3 sm:bg-white sm:border sm:border-gray-200/60 sm:rounded-xl text-sm font-semibold' : 'px-4 py-3 bg-white border border-gray-200/60 rounded-xl text-sm font-semibold'"
+      class="flex items-center w-full transition-all cursor-text"
+      :class="flat ? 'px-3 py-2 bg-white border border-gray-300 text-xs font-bold' : 'focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 ' + (iconOnlyOnMobile ? 'p-2 sm:px-4 sm:py-3 sm:bg-white sm:border sm:border-gray-200/60 sm:rounded-xl text-sm font-semibold' : 'px-4 py-3 bg-white border border-gray-200/60 rounded-xl text-sm font-semibold')"
       @click="openDropdown"
     >
       <!-- Filter Icon on Mobile -->
@@ -16,8 +16,8 @@
         v-model="searchQuery"
         type="text"
         :placeholder="selectedLabel || placeholder"
-        class="w-full bg-transparent outline-none placeholder-gray-400 text-gray-900"
-        :class="iconOnlyOnMobile ? 'hidden sm:block' : ''"
+        class="w-full bg-transparent outline-none placeholder-gray-400"
+        :class="[iconOnlyOnMobile ? 'hidden sm:block' : '', flat ? 'text-black' : 'text-gray-900']"
         @focus="openDropdown"
         @input="onInput"
         :required="required && !modelValue"
@@ -98,6 +98,10 @@ const props = defineProps({
     default: true
   },
   required: {
+    type: Boolean,
+    default: false
+  },
+  flat: {
     type: Boolean,
     default: false
   }

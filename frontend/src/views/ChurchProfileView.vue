@@ -1,22 +1,22 @@
 <template>
   <div v-if="loading" class="animate-pulse space-y-4 max-w-6xl mx-auto px-4 sm:px-6 mt-6">
-    <div class="h-32 bg-gray-100 rounded-[1.5rem]"></div>
+    <div class="h-32 bg-gray-100 rounded-lg"></div>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div class="h-64 bg-gray-100 rounded-[1.5rem]"></div>
-      <div class="lg:col-span-2 h-64 bg-gray-100 rounded-[1.5rem]"></div>
+      <div class="h-64 bg-gray-100 rounded-lg"></div>
+      <div class="lg:col-span-2 h-64 bg-gray-100 rounded-lg"></div>
     </div>
   </div>
 
-  <div v-else-if="!church" class="text-center py-20 bg-white rounded-[1.5rem] border border-gray-100 shadow-sm max-w-xl mx-auto mt-10 px-4">
+  <div v-else-if="!church" class="text-center py-20 bg-white rounded-lg border border-gray-100 shadow-sm max-w-xl mx-auto mt-10 px-4">
     <div class="w-16 h-16 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
       <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
     </div>
     <h2 class="text-xl font-black text-gray-900 tracking-tight">Record Not Found</h2>
     <p class="text-xs text-gray-500 mt-2">The church you are looking for might have been moved or the ID is incorrect.</p>
-    <div v-if="debugError" class="mt-4 p-4 bg-red-50 text-red-600 rounded-xl text-xs font-mono text-left overflow-auto">
+    <div v-if="debugError" class="mt-4 p-4 bg-red-50 text-red-600 rounded-md text-xs font-mono text-left overflow-auto">
       Error: {{ debugError }}
     </div>
-    <button @click="goBack" class="mt-6 px-6 py-2.5 text-xs bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition-all shadow-sm active:scale-95">
+    <button @click="goBack" class="mt-6 px-6 py-2.5 text-xs bg-gray-900 text-white font-bold rounded-md hover:bg-black transition-all shadow-sm active:scale-95">
       Return to Directory
     </button>
   </div>
@@ -32,19 +32,13 @@
     </div>
 
     <!-- Header Card -->
-    <div class="bg-white rounded-[1.5rem] shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-gray-100 p-5 sm:p-6">
+    <div class="bg-white rounded-lg shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-gray-100 p-5 sm:p-6">
       <div class="flex flex-col md:flex-row gap-5 items-start md:items-center">
         
         <!-- Logo -->
-        <div class="flex items-center shrink-0">
-          <div class="relative z-10">
-            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-[1.25rem] border border-gray-100 shadow-sm overflow-hidden bg-gray-50 flex items-center justify-center p-2">
-              <img src="/victory_chappel_logo-removebg-preview.png" class="w-full h-full object-contain" alt="Church Logo" />
-            </div>
-            <!-- Type Badge -->
-            <div class="absolute -bottom-2 -right-2 w-8 h-8 rounded-lg border-2 border-white flex items-center justify-center text-white shadow-sm bg-indigo-600">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-            </div>
+        <div class="shrink-0">
+          <div class="w-16 h-16 rounded-md border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center p-2">
+            <img src="/victory_chappel_logo-removebg-preview.png" class="w-full h-full object-contain" alt="Church Logo" />
           </div>
         </div>
 
@@ -64,7 +58,7 @@
 
         <!-- Actions -->
         <div class="flex flex-wrap gap-2 w-full md:w-auto pt-4 md:pt-0 border-t border-gray-100 md:border-0 mt-2 md:mt-0 shrink-0">
-          <button @click="openModal" class="w-full md:w-auto px-4 py-2 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95">
+          <button @click="openModal" class="w-full md:w-auto px-4 py-2 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-md transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Record Entry
           </button>
@@ -74,12 +68,12 @@
     </div>
 
     <!-- Main Content Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
       
       <!-- Left Sidebar (Details) -->
-      <div class="lg:col-span-1 space-y-4">
+      <div class="lg:col-span-1 space-y-4 lg:sticky lg:top-4">
         
-        <div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-gray-50 bg-gray-50/30">
              <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Details</h3>
           </div>
@@ -104,7 +98,7 @@
           </div>
         </div>
 
-        <div v-if="church.pioneer_pastor_id" class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden">
+        <div v-if="church.pioneer_pastor_id" class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-gray-50 bg-gray-50/30">
              <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pioneer / Founder</h3>
           </div>
@@ -125,26 +119,36 @@
       <div class="lg:col-span-2 space-y-4">
         
         <!-- Tabs Segmented Control -->
-        <div class="bg-gray-100 p-1 rounded-xl flex overflow-x-auto no-scrollbar shadow-inner">
+        <div class="bg-gray-100 p-1 rounded-md flex overflow-x-auto no-scrollbar shadow-inner">
           <button @click="activeTab = 'timeline'" :class="activeTab === 'timeline' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'" class="px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap flex-1 text-center">Timeline</button>
           <button @click="activeTab = 'notes'" :class="activeTab === 'notes' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'" class="px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap flex-1 text-center">Notes</button>
         </div>
 
         <!-- Tab: Timeline -->
-        <div v-if="activeTab === 'timeline'" class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-5 sm:p-6 min-h-[250px]">
+        <div v-if="activeTab === 'timeline'" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 sm:p-6 min-h-[250px]">
           
-          <div v-if="assignments.length === 0" class="text-center py-12 text-gray-400 border border-dashed border-gray-200 rounded-xl">
+          <div v-if="assignments.length === 0" class="text-center py-12 text-gray-400 border border-dashed border-gray-200 rounded-md">
             <p class="font-bold uppercase tracking-widest text-[10px]">No historical data.</p>
           </div>
           
           <div v-else class="relative border-l-2 border-gray-100 ml-2 space-y-6">
-             <div v-for="assign in assignments" :key="assign.id" class="relative pl-5">
+             <div v-for="assign in assignments" :key="assign.id" class="relative pl-5 group">
                 <div class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-white border-2" :class="!assign.end_date ? 'border-indigo-600 scale-125' : 'border-gray-300'"></div>
                 <div>
-                  <div class="text-[9px] font-black mb-0.5 uppercase tracking-widest" :class="!assign.end_date ? 'text-indigo-500' : 'text-gray-400'">
-                    {{ new Date(assign.start_date).getFullYear() }} — {{ assign.end_date ? new Date(assign.end_date).getFullYear() : 'Present' }}
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="text-[9px] font-black mb-0.5 uppercase tracking-widest" :class="!assign.end_date ? 'text-indigo-500' : 'text-gray-400'">
+                      {{ new Date(assign.start_date).getFullYear() }} — {{ assign.end_date ? new Date(assign.end_date).getFullYear() : 'Present' }}
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <button @click="openEditAssignModal(assign)" title="Edit" class="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                      </button>
+                      <button @click="deleteAssignment(assign)" title="Delete" class="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      </button>
+                    </div>
                   </div>
-                  
+
                   <div class="flex justify-between items-start mb-1">
                       <h4 class="text-sm font-black text-gray-900 uppercase tracking-tight">Ptr. {{ assign.pastor?.full_name || 'Unknown Pastor' }}</h4>
                       <button @click="$router.push(`/pastors/${assign.pastor_id}`)" class="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-900 flex-shrink-0">Profile</button>
@@ -162,9 +166,9 @@
         </div>
 
         <!-- Tab: Notes -->
-        <div v-else-if="activeTab === 'notes'" class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-5 sm:p-6 min-h-[250px]">
+        <div v-else-if="activeTab === 'notes'" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 sm:p-6 min-h-[250px]">
           <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-widest">Station Notes</h3>
-          <div class="flex flex-col items-center justify-center py-12 text-gray-300 border border-dashed border-gray-200 rounded-xl">
+          <div class="flex flex-col items-center justify-center py-12 text-gray-300 border border-dashed border-gray-200 rounded-md">
              <svg class="w-8 h-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
              <p class="font-bold text-xs">No notes provided for this station.</p>
           </div>
@@ -176,8 +180,8 @@
     <!-- Record Entry Modal -->
     <Teleport to="body">
     <div v-if="isModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
-      <div class="bg-white rounded-[1.5rem] shadow-xl w-full max-w-xl flex flex-col relative my-auto animate-in slide-in-from-bottom duration-300">
-        <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-[1.5rem]">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-xl flex flex-col relative my-auto animate-in slide-in-from-bottom duration-300">
+        <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-lg">
           <h3 class="text-sm font-black text-gray-900 uppercase tracking-widest">Archive Deployment</h3>
           <button @click="isModalOpen = false" class="text-gray-400 hover:text-gray-600 bg-white p-1.5 rounded-lg border border-gray-200 active:scale-95 shadow-sm">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -223,6 +227,60 @@
               <button type="button" @click="isModalOpen = false" class="px-4 py-2 text-xs font-black text-gray-500 uppercase tracking-widest hover:text-gray-800 transition-colors">Cancel</button>
               <button type="submit" :disabled="isSaving" class="px-6 py-2 bg-gray-900 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-black shadow-sm active:scale-95 transition-all disabled:opacity-50">
                 {{ isSaving ? 'Processing...' : 'Archive Entry' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    </Teleport>
+
+    <!-- Edit Assignment Modal -->
+    <Teleport to="body">
+    <div v-if="isEditAssignModalOpen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center py-20 px-4 md:px-10 bg-gray-900/80 backdrop-blur-sm">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-xl flex flex-col relative my-auto">
+        <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <h3 class="text-sm font-black text-gray-900 uppercase tracking-widest">Edit Assignment</h3>
+          <button @click="isEditAssignModalOpen = false" class="text-gray-400 hover:text-gray-600 bg-white p-1.5 rounded-md border border-gray-200 active:scale-95 shadow-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="p-5 overflow-y-auto max-h-[75vh]">
+          <form @submit.prevent="submitEditAssign" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Start Date</label>
+                <input v-model="editAssignData.start_date" required type="date" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold" />
+              </div>
+              <div>
+                <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">End Date</label>
+                <input v-model="editAssignData.end_date" type="date" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Status</label>
+              <select v-model="editAssignData.status_code" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold">
+                <option value="active">Active</option>
+                <option value="ended">Ended</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Assignment Type</label>
+              <input v-model="editAssignData.assignment_type" type="text" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold" />
+            </div>
+
+            <div>
+              <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Notes</label>
+              <textarea v-model="editAssignData.notes" rows="2" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-xs font-bold"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+              <button type="button" @click="isEditAssignModalOpen = false" class="px-4 py-2 text-xs font-black text-gray-500 uppercase tracking-widest hover:text-gray-800 transition-colors">Cancel</button>
+              <button type="submit" :disabled="isSavingAssign" class="px-6 py-2 bg-gray-900 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-black shadow-sm active:scale-95 transition-all disabled:opacity-50">
+                {{ isSavingAssign ? 'Saving...' : 'Save Changes' }}
               </button>
             </div>
           </form>
@@ -335,6 +393,62 @@ const submitHistoricalRecord = async () => {
         alert('Failed to save historical record')
     } finally {
         isSaving.value = false
+    }
+}
+
+// Edit Assignment State
+const isEditAssignModalOpen = ref(false)
+const isSavingAssign = ref(false)
+const editingAssignId = ref(null)
+const editAssignData = ref({})
+
+const openEditAssignModal = (assign) => {
+    editingAssignId.value = assign.id
+    editAssignData.value = {
+        start_date: assign.start_date ? assign.start_date.split('T')[0] : '',
+        end_date: assign.end_date ? assign.end_date.split('T')[0] : '',
+        status_code: assign.status_code,
+        assignment_type: assign.assignment_type,
+        notes: assign.notes || ''
+    }
+    isEditAssignModalOpen.value = true
+}
+
+const submitEditAssign = async () => {
+    isSavingAssign.value = true
+    try {
+        await AssignmentService.update(editingAssignId.value, {
+            ...editAssignData.value,
+            end_date: editAssignData.value.end_date || null
+        })
+        isEditAssignModalOpen.value = false
+        assignments.value = await AssignmentService.getByChurch(route.params.id)
+    } catch (err) {
+        console.error(err)
+        alert('Failed to update assignment')
+    } finally {
+        isSavingAssign.value = false
+    }
+}
+
+const deleteAssignment = async (assign) => {
+    const result = await Swal.fire({
+        title: 'Delete Assignment?',
+        text: `Remove the record for "Ptr. ${assign.pastor?.full_name || 'this pastor'}"? This cannot be undone.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#9ca3af',
+        confirmButtonText: 'Yes, delete it'
+    })
+    if (!result.isConfirmed) return
+
+    try {
+        await AssignmentService.delete(assign.id)
+        assignments.value = await AssignmentService.getByChurch(route.params.id)
+    } catch (err) {
+        console.error(err)
+        alert('Failed to delete assignment')
     }
 }
 

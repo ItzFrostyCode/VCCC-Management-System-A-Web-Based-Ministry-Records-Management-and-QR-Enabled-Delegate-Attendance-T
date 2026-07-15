@@ -43,7 +43,7 @@
           </div>
 
           <router-link v-for="item in mainNavItems" :key="item.to" :to="item.to"
-            class="nav-link group flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-indigo-100/70 hover:text-white hover:bg-white/10 relative"
+            class="nav-link group flex items-center gap-3 py-2.5 rounded-xl text-sm font-normal transition-all duration-200 text-gray-300 hover:text-white hover:bg-white/10 relative"
             :class="isCollapsed ? 'justify-center px-0' : 'px-3'"
             active-class="nav-link-active" :title="item.label">
             <!-- Active glow pill -->
@@ -62,7 +62,7 @@
           </div>
 
           <router-link v-for="item in qrNavItems" :key="item.to" :to="item.to"
-            class="nav-link group flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-indigo-100/70 hover:text-white hover:bg-white/10 relative"
+            class="nav-link group flex items-center gap-3 py-2.5 rounded-xl text-sm font-normal transition-all duration-200 text-gray-300 hover:text-white hover:bg-white/10 relative"
             :class="isCollapsed ? 'justify-center px-0' : 'px-3'"
             active-class="nav-link-active" :title="item.label">
             <span class="nav-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-white opacity-0 transition-opacity duration-200"></span>
@@ -81,7 +81,7 @@
             </div>
 
             <router-link v-for="item in adminNavItems" :key="item.to" :to="item.to"
-              class="nav-link group flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-indigo-100/70 hover:text-white hover:bg-white/10 relative"
+              class="nav-link group flex items-center gap-3 py-2.5 rounded-xl text-sm font-normal transition-all duration-200 text-gray-300 hover:text-white hover:bg-white/10 relative"
               :class="isCollapsed ? 'justify-center px-0' : 'px-3'"
               active-class="nav-link-active" :title="item.label">
               <span class="nav-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-white opacity-0 transition-opacity duration-200"></span>
@@ -247,7 +247,7 @@
             <span class="text-[9px] font-black uppercase tracking-[0.18em] text-indigo-200/50">Ministry</span>
           </div>
           <router-link v-for="item in mainNavItems" :key="item.to" :to="item.to"
-            class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-indigo-100/70 hover:text-white hover:bg-white/10 relative"
+            class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-normal transition-all duration-200 text-gray-300 hover:text-white hover:bg-white/10 relative"
             active-class="nav-link-active"
             @click="drawerOpen = false">
             <span class="nav-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-white opacity-0 transition-opacity duration-200"></span>
@@ -261,7 +261,7 @@
             <span class="text-[9px] font-black uppercase tracking-[0.18em] text-indigo-200/50">Events &amp; QR</span>
           </div>
           <router-link v-for="item in qrNavItems" :key="item.to" :to="item.to"
-            class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-indigo-100/70 hover:text-white hover:bg-white/10 relative"
+            class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-normal transition-all duration-200 text-gray-300 hover:text-white hover:bg-white/10 relative"
             active-class="nav-link-active"
             @click="drawerOpen = false">
             <span class="nav-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-white opacity-0 transition-opacity duration-200"></span>
@@ -276,7 +276,7 @@
               <span class="text-[9px] font-black uppercase tracking-[0.18em] text-indigo-200/50">Admin</span>
             </div>
             <router-link v-for="item in adminNavItems" :key="item.to" :to="item.to"
-              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-indigo-100/70 hover:text-white hover:bg-white/10 relative"
+              class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-normal transition-all duration-200 text-gray-300 hover:text-white hover:bg-white/10 relative"
               active-class="nav-link-active"
               @click="drawerOpen = false">
               <span class="nav-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-white opacity-0 transition-opacity duration-200"></span>
@@ -346,6 +346,7 @@ const ICONS = {
   conferences: `<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>`,
   badges:      `<path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>`,
   scanner:     `<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>`,
+  reports:     `<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2"/>`,
   users:       `<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />`, // users icon (same as pastors for now)
 }
 
@@ -360,6 +361,7 @@ const qrNavItems = [
   { to: '/conferences', label: 'Conferences', icon: ICONS.conferences },
   { to: '/badges',      label: 'Badges',      icon: ICONS.badges      },
   { to: '/scanner',     label: 'Scanner',     icon: ICONS.scanner     },
+  { to: '/reports',     label: 'Reports',     icon: ICONS.reports     },
 ]
 
 // Computed to dynamically show Users tab only to Admins
@@ -394,6 +396,7 @@ const PAGE_TITLES = {
   '/conferences':'Conferences',
   '/badges':     'Badges',
   '/scanner':    'QR Scanner',
+  '/reports':    'Reports',
   '/users':      'User Management',
   '/profile':    'My Profile',
 }

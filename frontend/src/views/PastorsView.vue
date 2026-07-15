@@ -569,7 +569,7 @@ const filteredPastors = computed(() => {
 })
 
 const currentPage = ref(1)
-const itemsPerPage = 15
+const itemsPerPage = 10
 
 watch([searchQuery, statusFilter], () => {
     currentPage.value = 1

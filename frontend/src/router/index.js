@@ -69,9 +69,9 @@ const router = createRouter({
            component: () => import('../views/ScannerView.vue')
         },
         {
-           path: '/conferences/:id/report',
-           name: 'conference-report',
-           component: () => import('../views/ConferenceReportView.vue')
+           path: '/reports',
+           name: 'reports',
+           component: () => import('../views/ReportsView.vue')
         },
         {
            path: '/users',

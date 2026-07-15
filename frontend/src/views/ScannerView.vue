@@ -75,6 +75,24 @@
                 </div>
              </div>
           </transition>
+
+          <!-- CAMERA BLOCKED OVERLAY (permission explicitly denied by the browser) -->
+          <div v-if="cameraBlocked" class="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center text-center p-6">
+             <div class="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center text-red-500 mb-4">
+                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M9.88 9.88a3 3 0 104.24 4.24M14.12 6.12A9.06 9.06 0 0021 12c0 1.02-.18 2-.5 2.91M6.12 6.12A9.06 9.06 0 003 12c0 4.97 4.03 9 9 9 1.6 0 3.1-.42 4.4-1.15"/></svg>
+             </div>
+             <h3 class="text-sm font-black text-gray-900 uppercase tracking-widest mb-2">Camera Blocked</h3>
+             <p class="text-xs font-semibold text-gray-500 leading-relaxed mb-1">You (or someone) tapped "Block" on the camera permission before.</p>
+             <p class="text-xs font-semibold text-gray-500 leading-relaxed mb-5">Look for a <span class="text-gray-900">camera or lock icon</span> near the address bar at the top of the browser, tap it, choose <span class="text-gray-900">Allow</span>, then tap Reload below.</p>
+             <div class="flex items-center gap-2">
+                <button @click="startScanner" class="h-10 px-4 rounded-xl bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
+                   Try Again
+                </button>
+                <button @click="() => location.reload()" class="h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
+                   Reload Page
+                </button>
+             </div>
+          </div>
        </div>
     </div>
 
@@ -215,6 +233,7 @@ const scanLogs = ref([])
 const currentTime = ref('')
 const successResult = ref(null)
 const errorMsg = ref('')
+const cameraBlocked = ref(false)
 const hlink = ref(null)
 const fastMode = ref(false)
 const bypassEnabled = ref(false)
@@ -334,15 +353,19 @@ const fetchConfDetails = async () => {
 }
 
 // --- SCANNER ACTIONS ---
+const isPermissionError = (err) => err?.name === 'NotAllowedError' || /permission/i.test(err?.message || '')
+
 const startScanner = async () => {
+  cameraBlocked.value = false
+
   if (hlink.value) {
      try { await hlink.value.stop() } catch(e){}
      try { hlink.value.clear() } catch(e){}
   }
-  
+
   hlink.value = new Html5Qrcode("reader")
   scanning.value = true
-  
+
   // We adjust the qrbox dynamically. If the screen is very small (like an iPhone SE), we drop the box size to 250 so it safely fits.
   const isSmallScreen = window.innerWidth < 350
   const boxSize = isSmallScreen ? 250 : 290
@@ -352,6 +375,13 @@ const startScanner = async () => {
      await hlink.value.start({ facingMode: "environment" }, config, onScanSuccess)
   } catch (err) {
      console.warn("Environment camera failed, trying fallback...", err)
+
+     if (isPermissionError(err)) {
+       scanning.value = false
+       cameraBlocked.value = true
+       return
+     }
+
      try {
        const devices = await Html5Qrcode.getCameras()
        if (devices && devices.length > 0) {
@@ -363,8 +393,12 @@ const startScanner = async () => {
      } catch (fallbackErr) {
        console.error("Scanner start failed:", fallbackErr)
        scanning.value = false
-       errorMsg.value = "Camera access denied or not found."
-       setTimeout(() => { errorMsg.value = '' }, 4000)
+       if (isPermissionError(fallbackErr)) {
+         cameraBlocked.value = true
+       } else {
+         errorMsg.value = "Camera access denied or not found."
+         setTimeout(() => { errorMsg.value = '' }, 4000)
+       }
      }
   }
 }

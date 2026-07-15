@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col relative p-6">
+  <div class="flex flex-col relative p-6">
     <!-- Header & Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
       <p class="text-sm font-semibold text-gray-500 tracking-tight">Manage scheduled conferences, days, and attendance slots.</p>
@@ -26,7 +26,7 @@
     </div>
 
     <!-- Conference List -->
-    <div class="space-y-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       <template v-if="loading">
         <div v-for="i in 6" :key="i" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100/80 animate-pulse flex flex-col">
           <div class="flex justify-between items-start mb-4">
@@ -47,7 +47,7 @@
       </template>
       
       <template v-else-if="filteredConferences.length === 0">
-        <div class="py-24 text-center">
+        <div class="col-span-full py-24 text-center">
           <div class="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 text-gray-300">
             <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           </div>
@@ -85,9 +85,6 @@
               <router-link :to="`/scanner?confId=${conf.id}`" class="flex-1 flex justify-center items-center gap-2 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v1m6 11h2m-6 0h-2m4-4V8m4 8a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                   Scan
-              </router-link>
-              <router-link :to="`/conferences/${conf.id}/report`" class="px-4 flex justify-center items-center gap-2 py-2 bg-white text-gray-600 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm" title="Report">
-                  <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2"/></svg>
               </router-link>
             </div>
           </div>

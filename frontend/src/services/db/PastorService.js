@@ -28,22 +28,14 @@ export const PastorService = {
       .from('pastors')
       .select(`
         *,
-        mentor:pastors!parent_id(id, full_name),
+        mentor:parent_id(id, full_name),
         disciples:pastors!parent_id(id, full_name)
       `)
       .eq('id', id)
       .eq('is_deleted', false)
       .single()
-      
+
     if (error) throw error
-    
-    // Supabase can't do a where clause inside a self-join easily without RPC, 
-    // so we filter the deleted disciples in JS
-    if (data && data.disciples) {
-        // Technically we need to fetch disciples correctly if the relation is one-to-many
-        // The above query assumes parent_id relation.
-    }
-    
     return data
   },
 
