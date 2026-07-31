@@ -38,6 +38,8 @@ export const DiscipleService = {
 
   async create(payload, discipleImageFile) {
     const dataToInsert = { ...payload, is_deleted: false }
+    delete dataToInsert.id
+    if (!dataToInsert.church_id) dataToInsert.church_id = null
     
     if (discipleImageFile) {
         dataToInsert.disciple_image_url = await this.uploadImage(discipleImageFile, 'disciples')
@@ -55,6 +57,8 @@ export const DiscipleService = {
 
   async update(id, payload, discipleImageFile) {
     const dataToUpdate = { ...payload }
+    delete dataToUpdate.id
+    if (!dataToUpdate.church_id) dataToUpdate.church_id = null
     
     if (discipleImageFile) {
         dataToUpdate.disciple_image_url = await this.uploadImage(discipleImageFile, 'disciples')

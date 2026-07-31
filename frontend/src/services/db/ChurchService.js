@@ -40,9 +40,15 @@ export const ChurchService = {
   },
 
   async create(payload) {
+    const dataToInsert = { ...payload, is_deleted: false }
+    delete dataToInsert.id
+    if (!dataToInsert.district_id) dataToInsert.district_id = null
+    if (!dataToInsert.pioneer_pastor_id) dataToInsert.pioneer_pastor_id = null
+    if (!dataToInsert.mother_church_id) dataToInsert.mother_church_id = null
+
     const { data, error } = await supabase
       .from('churches')
-      .insert([{ ...payload, is_deleted: false }])
+      .insert([dataToInsert])
       .select()
       .single()
       
@@ -51,9 +57,15 @@ export const ChurchService = {
   },
 
   async update(id, payload) {
+    const dataToUpdate = { ...payload }
+    delete dataToUpdate.id
+    if (!dataToUpdate.district_id) dataToUpdate.district_id = null
+    if (!dataToUpdate.pioneer_pastor_id) dataToUpdate.pioneer_pastor_id = null
+    if (!dataToUpdate.mother_church_id) dataToUpdate.mother_church_id = null
+
     const { data, error } = await supabase
       .from('churches')
-      .update(payload)
+      .update(dataToUpdate)
       .eq('id', id)
       .select()
       .single()

@@ -476,10 +476,30 @@ const onFileChange = (e) => {
 }
 
 const submitForm = async () => {
+    if (!formData.value.full_name || !formData.value.full_name.trim()) {
+        Swal.fire({
+            title: 'Required Field',
+            text: 'Please enter the disciple\'s full name.',
+            icon: 'warning',
+            confirmButtonColor: '#4f46e5'
+        })
+        return
+    }
+
+    if (!formData.value.church_id) {
+        Swal.fire({
+            title: 'Required Field',
+            text: 'Please select a local church for the disciple.',
+            icon: 'warning',
+            confirmButtonColor: '#4f46e5'
+        })
+        return
+    }
+
     const summaryHtml = generateSummaryHtml(formData.value)
     
     const result = await Swal.fire({
-        title: 'Save Disciple?',
+        title: isEditing.value ? 'Update Disciple?' : 'Save Disciple?',
         text: 'Please review the disciple details before saving:',
         html: summaryHtml,
         icon: 'info',
@@ -492,25 +512,36 @@ const submitForm = async () => {
     if (!result.isConfirmed) return;
 
     isSaving.value = true
-    const payload = new FormData()
-    Object.keys(formData.value).forEach(key => {
-        if (key !== 'id' && formData.value[key]) {
-            payload.append(key, formData.value[key])
-        }
-    })
-    if (formFile.value) payload.append('disciple_image', formFile.value)
+
+    // Clean payload for backend
+    const payload = {
+        full_name: formData.value.full_name.trim(),
+        church_id: formData.value.church_id || null
+    }
 
     try {
         if (isEditing.value) {
-            await DiscipleService.update(formData.value.id, formData.value, formFile.value)
+            await DiscipleService.update(formData.value.id, payload, formFile.value)
         } else {
-            await DiscipleService.create(formData.value, formFile.value)
+            await DiscipleService.create(payload, formFile.value)
         }
         closeModal()
-        fetchData()
+        await fetchData()
+        Swal.fire({
+            title: 'Success!',
+            text: `Disciple record ${isEditing.value ? 'updated' : 'saved'} successfully.`,
+            icon: 'success',
+            confirmButtonColor: '#4f46e5',
+            timer: 2000
+        })
     } catch (err) {
-        console.error(err)
-        alert("Failed to save disciple record")
+        console.error("Save disciple error:", err)
+        Swal.fire({
+            title: 'Error',
+            text: err.message || 'Failed to save disciple record.',
+            icon: 'error',
+            confirmButtonColor: '#ef4444'
+        })
     } finally {
         isSaving.value = false
     }

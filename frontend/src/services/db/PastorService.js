@@ -41,6 +41,9 @@ export const PastorService = {
 
   async create(payload, pastorImageFile, wifeImageFile) {
     const dataToInsert = { ...payload, is_deleted: false }
+    delete dataToInsert.id
+    if (!dataToInsert.parent_id) dataToInsert.parent_id = null
+    if (!dataToInsert.district_id) dataToInsert.district_id = null
     
     if (pastorImageFile) {
         dataToInsert.pastor_image_url = await this.uploadImage(pastorImageFile, 'pastors')
@@ -61,6 +64,9 @@ export const PastorService = {
 
   async update(id, payload, pastorImageFile, wifeImageFile) {
     const dataToUpdate = { ...payload }
+    delete dataToUpdate.id
+    if (!dataToUpdate.parent_id) dataToUpdate.parent_id = null
+    if (!dataToUpdate.district_id) dataToUpdate.district_id = null
     
     if (pastorImageFile) {
         dataToUpdate.pastor_image_url = await this.uploadImage(pastorImageFile, 'pastors')

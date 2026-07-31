@@ -43,9 +43,13 @@ export const DistrictService = {
   },
 
   async create(payload) {
+    const dataToInsert = { ...payload, is_deleted: false }
+    delete dataToInsert.id
+    if (!dataToInsert.leader_id) dataToInsert.leader_id = null
+
     const { data, error } = await supabase
       .from('districts')
-      .insert([{ ...payload, is_deleted: false }])
+      .insert([dataToInsert])
       .select()
       .single()
       
@@ -54,9 +58,13 @@ export const DistrictService = {
   },
 
   async update(id, payload) {
+    const dataToUpdate = { ...payload }
+    delete dataToUpdate.id
+    if (!dataToUpdate.leader_id) dataToUpdate.leader_id = null
+
     const { data, error } = await supabase
       .from('districts')
-      .update(payload)
+      .update(dataToUpdate)
       .eq('id', id)
       .select()
       .single()

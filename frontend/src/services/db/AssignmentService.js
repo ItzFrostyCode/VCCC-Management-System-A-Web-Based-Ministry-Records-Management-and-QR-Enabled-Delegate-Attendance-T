@@ -44,9 +44,15 @@ export const AssignmentService = {
   },
 
   async create(payload) {
+    const dataToInsert = { ...payload }
+    delete dataToInsert.id
+    if (!dataToInsert.pastor_id) dataToInsert.pastor_id = null
+    if (!dataToInsert.church_id) dataToInsert.church_id = null
+    if (!dataToInsert.end_date) dataToInsert.end_date = null
+
     const { data, error } = await supabase
       .from('assignments')
-      .insert([payload])
+      .insert([dataToInsert])
       .select()
       .single()
       
@@ -55,9 +61,15 @@ export const AssignmentService = {
   },
 
   async update(id, payload) {
+    const dataToUpdate = { ...payload }
+    delete dataToUpdate.id
+    if (!dataToUpdate.pastor_id) dataToUpdate.pastor_id = null
+    if (!dataToUpdate.church_id) dataToUpdate.church_id = null
+    if (!dataToUpdate.end_date) dataToUpdate.end_date = null
+
     const { data, error } = await supabase
       .from('assignments')
-      .update(payload)
+      .update(dataToUpdate)
       .eq('id', id)
       .select()
       .single()
