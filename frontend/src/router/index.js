@@ -9,14 +9,18 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/login',
+      path: '/',
       name: 'login',
       component: LoginView
     },
     {
-      path: '/',
-      redirect: '/pastors',
+      path: '/login',
+      redirect: '/'
+    },
+    {
+      path: '/main',
       component: AppLayout,
+      redirect: '/pastors',
       children: [
         {
            path: '/pastors',
