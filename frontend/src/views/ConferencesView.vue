@@ -272,21 +272,6 @@ const openModal = (conf = null) => {
 const closeModal = () => { isModalOpen.value = false }
 
 const submitForm = async () => {
-  const summaryHtml = generateSummaryHtml(formData.value)
-  
-  const result = await Swal.fire({
-      title: 'Save Conference?',
-      text: 'Please review the conference details before saving:',
-      html: summaryHtml,
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonColor: '#111827',
-      cancelButtonColor: '#9ca3af',
-      confirmButtonText: 'Yes, save it'
-  })
-  
-  if (!result.isConfirmed) return;
-
   isSaving.value = true
   try {
     const payload = { ...formData.value, slots_map: slotsMap.value }

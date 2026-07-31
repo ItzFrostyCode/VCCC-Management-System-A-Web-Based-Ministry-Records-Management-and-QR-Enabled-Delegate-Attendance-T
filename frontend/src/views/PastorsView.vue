@@ -679,21 +679,6 @@ const getChurches = async () => {
 
 // Submitting Form
 const submitForm = async () => {
-    const summaryHtml = generateSummaryHtml(formData.value)
-    
-    const result = await Swal.fire({
-        title: 'Save Details?',
-        text: 'Please review the information below before saving:',
-        html: summaryHtml,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#111827',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, save it'
-    })
-    
-    if (!result.isConfirmed) return;
-
     isSaving.value = true
     
     const payload = new FormData()
@@ -732,21 +717,6 @@ const submitForm = async () => {
 }
 
 const submitWizard = async () => {
-    const summaryHtml = generateSummaryHtml(wizardData.value)
-    
-    const result = await Swal.fire({
-        title: 'Register Pastor?',
-        text: 'Please review the information below before registering:',
-        html: summaryHtml,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#111827',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, register'
-    })
-    
-    if (!result.isConfirmed) return;
-
     isSaving.value = true
     try {
         await AssignmentService.create(wizardData.value)

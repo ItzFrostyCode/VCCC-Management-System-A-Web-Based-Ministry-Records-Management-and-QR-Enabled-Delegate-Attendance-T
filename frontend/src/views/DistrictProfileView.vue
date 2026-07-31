@@ -316,21 +316,6 @@ const closeAddChurchModal = () => {
 }
 
 const submitChurchForm = async () => {
-    const summaryHtml = generateSummaryHtml(churchFormData.value)
-    
-    const result = await Swal.fire({
-        title: 'Register Station?',
-        text: 'Please review the station details before registering:',
-        html: summaryHtml,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#111827',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, register it'
-    })
-    
-    if (!result.isConfirmed) return;
-
     isSavingChurch.value = true
     try {
         await ChurchService.create({

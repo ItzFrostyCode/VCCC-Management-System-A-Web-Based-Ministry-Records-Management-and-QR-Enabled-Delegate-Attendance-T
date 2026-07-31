@@ -496,21 +496,6 @@ const submitForm = async () => {
         return
     }
 
-    const summaryHtml = generateSummaryHtml(formData.value)
-    
-    const result = await Swal.fire({
-        title: isEditing.value ? 'Update Disciple?' : 'Save Disciple?',
-        text: 'Please review the disciple details before saving:',
-        html: summaryHtml,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#111827',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, save it'
-    })
-    
-    if (!result.isConfirmed) return;
-
     isSaving.value = true
 
     // Clean payload for backend

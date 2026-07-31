@@ -507,21 +507,6 @@ const closeModal = () => {
 }
 
 const submitForm = async () => {
-    const summaryHtml = generateSummaryHtml(formData.value)
-    
-    const result = await Swal.fire({
-        title: 'Save Station?',
-        text: 'Please review the station details before saving:',
-        html: summaryHtml,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#111827',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, save it'
-    })
-    
-    if (!result.isConfirmed) return;
-
     isSaving.value = true
     try {
         // Strip out empty string IDs to null for backend

@@ -367,21 +367,6 @@ const openModal = () => {
 }
 
 const submitHistoricalRecord = async () => {
-    const summaryHtml = generateSummaryHtml(formData.value)
-    
-    const result = await Swal.fire({
-        title: 'Save Record?',
-        text: 'Please review the historical record details before saving:',
-        html: summaryHtml,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#111827',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, save it'
-    })
-    
-    if (!result.isConfirmed) return;
-
     isSaving.value = true
     try {
         await AssignmentService.create(formData.value)

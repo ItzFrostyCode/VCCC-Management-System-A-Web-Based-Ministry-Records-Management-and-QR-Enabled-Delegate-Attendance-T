@@ -660,22 +660,6 @@ const openAssignModal = async () => {
 }
 
 const submitAssign = async () => {
-    const displayMap = { transition_type: 'TYPE', effective_date: 'DATE', new_church_name: 'NEW CHURCH', reason: 'REASON' };
-    const summaryHtml = generateSummaryHtml(assignData.value, displayMap);
-    
-    const result = await Swal.fire({
-        title: 'Confirm Assignment',
-        text: 'Please review the transition details before confirming:',
-        html: summaryHtml,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#111827',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, confirm it'
-    })
-    
-    if (!result.isConfirmed) return;
-
     isAssigning.value = true
     try {
         await AssignmentService.create({
@@ -823,21 +807,6 @@ const onFileChange = (e, target) => {
 }
 
 const submitEdit = async () => {
-    const summaryHtml = generateSummaryHtml(editData.value);
-    
-    const result = await Swal.fire({
-        title: 'Save Changes?',
-        text: 'Please review your profile updates before saving:',
-        html: summaryHtml,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#111827',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, save changes'
-    })
-    
-    if (!result.isConfirmed) return;
-
     isSaving.value = true
     try {
         await PastorService.update(route.params.id, editData.value, editFiles.value.pastor, editFiles.value.wife)

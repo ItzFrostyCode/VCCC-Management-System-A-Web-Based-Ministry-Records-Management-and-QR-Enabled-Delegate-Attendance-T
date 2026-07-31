@@ -530,21 +530,6 @@ const closeModal = () => {
 }
 
 const submitForm = async () => {
-  const summaryHtml = generateSummaryHtml(formData.value)
-  
-  const result = await Swal.fire({
-      title: 'Save District?',
-      text: 'Please review the district details before saving:',
-      html: summaryHtml,
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonColor: '#111827',
-      cancelButtonColor: '#9ca3af',
-      confirmButtonText: 'Yes, save it'
-  })
-  
-  if (!result.isConfirmed) return;
-
   isSaving.value = true
   try {
     const payload = {
