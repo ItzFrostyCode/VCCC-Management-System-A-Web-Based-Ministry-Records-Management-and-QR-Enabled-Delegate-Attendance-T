@@ -93,28 +93,40 @@ import { useAuth } from '../composables/useAuth'
 import { supabase } from '../services/supabase'
 
 router.beforeEach(async (to, from, next) => {
-  const { data: { session } } = await supabase.auth.getSession()
-  const isAuthenticated = !!session
-
-  if (to.name !== 'login' && !isAuthenticated) {
-    next({ name: 'login' })
-  } else if (to.name === 'login' && isAuthenticated) {
-    next({ name: 'pastors' })
-  } else if (to.meta.requiresAdmin) {
-    // Check if user is Admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .single()
-
-    if (profile?.role === 'Admin') {
-      next()
-    } else {
-      next({ name: 'pastors' })
+  try {
+    const { data, error } = await supabase.auth.getSession()
+    if (error) {
+      console.warn('Supabase auth session error:', error)
     }
-  } else {
-    next()
+    const session = data?.session || null
+    const isAuthenticated = !!session
+
+    if (to.name !== 'login' && !isAuthenticated) {
+      return next({ name: 'login' })
+    } else if (to.name === 'login' && isAuthenticated) {
+      return next({ name: 'pastors' })
+    } else if (to.meta.requiresAdmin && session?.user) {
+      // Check if user is Admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profile?.role === 'Admin') {
+        return next()
+      } else {
+        return next({ name: 'pastors' })
+      }
+    } else {
+      return next()
+    }
+  } catch (err) {
+    console.error('Error in router navigation guard:', err)
+    if (to.name !== 'login') {
+      return next({ name: 'login' })
+    }
+    return next()
   }
 })
 

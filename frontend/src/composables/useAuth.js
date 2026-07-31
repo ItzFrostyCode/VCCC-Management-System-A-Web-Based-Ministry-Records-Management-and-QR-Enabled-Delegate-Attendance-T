@@ -11,27 +11,37 @@ export function useAuth() {
 
   const loadSession = async () => {
     loading.value = true
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      user.value = session.user
-      await fetchProfile(session.user.id)
-    } else {
+    try {
+      const { data, error } = await supabase.auth.getSession()
+      if (!error && data?.session) {
+        user.value = data.session.user
+        await fetchProfile(data.session.user.id)
+      } else {
+        user.value = null
+        profile.value = null
+      }
+    } catch (err) {
+      console.error('Error loading session:', err)
       user.value = null
       profile.value = null
+    } finally {
+      loading.value = false
     }
-    loading.value = false
   }
 
   const fetchProfile = async (userId) => {
-    // Fetch profile from supabase directly since we need it instantly for UI
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-      
-    if (!error && data) {
-      profile.value = data
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+        
+      if (!error && data) {
+        profile.value = data
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err)
     }
   }
 
